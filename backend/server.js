@@ -15,6 +15,7 @@ const userRoutes = require('./routes/users');
 const tagRoutes = require('./routes/tags');
 const uploadRoutes = require('./routes/upload');
 const adminRoutes = require('./routes/admin');
+const healthRoutes = require('./routes/health');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -54,15 +55,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/tags', tagRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
-
-// 健康检查
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
+app.use('/api/health', healthRoutes);
 
 // 404处理
 app.use('/api/*', (req, res) => {
