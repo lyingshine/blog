@@ -34,11 +34,17 @@ pm2 startup
 # 进入前端目录
 cd /www/wwwroot/blog.lyingshine.top/frontend
 
-# 安装依赖
+# 清理并重新安装依赖（解决vite找不到的问题）
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm config set registry https://registry.npmmirror.com
 npm install
 
 # 构建生产版本
 npm run build
+
+# 如果构建失败，尝试使用npx
+# npx vite build
 ```
 
 ### 4. 数据库初始化
