@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && NODE_ENV=development npm run dev",
+    "dev:backend": "cd backend && npm run dev",
     "build": "cd frontend && npm run build",
-    "start": "cd backend && NODE_ENV=production npm start",
-    "start:dev": "cd backend && NODE_ENV=development npm start",
+    "start": "cd backend && npm start",
+    "start:dev": "cd backend && npm run dev",
     "install:all": "npm run install:backend && npm run install:frontend",
     "install:frontend": "cd frontend && npm install",
     "install:backend": "cd backend && npm install"

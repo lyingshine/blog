@@ -4,7 +4,7 @@ const path = require('path');
 // 根据环境加载配置
 const env = process.env.NODE_ENV || 'development';
 require('dotenv').config({ 
-  path: path.resolve(process.cwd(), `../.env.${env}`)
+  path: path.resolve(__dirname, `../.env.${env}`)
 });
 
 // 加载环境特定配置
