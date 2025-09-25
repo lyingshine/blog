@@ -8,7 +8,8 @@ const router = express.Router();
 
 // 生成JWT令牌
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+  const secret = process.env.JWT_SECRET || 'dev_jwt_secret_key_change_in_production';
+  return jwt.sign({ userId }, secret, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d'
   });
 };

@@ -11,7 +11,8 @@ const authenticateToken = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const secret = process.env.JWT_SECRET || 'dev_jwt_secret_key_change_in_production';
+    const decoded = jwt.verify(token, secret);
     
     // 验证用户是否存在
     const [users] = await pool.execute(
@@ -42,7 +43,8 @@ const optionalAuth = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const secret = process.env.JWT_SECRET || 'dev_jwt_secret_key_change_in_production';
+    const decoded = jwt.verify(token, secret);
     
     const [users] = await pool.execute(
       'SELECT id, username, email, avatar FROM users WHERE id = ?',
