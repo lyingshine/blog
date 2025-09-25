@@ -9,6 +9,7 @@ import CreatePost from '../views/CreatePost.vue'
 import MyPosts from '../views/MyPosts.vue'
 import Trash from '../views/Trash.vue'
 import Profile from '../views/Profile.vue'
+import Inspirations from '../views/Inspirations.vue'
 import { useAuth } from '../composables/useAuth'
 
 const routes = [
@@ -75,6 +76,11 @@ const routes = [
     name: 'Profile',
     component: Profile,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/inspirations',
+    name: 'Inspirations',
+    component: Inspirations
   }
 ]
 

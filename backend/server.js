@@ -17,6 +17,7 @@ const uploadRoutes = require('./routes/upload');
 const adminRoutes = require('./routes/admin');
 const healthRoutes = require('./routes/health');
 const avatarFixRoutes = require('./routes/avatar-fix');
+const inspirationRoutes = require('./routes/inspirations');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -59,6 +60,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/avatar-fix', avatarFixRoutes);
+app.use('/api/inspirations', inspirationRoutes);
 
 // 404处理
 app.use('/api/*', (req, res) => {
