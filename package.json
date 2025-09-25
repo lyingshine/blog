@@ -1,45 +1,32 @@
 {
-  "name": "vue-blog-frontend",
-  "version": "2.0.0",
-  "description": "A modern Vue.js blog platform with database backend",
-  "main": "index.js",
+  "name": "blog-system",
+  "version": "1.0.0",
+  "description": "一个基于 Vue.js + Node.js + MySQL 的全栈博客系统",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "serve": "vite preview",
-    "lint": "eslint src --ext .vue,.js,.ts",
-    "lint:fix": "eslint src --ext .vue,.js,.ts --fix",
-    "export-data": "node scripts/export-localStorage.js",
-    "setup": "chmod +x scripts/setup.sh && ./scripts/setup.sh"
-  },
-  "dependencies": {
-    "vue": "^3.3.4",
-    "vue-router": "^4.2.4",
-    "axios": "^1.5.0",
-    "dayjs": "^1.11.9"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^4.3.4",
-    "vite": "^4.4.9",
-    "eslint": "^8.45.0",
-    "eslint-plugin-vue": "^9.15.1"
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && npm install"
   },
   "keywords": [
-    "vue",
     "blog",
-    "frontend",
+    "vue",
+    "nodejs",
+    "express",
     "mysql",
-    "nodejs"
+    "fullstack"
   ],
-  "author": "Blog Team",
+  "author": "lyingshine",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/your-username/vue-blog.git"
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   },
-  "bugs": {
-    "url": "https://github.com/your-username/vue-blog/issues"
-  },
-  "homepage": "https://github.com/your-username/vue-blog#readme"
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
 }

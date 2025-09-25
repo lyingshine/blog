@@ -1,0 +1,45 @@
+{
+  "name": "vue-blog-frontend",
+  "version": "2.0.0",
+  "description": "A modern Vue.js blog platform with database backend",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview",
+    "lint": "eslint src --ext .vue,.js,.ts",
+    "lint:fix": "eslint src --ext .vue,.js,.ts --fix",
+    "export-data": "node scripts/export-localStorage.js",
+    "setup": "chmod +x scripts/setup.sh && ./scripts/setup.sh"
+  },
+  "dependencies": {
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.4",
+    "axios": "^1.5.0",
+    "dayjs": "^1.11.9"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.3.4",
+    "vite": "^4.4.9",
+    "eslint": "^8.45.0",
+    "eslint-plugin-vue": "^9.15.1"
+  },
+  "keywords": [
+    "vue",
+    "blog",
+    "frontend",
+    "mysql",
+    "nodejs"
+  ],
+  "author": "Blog Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/vue-blog.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/vue-blog/issues"
+  },
+  "homepage": "https://github.com/your-username/vue-blog#readme"
+}
