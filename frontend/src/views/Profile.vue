@@ -191,11 +191,21 @@
 <script>
 import AvatarUploader from '../components/AvatarUploader.vue'
 import message from '../utils/message.js'
+import { useAuth } from '../composables/useAuth.js'
+import { refreshAllAvatars } from '../utils/cache-buster.js'
 
 export default {
   name: 'Profile',
   components: {
     AvatarUploader
+  },
+  setup() {
+    const { user: authUser, refreshUser, updateAvatar } = useAuth()
+    return {
+      authUser,
+      refreshUser,
+      updateAvatar
+    }
   },
   data() {
     return {
@@ -349,10 +359,35 @@ export default {
       }
     },
 
-    handleAvatarUpdate(newAvatar) {
+    async handleAvatarUpdate(newAvatar) {
+      // 更新本地用户信息
       this.user.avatar = newAvatar
-      // 更新全局用户状态
-      this.$emit('user-updated', this.user)
+      
+      // 使用 useAuth 更新全局状态
+      this.updateAvatar(newAvatar)
+      
+      // 刷新用户信息以确保同步
+      await this.refreshUser()
+      
+      // 如果全局用户状态已更新，同步到本地
+      if (this.authUser) {
+        this.user = { ...this.authUser }
+      }
+      
+      // 强制刷新所有头像图片，清理缓存
+      setTimeout(() => {
+        refreshAllAvatars()
+      }, 100)
+      
+      // 强制刷新页面上的头像显示
+      this.$forceUpdate()
+      
+      // 触发全局事件，通知其他组件更新头像
+      window.dispatchEvent(new CustomEvent('avatar-updated', { 
+        detail: { avatar: newAvatar } 
+      }))
+      
+      message.success('头像更新成功')
     }
   }
 }

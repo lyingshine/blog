@@ -14,7 +14,7 @@
     <!-- 评论输入框 -->
     <div v-if="isLoggedIn" class="comment-form">
       <div class="user-avatar">
-        <img :src="currentUser.avatar || '/default-avatar.png'" :alt="currentUser.username" />
+        <img :src="getAvatarUrl(currentUser.avatar, currentUser.username)" :alt="currentUser.username" />
       </div>
       <div class="comment-input-wrapper">
         <textarea
@@ -81,6 +81,7 @@
 <script>
 import CommentItem from './CommentItem.vue'
 import { commentsAPI } from '../utils/api'
+import { getAvatarUrl } from '../utils/image-url'
 import message from '../utils/message'
 
 export default {

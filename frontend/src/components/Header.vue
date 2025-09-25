@@ -86,14 +86,14 @@
           <!-- User Menu -->
           <div v-if="isAuthenticated" class="user-menu">
             <button @click="toggleUserMenu" class="user-avatar">
-              <img :src="user.avatar" :alt="user.username" />
+              <img :src="getAvatarUrl(user.avatar, user.username)" :alt="user.username" />
               <div class="user-status"></div>
             </button>
             
             <transition name="dropdown">
               <div v-if="showUserMenu" class="user-dropdown">
                 <div class="dropdown-header">
-                  <img :src="user.avatar" :alt="user.username" />
+                  <img :src="getAvatarUrl(user.avatar, user.username)" :alt="user.username" />
                   <div class="user-info">
                     <div class="user-name">{{ user.username }}</div>
                     <div class="user-email">{{ user.email }}</div>
@@ -279,16 +279,11 @@
 <script>
 import { useAuth } from '../composables/useAuth'
 import { useDarkMode } from '../composables/useDarkMode'
+import { getAvatarUrl } from '../utils/image-url'
 
 export default {
   name: 'Header',
-  data() {
-    return {
-      searchQuery: '',
-      showUserMenu: false,
-      isMobileMenuOpen: false
-    }
-  },
+
   setup() {
     const { user, isAuthenticated, logout } = useAuth()
     const { isDark, toggleDarkMode } = useDarkMode()
@@ -300,6 +295,22 @@ export default {
       isDark,
       toggleDarkMode
     }
+  },
+  data() {
+    return {
+      searchQuery: '',
+      showUserMenu: false,
+      isMobileMenuOpen: false,
+      avatarRefreshKey: Date.now() // 用于强制刷新头像
+    }
+  },
+  mounted() {
+    // 监听头像更新事件
+    window.addEventListener('avatar-updated', this.handleAvatarUpdated)
+  },
+  beforeUnmount() {
+    // 清理事件监听器
+    window.removeEventListener('avatar-updated', this.handleAvatarUpdated)
   },
   methods: {
     handleSearch() {
@@ -336,6 +347,18 @@ export default {
       this.logout()
       this.closeUserMenu()
       this.$router.push('/')
+    },
+    
+    getAvatarUrl(avatarPath, username) {
+      // 在头像更新后强制刷新
+      const forceRefresh = this.avatarRefreshKey > 0
+      return getAvatarUrl(avatarPath, username, forceRefresh)
+    },
+    
+    handleAvatarUpdated(event) {
+      // 更新刷新键以强制重新渲染头像
+      this.avatarRefreshKey = Date.now()
+      console.log('Header: 头像已更新', event.detail)
     }
   }
 }

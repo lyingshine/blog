@@ -131,6 +131,30 @@ const updateUser = async (userInfo) => {
   }
 }
 
+// 刷新用户信息
+const refreshUser = async () => {
+  const token = localStorage.getItem('blog_token')
+  if (!token) return false
+  
+  try {
+    const response = await authAPI.getCurrentUser()
+    user.value = response.user
+    localStorage.setItem('blog_user', JSON.stringify(user.value))
+    return true
+  } catch (error) {
+    console.error('刷新用户信息失败:', error)
+    return false
+  }
+}
+
+// 更新用户头像（专门用于头像更新）
+const updateAvatar = (newAvatar) => {
+  if (user.value) {
+    user.value.avatar = newAvatar
+    localStorage.setItem('blog_user', JSON.stringify(user.value))
+  }
+}
+
 export function useAuth() {
   return {
     user,
@@ -142,6 +166,8 @@ export function useAuth() {
     login,
     register,
     logout,
-    updateUser
+    updateUser,
+    refreshUser,
+    updateAvatar
   }
 }

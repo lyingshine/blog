@@ -1,18 +1,18 @@
 const mysql = require('mysql2/promise');
 const path = require('path');
 
-// 根据环境加载配置
-const env = process.env.NODE_ENV || 'development';
-require('dotenv').config({ 
-  path: path.resolve(__dirname, `../.env.${env}`)
-});
+// 加载环境变量
+require('dotenv').config();
 
-// 加载环境特定配置
+// 根据环境加载配置
+const env = (process.env.NODE_ENV || 'development').trim();
 let config;
 try {
   config = require(`./${env}.js`);
+  console.log(`✅ 加载 ${env} 环境配置成功`);
 } catch (error) {
   console.warn(`未找到 ${env} 环境配置，使用默认配置`);
+  console.warn(`错误详情: ${error.message}`);
   config = require('./development.js');
 }
 

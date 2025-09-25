@@ -35,7 +35,7 @@
         <footer class="article-footer">
           <div class="author-info">
             <div class="author-avatar">
-              <img :src="article.author.avatar" :alt="article.author.name" />
+              <img :src="getAvatarUrl(article.author.avatar, article.author.name)" :alt="article.author.name" />
             </div>
             <div class="author-details">
               <h4>{{ article.author.name }}</h4>
@@ -93,6 +93,7 @@
 <script>
 import dayjs from 'dayjs'
 import { articlesAPI } from '../utils/api'
+import { getAvatarUrl } from '../utils/image-url'
 import CommentSection from '../components/CommentSection.vue'
 
 export default {
@@ -134,7 +135,7 @@ export default {
       this.loading = true
       try {
         console.log('正在获取文章，ID:', this.id)
-        console.log('API基础URL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api')
+        console.log('API基础URL:', import.meta.env.VITE_API_BASE_URL || '/api')
         
         const response = await articlesAPI.getArticle(this.id)
         console.log('API响应:', response)
@@ -190,6 +191,10 @@ export default {
     
     formatDate(date) {
       return dayjs(date).format('YYYY年MM月DD日')
+    },
+    
+    getAvatarUrl(avatarPath, username) {
+      return getAvatarUrl(avatarPath, username)
     },
     
     async toggleLike() {

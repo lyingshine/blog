@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>头像修复工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.danger {
+            background-color: #dc3545;
+        }
+        button.danger:hover {
+            background-color: #c82333;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            margin: 5px;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 头像修复工具</h1>
+        
+        <div class="section">
+            <h3>1. 检查特定用户头像</h3>
+            <input type="number" id="userId" placeholder="输入用户ID" value="5">
+            <button onclick="checkUser()">检查用户</button>
+            <div id="userResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <div class="section">
+            <h3>2. 修复单个用户头像</h3>
+            <input type="number" id="fixUserId" placeholder="输入用户ID" value="5">
+            <select id="avatarType">
+                <option value="initials">字母头像</option>
+                <option value="avataaars">卡通头像</option>
+                <option value="personas">简约头像</option>
+                <option value="bottts">机器人头像</option>
+                <option value="identicon">几何头像</option>
+            </select>
+            <button onclick="fixSingleUser()">修复此用户</button>
+            <div id="fixResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <div class="section">
+            <h3>3. 批量修复所有缺失头像</h3>
+            <p>这将检查所有用户的头像文件，并为缺失文件的用户设置默认头像。</p>
+            <button onclick="fixAllUsers()" class="danger">批量修复所有用户</button>
+            <div id="batchResult" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/avatar-fix';
+        
+        async function checkUser() {
+            const userId = document.getElementById('userId').value;
+            const resultDiv = document.getElementById('userResult');
+            
+            if (!userId) {
+                showResult(resultDiv, '请输入用户ID', 'error');
+                return;
+            }
+            
+            try {
+                showResult(resultDiv, '检查中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/check-user/${userId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const user = data.user;
+                    let message = `用户信息：
+ID: ${user.id}
+用户名: ${user.username}
+头像路径: ${user.avatar || '无'}
+头像类型: ${user.avatarType}`;
+                    
+                    if (user.avatarType === 'local') {
+                        message += `
+文件存在: ${user.fileExists ? '✅ 是' : '❌ 否'}
+文件路径: ${user.filePath}`;
+                        
+                        if (!user.fileExists) {
+                            message += `
+
+🔧 建议：此用户的头像文件缺失，需要修复！`;
+                        }
+                    }
+                    
+                    showResult(resultDiv, message, user.fileExists === false ? 'error' : 'success');
+                } else {
+                    showResult(resultDiv, `错误: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(resultDiv, `请求失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function fixSingleUser() {
+            const userId = document.getElementById('fixUserId').value;
+            const avatarType = document.getElementById('avatarType').value;
+            const resultDiv = document.getElementById('fixResult');
+            
+            if (!userId) {
+                showResult(resultDiv, '请输入用户ID', 'error');
+                return;
+            }
+            
+            try {
+                showResult(resultDiv, '修复中...', 'info');
+                
+                const response = await fetch(`${API_BASE}/set-default-avatar/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ avatarType })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const message = `✅ 修复成功！
+用户ID: ${data.userId}
+用户名: ${data.username}
+新头像: ${data.newAvatar}`;
+                    showResult(resultDiv, message, 'success');
+                } else {
+                    showResult(resultDiv, `❌ 修复失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(resultDiv, `请求失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function fixAllUsers() {
+            const resultDiv = document.getElementById('batchResult');
+            
+            if (!confirm('确定要批量修复所有缺失的头像吗？这个操作不可撤销。')) {
+                return;
+            }
+            
+            try {
+                showResult(resultDiv, '批量修复中，请稍候...', 'info');
+                
+                const response = await fetch(`${API_BASE}/fix-missing-avatars`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    let message = `✅ 批量修复完成！
+
+统计信息：
+- 检查用户数: ${data.summary.totalChecked}
+- 修复成功数: ${data.summary.fixed}
+- 修复失败数: ${data.summary.errors}`;
+
+                    if (data.fixed.length > 0) {
+                        message += `
+
+修复的用户：`;
+                        data.fixed.forEach(user => {
+                            message += `
+- 用户 ${user.id} (${user.username}): ${user.oldAvatar} → ${user.newAvatar}`;
+                        });
+                    }
+                    
+                    if (data.errors.length > 0) {
+                        message += `
+
+修复失败的用户：`;
+                        data.errors.forEach(user => {
+                            message += `
+- 用户 ${user.id} (${user.username}): ${user.error}`;
+                        });
+                    }
+                    
+                    showResult(resultDiv, message, 'success');
+                } else {
+                    showResult(resultDiv, `❌ 批量修复失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(resultDiv, `请求失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function showResult(element, message, type) {
+            element.textContent = message;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

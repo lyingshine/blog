@@ -16,6 +16,7 @@ const tagRoutes = require('./routes/tags');
 const uploadRoutes = require('./routes/upload');
 const adminRoutes = require('./routes/admin');
 const healthRoutes = require('./routes/health');
+const avatarFixRoutes = require('./routes/avatar-fix');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -46,6 +47,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 静态文件服务
 app.use('/uploads', express.static('uploads'));
+app.use('/public', express.static('public'));
 
 // API路由
 app.use('/api/auth', authRoutes);
@@ -56,6 +58,7 @@ app.use('/api/tags', tagRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/health', healthRoutes);
+app.use('/api/avatar-fix', avatarFixRoutes);
 
 // 404处理
 app.use('/api/*', (req, res) => {
