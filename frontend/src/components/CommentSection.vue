@@ -299,6 +299,11 @@ export default {
         console.error('更新评论失败:', error)
         message.error(error.response?.data?.error || '更新评论失败')
       }
+    },
+
+    // 头像URL处理函数
+    getAvatarUrl(avatarPath, username) {
+      return getAvatarUrl(avatarPath, username)
     }
   }
 }
