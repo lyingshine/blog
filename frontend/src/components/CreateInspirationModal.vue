@@ -273,15 +273,18 @@ export default {
     })
 
     // ESC键关闭弹窗
-    const handleEsc = (e) => {
+    this.handleEsc = (e) => {
       if (e.key === 'Escape') {
         this.$emit('close')
       }
     }
-    document.addEventListener('keydown', handleEsc)
-    this.$once('hook:beforeDestroy', () => {
-      document.removeEventListener('keydown', handleEsc)
-    })
+    document.addEventListener('keydown', this.handleEsc)
+  },
+  beforeUnmount() {
+    // 清理事件监听器
+    if (this.handleEsc) {
+      document.removeEventListener('keydown', this.handleEsc)
+    }
   }
 }
 </script>

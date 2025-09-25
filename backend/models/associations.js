@@ -3,6 +3,8 @@ const User = require('./User');
 const Inspiration = require('./Inspiration');
 const InspirationLike = require('./InspirationLike');
 const InspirationComment = require('./InspirationComment');
+const InspirationCommentLike = require('./InspirationCommentLike');
+const InspirationShare = require('./InspirationShare');
 
 // 用户和灵感的关联
 User.hasMany(Inspiration, {
@@ -70,9 +72,74 @@ InspirationComment.belongsTo(InspirationComment, {
   as: 'parent'
 });
 
+// 灵感转发关联
+User.hasMany(InspirationShare, {
+  foreignKey: 'user_id',
+  as: 'inspirationShares'
+});
+
+InspirationShare.belongsTo(User, {
+  foreignKey: 'user_id',
+  as: 'user'
+});
+
+Inspiration.hasMany(InspirationShare, {
+  foreignKey: 'inspiration_id',
+  as: 'shares'
+});
+
+Inspiration.hasMany(InspirationShare, {
+  foreignKey: 'original_inspiration_id',
+  as: 'originalShares'
+});
+
+InspirationShare.belongsTo(Inspiration, {
+  foreignKey: 'inspiration_id',
+  as: 'inspiration'
+});
+
+InspirationShare.belongsTo(Inspiration, {
+  foreignKey: 'original_inspiration_id',
+  as: 'originalInspiration'
+});
+
+// 灵感自引用关联（转发）
+Inspiration.belongsTo(Inspiration, {
+  foreignKey: 'original_inspiration_id',
+  as: 'originalInspiration'
+});
+
+Inspiration.hasMany(Inspiration, {
+  foreignKey: 'original_inspiration_id',
+  as: 'shareInspirations'
+});
+
+// 评论点赞关联
+User.hasMany(InspirationCommentLike, {
+  foreignKey: 'user_id',
+  as: 'inspirationCommentLikes'
+});
+
+InspirationCommentLike.belongsTo(User, {
+  foreignKey: 'user_id',
+  as: 'user'
+});
+
+InspirationComment.hasMany(InspirationCommentLike, {
+  foreignKey: 'comment_id',
+  as: 'likes'
+});
+
+InspirationCommentLike.belongsTo(InspirationComment, {
+  foreignKey: 'comment_id',
+  as: 'comment'
+});
+
 module.exports = {
   User,
   Inspiration,
   InspirationLike,
-  InspirationComment
+  InspirationComment,
+  InspirationCommentLike,
+  InspirationShare
 };

@@ -191,26 +191,14 @@ export default {
       await this.loadInspirations()
     },
 
-    async handleLike(inspirationId) {
+    handleLike() {
       if (!this.isLoggedIn) {
         this.$message?.warning('请先登录')
         return
       }
-
-      try {
-        const response = await inspirationsAPI.toggleLike(inspirationId)
-        
-        // 更新本地数据
-        const inspiration = this.inspirations.find(i => i.id === inspirationId)
-        if (inspiration) {
-          inspiration.isLiked = response.data.isLiked
-          inspiration.likes_count = response.data.likes_count
-        }
-        
-      } catch (error) {
-        console.error('点赞失败:', error)
-        this.$message?.error('操作失败')
-      }
+      
+      // 父组件不需要处理点赞逻辑，完全由子组件处理
+      // 这个方法保留是为了兼容，但实际不执行任何操作
     },
 
     async handleDelete(inspirationId) {

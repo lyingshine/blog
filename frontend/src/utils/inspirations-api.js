@@ -66,6 +66,18 @@ export const inspirationsAPI = {
     return api.post(`/inspirations/${id}/like`)
   },
 
+  // 转发灵感
+  shareInspiration(id, shareContent = '') {
+    return api.post(`/inspirations/${id}/share`, {
+      share_content: shareContent
+    })
+  },
+
+  // 获取转发列表
+  getShares(id, params = {}) {
+    return api.get(`/inspirations/${id}/shares`, { params })
+  },
+
   // 删除灵感
   deleteInspiration(id) {
     return api.delete(`/inspirations/${id}`)
@@ -79,6 +91,39 @@ export const inspirationsAPI = {
         ...params 
       } 
     })
+  }
+}
+
+// 评论相关API
+export const commentsAPI = {
+  // 获取灵感评论列表
+  getComments(inspirationId, params = {}) {
+    return api.get(`/inspiration-comments/${inspirationId}`, { params })
+  },
+
+  // 获取评论回复列表
+  getReplies(commentId, params = {}) {
+    return api.get(`/inspiration-comments/${commentId}/replies`, { params })
+  },
+
+  // 发布评论
+  createComment(data) {
+    return api.post('/inspiration-comments', data)
+  },
+
+  // 点赞/取消点赞评论
+  toggleCommentLike(commentId) {
+    return api.post(`/inspiration-comments/${commentId}/like`)
+  },
+
+  // 删除评论
+  deleteComment(commentId) {
+    return api.delete(`/inspiration-comments/${commentId}`)
+  },
+
+  // 更新评论
+  updateComment(commentId, content) {
+    return api.put(`/inspiration-comments/${commentId}`, { content })
   }
 }
 
