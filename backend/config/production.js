@@ -25,7 +25,11 @@ module.exports = {
 
   // CORS配置
   cors: {
-    origin: process.env.CORS_ORIGIN || 'https://blog.lyingshine.top',
+    origin: [
+      'https://blog.lyingshine.top',
+      'http://localhost:4173',
+      'http://localhost:5173'
+    ],
     credentials: true
   },
 
