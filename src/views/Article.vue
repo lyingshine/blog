@@ -53,6 +53,13 @@
           </div>
         </footer>
 
+        <!-- Comment Section -->
+        <CommentSection
+          :article-id="id"
+          :current-user="currentUser"
+          :is-logged-in="isLoggedIn"
+        />
+
         <!-- Related Articles -->
         <section class="related-articles">
           <h3>相关文章</h3>
@@ -85,9 +92,14 @@
 
 <script>
 import dayjs from 'dayjs'
+import { articlesAPI } from '../utils/api'
+import CommentSection from '../components/CommentSection.vue'
 
 export default {
   name: 'Article',
+  components: {
+    CommentSection
+  },
   props: {
     id: {
       type: String,
@@ -99,10 +111,13 @@ export default {
       loading: true,
       article: null,
       isLiked: false,
-      relatedArticles: []
+      relatedArticles: [],
+      currentUser: null,
+      isLoggedIn: false
     }
   },
   async created() {
+    this.checkLoginStatus()
     await this.fetchArticle()
     await this.fetchRelatedArticles()
   },
@@ -118,15 +133,31 @@ export default {
     async fetchArticle() {
       this.loading = true
       try {
-        // 模拟API调用
-        await new Promise(resolve => setTimeout(resolve, 500))
+        console.log('正在获取文章，ID:', this.id)
+        console.log('API基础URL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api')
         
-        // 从localStorage获取文章数据
-        const articles = JSON.parse(localStorage.getItem('blog_articles') || '[]')
-        this.article = articles.find(article => article.id.toString() === this.id)
+        const response = await articlesAPI.getArticle(this.id)
+        console.log('API响应:', response)
+        
+        this.article = {
+          ...response.article,
+          // 适配前端数据结构
+          date: response.article.created_at,
+          summary: response.article.excerpt,
+          readingTime: response.article.reading_time,
+          content: response.article.content,
+          author: response.article.author || {
+            name: response.article.author_name,
+            avatar: response.article.author_avatar || '/default-avatar.png',
+            bio: '博客作者'
+          }
+        }
+        this.isLiked = response.article.isLiked || false
         
       } catch (error) {
         console.error('获取文章失败:', error)
+        console.error('错误详情:', error.response?.data || error.message)
+        this.article = null
       } finally {
         this.loading = false
       }
@@ -134,18 +165,23 @@ export default {
     
     async fetchRelatedArticles() {
       try {
-        // 从localStorage获取所有文章
-        const articles = JSON.parse(localStorage.getItem('blog_articles') || '[]')
+        if (!this.article) return
         
-        if (this.article && articles.length > 0) {
-          // 获取同分类的其他文章，最多3篇
-          this.relatedArticles = articles
-            .filter(article => 
-              article.id !== this.article.id && 
-              article.category === this.article.category
-            )
-            .slice(0, 3)
-        }
+        const response = await articlesAPI.getArticles({ 
+          category: this.article.category,
+          limit: 4 
+        })
+        
+        // 过滤掉当前文章，最多显示3篇
+        this.relatedArticles = response.articles
+          .filter(article => article.id !== parseInt(this.id))
+          .slice(0, 3)
+          .map(article => ({
+            ...article,
+            date: article.created_at,
+            excerpt: article.excerpt
+          }))
+          
       } catch (error) {
         console.error('获取相关文章失败:', error)
         this.relatedArticles = []
@@ -156,8 +192,19 @@ export default {
       return dayjs(date).format('YYYY年MM月DD日')
     },
     
-    toggleLike() {
-      this.isLiked = !this.isLiked
+    async toggleLike() {
+      try {
+        await articlesAPI.toggleLike(this.id)
+        if (this.isLiked) {
+          this.article.likes = Math.max(0, this.article.likes - 1)
+        } else {
+          this.article.likes = (this.article.likes || 0) + 1
+        }
+        this.isLiked = !this.isLiked
+      } catch (error) {
+        console.error('点赞操作失败:', error)
+        alert('操作失败，请稍后重试')
+      }
     },
     
     shareArticle() {
@@ -176,6 +223,25 @@ export default {
     
     goToArticle(id) {
       this.$router.push(`/article/${id}`)
+    },
+
+    checkLoginStatus() {
+      const token = localStorage.getItem('blog_token')
+      const user = localStorage.getItem('blog_user')
+      
+      if (token && user) {
+        try {
+          this.currentUser = JSON.parse(user)
+          this.isLoggedIn = true
+        } catch (error) {
+          console.error('解析用户信息失败:', error)
+          this.isLoggedIn = false
+          this.currentUser = null
+        }
+      } else {
+        this.isLoggedIn = false
+        this.currentUser = null
+      }
     }
   }
 }

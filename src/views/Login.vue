@@ -36,6 +36,23 @@
 
         <!-- Form -->
         <form @submit.prevent="handleSubmit" class="auth-form">
+          <!-- General Error Message -->
+          <div v-if="errors.general" class="general-error">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            {{ errors.general }}
+          </div>
+
+          <!-- Success Message -->
+          <div v-if="successMessage" class="success-message">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20,6 9,17 4,12"/>
+            </svg>
+            {{ successMessage }}
+          </div>
           <!-- Username Field -->
           <div class="form-group">
             <label for="username" class="form-label">
@@ -237,7 +254,6 @@ export default {
   data() {
     return {
       isLogin: true,
-      loading: false,
       showPassword: false,
       form: {
         username: '',
@@ -245,13 +261,16 @@ export default {
         password: '',
         confirmPassword: ''
       },
-      errors: {}
+      errors: {},
+      successMessage: ''
     }
   },
   setup() {
-    const { login } = useAuth()
+    const { login, register, loading } = useAuth()
     return {
-      login
+      login,
+      register,
+      loading
     }
   },
   computed: {
@@ -282,6 +301,7 @@ export default {
       this.isLogin = !this.isLogin
       this.clearForm()
       this.errors = {}
+      this.successMessage = ''
     },
     
     clearForm() {
@@ -333,57 +353,53 @@ export default {
     },
     
     async handleSubmit() {
-      if (!this.validateForm()) return
+      console.log('表单提交开始')
       
-      this.loading = true
+      // 清除之前的错误和成功消息
+      this.errors = {}
+      this.successMessage = ''
+      
+      if (!this.validateForm()) {
+        console.log('表单验证失败')
+        return
+      }
+      
+      console.log('表单验证通过，开始认证')
       
       try {
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
+        let result
         if (this.isLogin) {
-          // 登录逻辑
-          const users = JSON.parse(localStorage.getItem('blog_users') || '[]')
-          const user = users.find(u => u.username === this.form.username && u.password === this.form.password)
-          
-          if (user) {
-            this.login(user)
-            this.$router.push('/')
-          } else {
-            this.errors.password = '用户名或密码错误'
-          }
+          console.log('执行登录操作')
+          // 登录
+          result = await this.login({
+            username: this.form.username,
+            password: this.form.password
+          })
         } else {
-          // 注册逻辑
-          const users = JSON.parse(localStorage.getItem('blog_users') || '[]')
-          
-          if (users.find(u => u.username === this.form.username)) {
-            this.errors.username = '用户名已存在'
-            return
-          }
-          
-          if (users.find(u => u.email === this.form.email)) {
-            this.errors.email = '邮箱已被注册'
-            return
-          }
-          
-          const newUser = {
-            id: Date.now(),
+          console.log('执行注册操作')
+          // 注册
+          result = await this.register({
             username: this.form.username,
             email: this.form.email,
-            password: this.form.password,
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${this.form.username}`,
-            createdAt: new Date().toISOString()
-          }
+            password: this.form.password
+          })
+        }
+        
+        console.log('认证结果:', result)
+        
+        if (result && result.success) {
+          this.successMessage = this.isLogin ? '登录成功！正在跳转...' : '注册成功！正在跳转...'
           
-          users.push(newUser)
-          localStorage.setItem('blog_users', JSON.stringify(users))
-          
-          this.login(newUser)
-          this.$router.push('/')
+          // 延迟跳转，让用户看到成功消息
+          setTimeout(() => {
+            this.$router.push('/')
+          }, 1500)
+        } else {
+          this.errors.general = result?.message || '操作失败，请检查输入信息'
         }
       } catch (error) {
         console.error('认证失败:', error)
-      } finally {
-        this.loading = false
+        this.errors.general = error.response?.data?.message || '网络错误，请稍后重试'
       }
     }
   }
@@ -396,9 +412,21 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--bg-primary);
   position: relative;
   overflow: hidden;
+}
+
+.auth-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+  opacity: 0.05;
+  z-index: 1;
 }
 
 .auth-container {
@@ -422,7 +450,8 @@ export default {
 .bg-shape {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-primary);
+  opacity: 0.05;
   backdrop-filter: blur(10px);
   animation: float 8s ease-in-out infinite;
 }
@@ -463,7 +492,8 @@ export default {
   position: absolute;
   width: 4px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--color-primary);
+  opacity: 0.2;
   border-radius: 50%;
   animation: particle 6s linear infinite;
 }
@@ -500,12 +530,12 @@ export default {
 
 /* Auth Card */
 .auth-card {
-  background: var(--color-white);
+  background: var(--bg-secondary);
   border-radius: var(--radius-2xl);
   padding: var(--space-3xl);
   box-shadow: var(--shadow-xl);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border-color);
   position: relative;
   overflow: hidden;
 }
@@ -548,18 +578,18 @@ export default {
 .logo-text {
   font-size: 1.5rem;
   font-weight: 800;
-  color: var(--color-gray-900);
+  color: var(--text-primary);
 }
 
 .auth-title h1 {
   font-size: 2rem;
   font-weight: 800;
-  color: var(--color-gray-900);
+  color: var(--text-primary);
   margin-bottom: var(--space-sm);
 }
 
 .auth-title p {
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   font-size: 1rem;
   margin: 0;
 }
@@ -578,7 +608,7 @@ export default {
   align-items: center;
   gap: var(--space-xs);
   font-weight: 600;
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
   margin-bottom: var(--space-sm);
   font-size: 0.875rem;
 }
@@ -590,23 +620,28 @@ export default {
 .form-input {
   width: 100%;
   padding: var(--space-md) var(--space-lg);
-  border: 2px solid var(--color-gray-200);
+  border: 2px solid var(--border-color);
   border-radius: var(--radius-lg);
   font-size: 1rem;
   transition: var(--transition-fast);
-  background: var(--color-gray-50);
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: var(--color-white);
+  background: var(--bg-primary);
   box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .form-input.error {
   border-color: var(--color-error);
-  background: #fef2f2;
+  background: var(--bg-primary);
+}
+
+.form-input::placeholder {
+  color: var(--text-tertiary);
 }
 
 .input-status {
@@ -624,7 +659,7 @@ export default {
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--color-gray-400);
+  color: var(--text-tertiary);
   cursor: pointer;
   padding: var(--space-xs);
   border-radius: var(--radius-md);
@@ -633,7 +668,7 @@ export default {
 
 .password-toggle:hover {
   color: var(--color-primary);
-  background: var(--color-gray-100);
+  background: var(--bg-tertiary);
 }
 
 .error-message {
@@ -650,6 +685,47 @@ export default {
   font-size: 0.75rem;
 }
 
+/* General Error Message */
+.general-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--color-error);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.875rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Success Message */
+.success-message {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: var(--color-success);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.875rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Password Strength */
 .password-strength {
   margin-top: var(--space-sm);
@@ -657,7 +733,7 @@ export default {
 
 .strength-bar {
   height: 4px;
-  background: var(--color-gray-200);
+  background: var(--border-color);
   border-radius: 2px;
   overflow: hidden;
   margin-bottom: var(--space-xs);
@@ -683,7 +759,7 @@ export default {
 
 .strength-text {
   font-size: 0.75rem;
-  color: var(--color-gray-500);
+  color: var(--text-tertiary);
 }
 
 /* Submit Button */
@@ -737,7 +813,7 @@ export default {
 }
 
 .auth-toggle p {
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -761,7 +837,7 @@ export default {
   display: flex;
   justify-content: space-around;
   padding-top: var(--space-xl);
-  border-top: 1px solid var(--color-gray-200);
+  border-top: 1px solid var(--border-color);
 }
 
 .feature-item {
@@ -785,7 +861,7 @@ export default {
 
 .feature-item span {
   font-size: 0.875rem;
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 

@@ -4,7 +4,7 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
   
-  /* 颜色系统 */
+  /* 颜色系统 - 亮色模式 */
   --color-primary: #2563eb;
   --color-primary-hover: #1d4ed8;
   --color-primary-light: #dbeafe;
@@ -12,7 +12,7 @@
   --color-accent: #10b981;
   --color-accent-hover: #059669;
   
-  /* 中性色 */
+  /* 中性色 - 亮色模式 */
   --color-white: #ffffff;
   --color-gray-50: #f8fafc;
   --color-gray-100: #f1f5f9;
@@ -30,6 +30,16 @@
   --color-warning: #f59e0b;
   --color-error: #ef4444;
   --color-info: #3b82f6;
+  
+  /* 主题颜色变量 */
+  --bg-primary: var(--color-white);
+  --bg-secondary: var(--color-gray-50);
+  --bg-tertiary: var(--color-gray-100);
+  --text-primary: var(--color-gray-900);
+  --text-secondary: var(--color-gray-600);
+  --text-tertiary: var(--color-gray-500);
+  --border-color: var(--color-gray-200);
+  --border-hover: var(--color-gray-300);
   
   /* 阴影系统 */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -59,6 +69,43 @@
   --transition-slow: 350ms ease;
 }
 
+/* 暗色模式 */
+:root.dark {
+  /* 颜色系统 - 暗色模式 */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #1e3a8a;
+  
+  /* 主题颜色变量 - 暗色模式 */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --border-color: #334155;
+  --border-hover: #475569;
+  
+  /* 暗色模式下的语义化颜色调整 */
+  --color-success: #22c55e;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --color-info: #60a5fa;
+}
+
+/* 亮色模式 - 显式定义 */
+:root.light {
+  /* 主题颜色变量 - 亮色模式 */
+  --bg-primary: var(--color-white);
+  --bg-secondary: var(--color-gray-50);
+  --bg-tertiary: var(--color-gray-100);
+  --text-primary: var(--color-gray-900);
+  --text-secondary: var(--color-gray-600);
+  --text-tertiary: var(--color-gray-500);
+  --border-color: var(--color-gray-200);
+  --border-hover: var(--color-gray-300);
+}
+
 /* 重置样式 */
 * {
   box-sizing: border-box;
@@ -74,10 +121,11 @@ body {
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.6;
-  color: var(--color-gray-800);
-  background-color: var(--color-gray-50);
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* 链接样式 */
@@ -95,7 +143,7 @@ a:hover {
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   line-height: 1.2;
-  color: var(--color-gray-900);
+  color: var(--text-primary);
   margin-bottom: var(--space-md);
 }
 
@@ -109,7 +157,7 @@ h6 { font-size: 1rem; }
 /* 段落样式 */
 p {
   margin-bottom: var(--space-md);
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
 }
 
 /* 按钮基础样式 */
@@ -171,11 +219,11 @@ p {
 
 /* 卡片样式 */
 .card {
-  background: var(--color-white);
+  background: var(--bg-secondary);
   border-radius: var(--radius-xl);
   padding: var(--space-xl);
   box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-color);
   transition: var(--transition-normal);
 }
 
@@ -255,20 +303,149 @@ p {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-gray-100);
+  background: var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-gray-300);
+  background: var(--border-color);
   border-radius: var(--radius-md);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-gray-400);
+  background: var(--text-tertiary);
+}
+
+/* 暗色模式滚动条 */
+:root.dark ::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+:root.dark ::-webkit-scrollbar-thumb {
+  background: var(--border-hover);
+}
+
+:root.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
 }
 
 /* 选择文本样式 */
 ::selection {
   background: var(--color-primary-light);
-  color: var(--color-primary);
+  color: var(--text-primary);
+}
+
+/* 表单元素统一样式 */
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-sm) var(--space-md);
+  transition: var(--transition-fast);
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* 按钮禁用状态 */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* 加载状态 */
+.loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  animation: loading 1.5s infinite;
+}
+
+:root.dark .loading::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+}
+
+@keyframes loading {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* 错误和成功状态 */
+.error {
+  border-color: var(--color-error) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.success {
+  border-color: var(--color-success) !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+}
+
+/* 通知样式 */
+.notification {
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-weight: 500;
+  margin-bottom: var(--space-md);
+}
+
+.notification-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.notification-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.notification-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.notification-info {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--color-info);
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }

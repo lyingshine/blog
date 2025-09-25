@@ -7,6 +7,8 @@ import Login from '../views/Login.vue'
 import Admin from '../views/Admin.vue'
 import CreatePost from '../views/CreatePost.vue'
 import MyPosts from '../views/MyPosts.vue'
+import Trash from '../views/Trash.vue'
+import Profile from '../views/Profile.vue'
 import { useAuth } from '../composables/useAuth'
 
 const routes = [
@@ -61,6 +63,18 @@ const routes = [
     name: 'MyPosts',
     component: MyPosts,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/trash',
+    name: 'Trash',
+    component: Trash,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile,
+    meta: { requiresAuth: true }
   }
 ]
 
@@ -70,8 +84,13 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
-  const { isAuthenticated } = useAuth()
+router.beforeEach(async (to, from, next) => {
+  const { isAuthenticated, checkLocalAuth, initAuth, initialized } = useAuth()
+  
+  // 如果还没有初始化，先检查本地认证状态
+  if (!initialized.value) {
+    checkLocalAuth()
+  }
   
   // 检查路由是否需要认证
   if (to.meta.requiresAuth && !isAuthenticated.value) {

@@ -102,6 +102,14 @@
                 
                 <div class="dropdown-divider"></div>
                 
+                <router-link to="/profile" @click="closeUserMenu" class="dropdown-item">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  个人设置
+                </router-link>
+                
                 <router-link to="/my-posts" @click="closeUserMenu" class="dropdown-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -117,6 +125,27 @@
                   </svg>
                   写新文章
                 </router-link>
+                
+                <router-link to="/trash" @click="closeUserMenu" class="dropdown-item">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3,6 5,6 21,6"/>
+                    <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                  </svg>
+                  回收站
+                </router-link>
+                
+                <button @click="toggleDarkMode" class="dropdown-item">
+                  <svg v-if="isDark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"/>
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                  </svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                  </svg>
+                  {{ isDark ? '亮色模式' : '暗色模式' }}
+                </button>
                 
                 <div class="dropdown-divider"></div>
                 
@@ -220,6 +249,16 @@
             我的文章
           </router-link>
           
+          <router-link v-if="isAuthenticated" to="/trash" @click="closeMobileMenu" class="mobile-nav-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3,6 5,6 21,6"/>
+              <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2v2"/>
+              <line x1="10" y1="11" x2="10" y2="17"/>
+              <line x1="14" y1="11" x2="14" y2="17"/>
+            </svg>
+            回收站
+          </router-link>
+          
           <router-link v-if="!isAuthenticated" to="/login" @click="closeMobileMenu" class="mobile-nav-link login-link">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
@@ -239,6 +278,7 @@
 
 <script>
 import { useAuth } from '../composables/useAuth'
+import { useDarkMode } from '../composables/useDarkMode'
 
 export default {
   name: 'Header',
@@ -251,10 +291,14 @@ export default {
   },
   setup() {
     const { user, isAuthenticated, logout } = useAuth()
+    const { isDark, toggleDarkMode } = useDarkMode()
+    
     return {
       user,
       isAuthenticated,
-      logout
+      logout,
+      isDark,
+      toggleDarkMode
     }
   },
   methods: {
@@ -299,12 +343,20 @@ export default {
 
 <style scoped>
 .header {
-  background: var(--color-white);
-  border-bottom: 1px solid var(--color-gray-200);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
   z-index: 100;
   backdrop-filter: blur(10px);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+:root.dark .header {
+  background: rgba(15, 23, 42, 0.95);
+}
+
+:root.light .header {
   background: rgba(255, 255, 255, 0.95);
 }
 
@@ -322,7 +374,7 @@ export default {
   gap: var(--space-sm);
   font-weight: 800;
   font-size: 1.25rem;
-  color: var(--color-gray-900);
+  color: var(--text-primary);
   transition: var(--transition-fast);
 }
 
@@ -361,7 +413,7 @@ export default {
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-lg);
   font-weight: 500;
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   transition: var(--transition-fast);
   position: relative;
 }
@@ -419,18 +471,23 @@ export default {
 .search-input {
   width: 240px;
   padding: var(--space-sm) var(--space-md) var(--space-sm) 2.5rem;
-  border: 2px solid var(--color-gray-200);
+  border: 2px solid var(--border-color);
   border-radius: var(--radius-lg);
   font-size: 0.875rem;
-  background: var(--color-gray-50);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   transition: var(--transition-fast);
 }
 
 .search-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: var(--color-white);
+  background: var(--bg-primary);
   box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.search-input::placeholder {
+  color: var(--text-tertiary);
 }
 
 /* User Menu */
@@ -443,7 +500,7 @@ export default {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid var(--color-gray-200);
+  border: 2px solid var(--border-color);
   overflow: hidden;
   cursor: pointer;
   transition: var(--transition-fast);
@@ -479,10 +536,10 @@ export default {
   top: calc(100% + var(--space-sm));
   right: 0;
   width: 280px;
-  background: var(--color-white);
+  background: var(--bg-secondary);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-color);
   overflow: hidden;
   z-index: 1000;
 }
@@ -492,7 +549,7 @@ export default {
   align-items: center;
   gap: var(--space-md);
   padding: var(--space-lg);
-  background: var(--color-gray-50);
+  background: var(--bg-tertiary);
 }
 
 .dropdown-header img {
@@ -508,18 +565,19 @@ export default {
 
 .user-name {
   font-weight: 600;
-  color: var(--color-gray-900);
+  font-size: 0.875rem;
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 
 .user-email {
-  font-size: 0.875rem;
-  color: var(--color-gray-500);
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
 }
 
 .dropdown-divider {
   height: 1px;
-  background: var(--color-gray-200);
+  background: var(--border-color);
   margin: var(--space-xs) 0;
 }
 
@@ -529,8 +587,9 @@ export default {
   gap: var(--space-md);
   width: 100%;
   padding: var(--space-md) var(--space-lg);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
   font-weight: 500;
+  font-size: 0.875rem;
   transition: var(--transition-fast);
   border: none;
   background: none;
@@ -539,7 +598,7 @@ export default {
 }
 
 .dropdown-item:hover {
-  background: var(--color-gray-50);
+  background: var(--bg-tertiary);
   color: var(--color-primary);
 }
 
@@ -594,8 +653,8 @@ export default {
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--color-white);
-  border-bottom: 1px solid var(--color-gray-200);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
   box-shadow: var(--shadow-lg);
   z-index: 999;
 }
@@ -609,8 +668,9 @@ export default {
   align-items: center;
   gap: var(--space-md);
   padding: var(--space-md);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
   font-weight: 500;
+  font-size: 0.875rem;
   border-radius: var(--radius-lg);
   transition: var(--transition-fast);
   margin-bottom: var(--space-xs);
@@ -618,7 +678,7 @@ export default {
 
 .mobile-nav-link:hover,
 .mobile-nav-link.router-link-active {
-  background: var(--color-primary-light);
+  background: var(--bg-tertiary);
   color: var(--color-primary);
 }
 
@@ -642,7 +702,7 @@ export default {
 
 .mobile-divider {
   height: 1px;
-  background: var(--color-gray-200);
+  background: var(--border-color);
   margin: var(--space-lg) 0;
 }
 

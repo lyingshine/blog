@@ -190,17 +190,41 @@ export default {
     async fetchArticles() {
       this.loading = true
       try {
-        // 模拟API调用
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // 构建查询参数
+        const params = {
+          page: 1,
+          limit: 100,
+          status: 'published'
+        }
         
-        // 从localStorage获取文章数据
-        const allArticles = JSON.parse(localStorage.getItem('blog_articles') || '[]')
+        // 如果不是"全部"分类，添加分类过滤
+        if (this.categoryName !== '全部') {
+          params.category = this.categoryName
+        }
         
-        // 根据分类过滤文章
-        if (this.categoryName === '全部') {
-          this.articles = allArticles
+        // 从API获取文章数据
+        const { articlesAPI } = await import('../utils/api.js')
+        const response = await articlesAPI.getArticles(params)
+        
+        // 检查响应格式
+        if (response && response.articles) {
+          // 转换数据格式
+          this.articles = response.articles.map(article => ({
+            id: article.id,
+            title: article.title,
+            excerpt: article.excerpt,
+            content: article.content,
+            category: article.category,
+            image: article.image,
+            date: article.created_at,
+            likes: article.likes || 0,
+            views: article.views || 0,
+            readingTime: article.reading_time || 5,
+            tags: article.tags || [],
+            author: article.author_name || '匿名'
+          }))
         } else {
-          this.articles = allArticles.filter(article => article.category === this.categoryName)
+          this.articles = []
         }
         
       } catch (error) {
@@ -411,6 +435,21 @@ export default {
 .no-articles p {
   color: #6b7280;
   margin-bottom: 2rem;
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: #3b82f6;
+  color: white;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+  background: #2563eb;
 }
 
 .pagination {

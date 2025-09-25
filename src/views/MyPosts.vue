@@ -87,8 +87,8 @@
             <router-link :to="`/edit/${post.id}`" class="action-btn edit-btn">
               编辑
             </router-link>
-            <button @click="deletePost(post.id)" class="action-btn delete-btn">
-              删除
+            <button @click="movePostToTrash(post.id)" class="action-btn trash-btn">
+              移至回收站
             </button>
           </div>
         </div>
@@ -100,6 +100,7 @@
 <script>
 import dayjs from 'dayjs'
 import { useAuth } from '../composables/useAuth'
+import { useArticles } from '../composables/useArticles'
 
 export default {
   name: 'MyPosts',
@@ -112,8 +113,19 @@ export default {
   },
   setup() {
     const { user } = useAuth()
+    const { 
+      articles, 
+      loading: articlesLoading, 
+      fetchArticles, 
+      moveToTrash 
+    } = useArticles()
+    
     return {
-      currentUser: user
+      currentUser: user,
+      articles,
+      articlesLoading,
+      fetchArticles,
+      moveToTrash
     }
   },
   computed: {
@@ -143,14 +155,15 @@ export default {
     async fetchMyPosts() {
       this.loading = true
       try {
-        await new Promise(resolve => setTimeout(resolve, 300))
+        await this.fetchArticles()
         
-        const articles = JSON.parse(localStorage.getItem('blog_articles') || '[]')
-        
-        // 只显示当前用户的文章
-        this.allPosts = articles
-          .filter(article => article.author?.name === this.currentUser.username)
-          .sort((a, b) => new Date(b.updatedAt || b.date) - new Date(a.updatedAt || a.date))
+        // 只显示当前用户的文章（非回收站）
+        this.allPosts = this.articles
+          .filter(article => 
+            article.author_id === this.currentUser.id && 
+            !article.deleted_at
+          )
+          .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
           
       } catch (error) {
         console.error('获取文章失败:', error)
@@ -159,23 +172,21 @@ export default {
       }
     },
     
-    async deletePost(postId) {
-      if (!confirm('确定要删除这篇文章吗？此操作不可恢复。')) {
+    async movePostToTrash(postId) {
+      if (!confirm('确定要将这篇文章移至回收站吗？')) {
         return
       }
       
       try {
-        const articles = JSON.parse(localStorage.getItem('blog_articles') || '[]')
-        const updatedArticles = articles.filter(article => article.id !== postId)
-        localStorage.setItem('blog_articles', JSON.stringify(updatedArticles))
+        await this.moveToTrash(postId)
         
-        // 更新本地数据
+        // 从列表中移除
         this.allPosts = this.allPosts.filter(post => post.id !== postId)
         
-        alert('文章已删除')
+        alert('文章已移至回收站')
       } catch (error) {
-        console.error('删除文章失败:', error)
-        alert('删除失败')
+        console.error('移至回收站失败:', error)
+        alert('操作失败：' + error.message)
       }
     },
     
@@ -450,13 +461,13 @@ export default {
   background: #1d4ed8;
 }
 
-.delete-btn {
-  background: #ef4444;
+.trash-btn {
+  background: #f59e0b;
   color: white;
 }
 
-.delete-btn:hover {
-  background: #dc2626;
+.trash-btn:hover {
+  background: #d97706;
 }
 
 @media (max-width: 768px) {

@@ -124,6 +124,7 @@
 
 <script>
 import { useAuth } from '../composables/useAuth'
+import { useArticles } from '../composables/useArticles'
 
 export default {
   name: 'CreatePost',
@@ -149,8 +150,13 @@ export default {
   },
   setup() {
     const { user } = useAuth()
+    const { createArticle, updateArticle, fetchArticle, loading } = useArticles()
     return {
-      currentUser: user
+      currentUser: user,
+      createArticle,
+      updateArticle,
+      fetchArticle,
+      apiLoading: loading
     }
   },
   computed: {
@@ -178,10 +184,10 @@ export default {
   methods: {
     async loadPost() {
       try {
-        const articles = JSON.parse(localStorage.getItem('blog_articles') || '[]')
-        const article = articles.find(a => a.id.toString() === this.id)
+        const result = await this.fetchArticle(this.id)
         
-        if (article) {
+        if (result.success) {
+          const article = result.article
           this.post = {
             title: article.title,
             excerpt: article.excerpt,
@@ -239,42 +245,31 @@ export default {
     },
 
     async savePost(status) {
-      const articles = JSON.parse(localStorage.getItem('blog_articles') || '[]')
-      
       const postData = {
-        ...this.post,
-        status,
-        date: this.isEdit ? 
-          (articles.find(a => a.id.toString() === this.id)?.date || new Date().toISOString()) : 
-          new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        author: {
-          name: this.currentUser.username,
-          bio: '博客作者',
-          avatar: this.currentUser.avatar
-        },
-        likes: this.isEdit ? 
-          (articles.find(a => a.id.toString() === this.id)?.likes || 0) : 
-          0,
-        views: this.isEdit ? 
-          (articles.find(a => a.id.toString() === this.id)?.views || 0) : 
-          0,
-        readingTime: this.calculateReadingTime(this.post.content)
+        title: this.post.title,
+        excerpt: this.post.excerpt,
+        content: this.post.content,
+        category: this.post.category,
+        image: this.post.image,
+        tags: this.post.tags,
+        featured: this.post.featured,
+        status
       }
 
+      let result
       if (this.isEdit) {
         // 更新现有文章
-        const index = articles.findIndex(a => a.id.toString() === this.id)
-        if (index !== -1) {
-          articles[index] = { ...articles[index], ...postData }
-        }
+        result = await this.updateArticle(this.id, postData)
       } else {
         // 创建新文章
-        postData.id = Date.now()
-        articles.unshift(postData)
+        result = await this.createArticle(postData)
       }
 
-      localStorage.setItem('blog_articles', JSON.stringify(articles))
+      if (!result.success) {
+        throw new Error(result.message || '保存失败')
+      }
+
+      return result
     },
 
     calculateReadingTime(content) {

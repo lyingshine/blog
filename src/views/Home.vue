@@ -36,22 +36,6 @@
             </router-link>
           </div>
         </div>
-        <div class="hero-visual">
-          <div class="floating-cards">
-            <div class="floating-card card-1">
-              <div class="card-icon">📝</div>
-              <div class="card-text">写作</div>
-            </div>
-            <div class="floating-card card-2">
-              <div class="card-icon">💡</div>
-              <div class="card-text">创意</div>
-            </div>
-            <div class="floating-card card-3">
-              <div class="card-icon">🚀</div>
-              <div class="card-text">分享</div>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -79,16 +63,10 @@
             class="article-card featured-card"
             @click="goToArticle(article.id)"
           >
-            <div v-if="article.image" class="article-image">
-              <img :src="article.image" :alt="article.title" />
-              <div class="image-overlay">
-                <div class="featured-badge">精选</div>
-              </div>
-            </div>
             <div class="article-content">
               <div class="article-meta">
                 <span class="category">{{ article.category }}</span>
-                <span class="date">{{ formatDate(article.date) }}</span>
+                <span class="date">{{ formatDate(article.created_at) }}</span>
               </div>
               <h3 class="article-title">{{ article.title }}</h3>
               <p class="article-excerpt">{{ article.excerpt }}</p>
@@ -124,7 +102,7 @@
             <div class="article-content">
               <div class="article-meta">
                 <span class="category">{{ article.category }}</span>
-                <span class="date">{{ formatDate(article.date) }}</span>
+                <span class="date">{{ formatDate(article.created_at) }}</span>
               </div>
               <h3 class="article-title">{{ article.title }}</h3>
               <p class="article-excerpt">{{ article.excerpt }}</p>
@@ -166,11 +144,6 @@
                 <polyline points="10,9 9,9 8,9"/>
               </svg>
             </div>
-            <div class="empty-particles">
-              <div class="particle"></div>
-              <div class="particle"></div>
-              <div class="particle"></div>
-            </div>
           </div>
           <h3 class="empty-title">开启你的创作之旅</h3>
           <p v-if="!isAuthenticated" class="empty-description">
@@ -207,54 +180,35 @@
 <script>
 import dayjs from 'dayjs'
 import { useAuth } from '../composables/useAuth'
+import { useArticles } from '../composables/useArticles'
 
 export default {
   name: 'Home',
-  data() {
-    return {
-      loading: true,
-      featuredArticles: [],
-      recentArticles: []
-    }
-  },
   setup() {
     const { isAuthenticated } = useAuth()
+    const { articles, loading, fetchArticles } = useArticles()
+    
     return {
-      isAuthenticated
+      isAuthenticated,
+      articles,
+      loading,
+      fetchArticles
+    }
+  },
+  computed: {
+    featuredArticles() {
+      return this.articles.filter(article => article.featured).slice(0, 2)
+    },
+    recentArticles() {
+      return this.articles
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 6)
     }
   },
   async created() {
     await this.fetchArticles()
   },
   methods: {
-    async fetchArticles() {
-      this.loading = true
-      try {
-        await new Promise(resolve => setTimeout(resolve, 800))
-        
-        const articles = JSON.parse(localStorage.getItem('blog_articles') || '[]')
-        
-        if (articles.length === 0) {
-          this.featuredArticles = []
-          this.recentArticles = []
-          return
-        }
-        
-        this.featuredArticles = articles
-          .filter(article => article.featured)
-          .slice(0, 2)
-        
-        this.recentArticles = articles
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
-          .slice(0, 6)
-          
-      } catch (error) {
-        console.error('获取文章失败:', error)
-      } finally {
-        this.loading = false
-      }
-    },
-    
     goToArticle(id) {
       if (!this.isAuthenticated) {
         this.$router.push('/login')
@@ -359,69 +313,6 @@ export default {
   transform: translateY(-2px);
 }
 
-.hero-visual {
-  position: absolute;
-  top: 50%;
-  right: 10%;
-  transform: translateY(-50%);
-  z-index: 1;
-}
-
-.floating-cards {
-  position: relative;
-  width: 200px;
-  height: 200px;
-}
-
-.floating-card {
-  position: absolute;
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: var(--radius-xl);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  animation: float 6s ease-in-out infinite;
-}
-
-.card-1 {
-  top: 0;
-  left: 0;
-  animation-delay: 0s;
-}
-
-.card-2 {
-  top: 0;
-  right: 0;
-  animation-delay: 2s;
-}
-
-.card-3 {
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  animation-delay: 4s;
-}
-
-.card-icon {
-  font-size: 1.5rem;
-}
-
-.card-text {
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
 /* Loading */
 .loading-section {
   padding: var(--space-3xl) 0;
@@ -473,9 +364,6 @@ export default {
 .articles-grid {
   display: grid;
   gap: var(--space-xl);
-}
-
-.articles-grid {
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
 }
 
@@ -498,49 +386,6 @@ export default {
 .article-card:hover {
   transform: translateY(-8px);
   box-shadow: var(--shadow-xl);
-}
-
-.featured-card {
-  position: relative;
-}
-
-.article-image {
-  height: 240px;
-  overflow: hidden;
-  position: relative;
-}
-
-.article-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: var(--transition-slow);
-}
-
-.article-card:hover .article-image img {
-  transform: scale(1.05);
-}
-
-.image-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%);
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: var(--space-lg);
-}
-
-.featured-badge {
-  background: var(--color-accent);
-  color: var(--color-white);
-  padding: var(--space-xs) var(--space-md);
-  border-radius: 50px;
-  font-size: 0.75rem;
-  font-weight: 600;
 }
 
 .article-content {
@@ -656,49 +501,6 @@ export default {
   z-index: 2;
 }
 
-.empty-particles {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 200px;
-  height: 200px;
-  z-index: 1;
-}
-
-.particle {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background: var(--color-primary);
-  border-radius: 50%;
-  opacity: 0.3;
-  animation: particle 4s ease-in-out infinite;
-}
-
-.particle:nth-child(1) {
-  top: 20%;
-  left: 20%;
-  animation-delay: 0s;
-}
-
-.particle:nth-child(2) {
-  top: 20%;
-  right: 20%;
-  animation-delay: 1.3s;
-}
-
-.particle:nth-child(3) {
-  bottom: 20%;
-  left: 50%;
-  animation-delay: 2.6s;
-}
-
-@keyframes particle {
-  0%, 100% { transform: translateY(0px) scale(1); opacity: 0.3; }
-  50% { transform: translateY(-20px) scale(1.2); opacity: 0.8; }
-}
-
 .empty-title {
   font-size: 2rem;
   font-weight: 800;
@@ -720,12 +522,6 @@ export default {
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
-  .hero-visual {
-    display: none;
-  }
-}
-
 @media (max-width: 768px) {
   .hero-title {
     font-size: 2.5rem;

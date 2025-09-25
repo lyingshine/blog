@@ -188,11 +188,22 @@ export default {
 
 <style scoped>
 .footer {
-  background: linear-gradient(135deg, var(--color-gray-900) 0%, var(--color-gray-800) 100%);
-  color: var(--color-white);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
   position: relative;
   overflow: hidden;
   margin-top: auto;
+  border-top: 1px solid var(--border-color);
+}
+
+:root.dark .footer {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: var(--text-primary);
+}
+
+:root.light .footer {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: var(--text-primary);
 }
 
 .footer-content {
@@ -236,11 +247,11 @@ export default {
 .brand-name {
   font-size: 1.5rem;
   font-weight: 800;
-  color: var(--color-white);
+  color: var(--text-primary);
 }
 
 .brand-description {
-  color: var(--color-gray-300);
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: var(--space-xl);
 }
@@ -253,20 +264,20 @@ export default {
 .social-link {
   width: 44px;
   height: 44px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-secondary);
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-300);
+  color: var(--text-secondary);
   transition: var(--transition-fast);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .social-link:hover {
   background: var(--color-primary);
-  color: var(--color-white);
+  color: white;
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
@@ -279,7 +290,7 @@ export default {
 .nav-title {
   font-size: 1.125rem;
   font-weight: 700;
-  color: var(--color-white);
+  color: var(--text-primary);
   margin-bottom: var(--space-lg);
 }
 
@@ -294,7 +305,7 @@ export default {
 }
 
 .nav-link {
-  color: var(--color-gray-300);
+  color: var(--text-secondary);
   font-weight: 500;
   transition: var(--transition-fast);
   display: inline-block;
@@ -326,22 +337,22 @@ export default {
 
 /* Newsletter */
 .newsletter {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-secondary);
   padding: var(--space-xl);
   border-radius: var(--radius-2xl);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
 }
 
 .newsletter-title {
   font-size: 1.125rem;
   font-weight: 700;
-  color: var(--color-white);
+  color: var(--text-primary);
   margin-bottom: var(--space-md);
 }
 
 .newsletter-description {
-  color: var(--color-gray-300);
+  color: var(--text-secondary);
   font-size: 0.875rem;
   line-height: 1.5;
   margin-bottom: var(--space-lg);
@@ -355,7 +366,8 @@ export default {
   display: flex;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  background: var(--color-white);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
 }
 
 .newsletter-input {
@@ -363,7 +375,7 @@ export default {
   padding: var(--space-md);
   border: none;
   background: transparent;
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   font-size: 0.875rem;
 }
 
@@ -372,13 +384,13 @@ export default {
 }
 
 .newsletter-input::placeholder {
-  color: var(--color-gray-400);
+  color: var(--text-tertiary);
 }
 
 .newsletter-btn {
   padding: var(--space-md);
   background: var(--color-primary);
-  color: var(--color-white);
+  color: white;
   border: none;
   cursor: pointer;
   transition: var(--transition-fast);
@@ -397,7 +409,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: var(--space-xl) 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-color);
   position: relative;
   z-index: 2;
 }
@@ -407,13 +419,13 @@ export default {
 }
 
 .copyright {
-  color: var(--color-gray-400);
+  color: var(--text-tertiary);
   font-size: 0.875rem;
   margin-bottom: var(--space-xs);
 }
 
 .powered-by {
-  color: var(--color-gray-500);
+  color: var(--text-tertiary);
   font-size: 0.75rem;
 }
 
@@ -446,7 +458,7 @@ export default {
 
 .stat-label {
   font-size: 0.75rem;
-  color: var(--color-gray-400);
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
