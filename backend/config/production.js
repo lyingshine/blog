@@ -8,7 +8,11 @@ module.exports = {
     password: process.env.DB_PASSWORD || '132014',
     database: process.env.DB_NAME || 'blog',
     charset: 'utf8mb4',
-    connectionLimit: 20
+    connectionLimit: 10,
+    acquireTimeout: 60000,
+    timeout: 60000,
+    reconnect: true,
+    idleTimeout: 300000
   },
 
   // 服务器配置
