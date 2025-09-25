@@ -23,10 +23,21 @@ cd /www/wwwroot/blog.lyingshine.top/backend
 # 安装依赖
 npm install --production
 
+# 清理可能的端口冲突
+pm2 stop all 2>/dev/null || true
+pm2 delete all 2>/dev/null || true
+pkill -f node 2>/dev/null || true
+
+# 等待进程完全关闭
+sleep 3
+
 # 启动服务（使用PM2）
 pm2 start ecosystem.config.js
 pm2 save
 pm2 startup
+
+# 验证启动状态
+pm2 status
 ```
 
 ### 3. 前端部署
