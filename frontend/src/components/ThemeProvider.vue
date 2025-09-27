@@ -5,12 +5,13 @@
 </template>
 
 <script>
-import { useDarkMode } from '../composables/useDarkMode'
+import { useUIStore } from '../stores/ui.store'
 
 export default {
   name: 'ThemeProvider',
   setup() {
-    const { isDark } = useDarkMode()
+    const uiStore = useUIStore()
+    const { isDark } = uiStore
     
     return {
       isDark

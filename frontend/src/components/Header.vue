@@ -284,7 +284,7 @@
 
 <script>
 import { useAuthStore } from '../stores/auth.store'
-import { useDarkMode } from '../composables/useDarkMode'
+import { useUIStore } from '../stores/ui.store'
 import { getAvatarUrl } from '../utils/image-url'
 
 export default {
@@ -292,7 +292,8 @@ export default {
 
   setup() {
     const { user, isAuthenticated, logout } = useAuthStore()
-    const { isDark, toggleDarkMode } = useDarkMode()
+    const uiStore = useUIStore()
+    const { isDark, toggleDarkMode } = uiStore
     
     return {
       user,
