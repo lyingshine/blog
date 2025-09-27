@@ -10,21 +10,40 @@
     "serve": "vite preview",
     "lint": "eslint src --ext .vue,.js,.ts",
     "lint:fix": "eslint src --ext .vue,.js,.ts --fix",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test",
+    "analyze": "vite-bundle-analyzer",
     "export-data": "node scripts/export-localStorage.js",
-    "setup": "chmod +x scripts/setup.sh && ./scripts/setup.sh"
+    "setup": "chmod +x scripts/setup.sh && ./scripts/setup.sh",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
     "vue": "^3.3.4",
     "vue-router": "^4.2.4",
     "axios": "^1.5.0",
-    "dayjs": "^1.11.9"
+    "dayjs": "^1.11.9",
+    "@sentry/vue": "^7.74.1",
+    "web-vitals": "^3.5.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.3.4",
     "vite": "^4.4.9",
     "terser": "^5.19.2",
     "eslint": "^8.45.0",
-    "eslint-plugin-vue": "^9.15.1"
+    "eslint-plugin-vue": "^9.15.1",
+    "vitest": "^0.34.6",
+    "@vitest/ui": "^0.34.6",
+    "@vue/test-utils": "^2.4.1",
+    "jsdom": "^22.1.0",
+    "@playwright/test": "^1.38.1",
+    "vite-bundle-analyzer": "^0.7.0",
+    "vitepress": "^1.0.0-rc.20",
+    "@vitejs/plugin-legacy": "^4.1.1",
+    "rollup-plugin-visualizer": "^5.9.2"
   },
   "keywords": [
     "vue",

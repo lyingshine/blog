@@ -1,16 +1,22 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Home from '../views/Home.vue'
-import Article from '../views/Article.vue'
-import Category from '../views/Category.vue'
-import About from '../views/About.vue'
-import Login from '../views/Login.vue'
-import Admin from '../views/Admin.vue'
-import CreatePost from '../views/CreatePost.vue'
-import MyPosts from '../views/MyPosts.vue'
-import Trash from '../views/Trash.vue'
-import Profile from '../views/Profile.vue'
-import Inspirations from '../views/Inspirations.vue'
 import { useAuthStore } from '../stores/auth.store'
+
+// 懒加载组件 - 代码分割
+const Home = () => import('../views/Home.vue')
+const Article = () => import('../views/Article.vue')
+const Category = () => import('../views/Category.vue')
+const About = () => import('../views/About.vue')
+const Login = () => import('../views/Login.vue')
+
+// 管理员相关页面 - 单独的 chunk
+const Admin = () => import(/* webpackChunkName: "admin" */ '../views/Admin.vue')
+const CreatePost = () => import(/* webpackChunkName: "admin" */ '../views/CreatePost.vue')
+const MyPosts = () => import(/* webpackChunkName: "admin" */ '../views/MyPosts.vue')
+const Trash = () => import(/* webpackChunkName: "admin" */ '../views/Trash.vue')
+const Profile = () => import(/* webpackChunkName: "admin" */ '../views/Profile.vue')
+
+// 其他功能页面
+const Inspirations = () => import(/* webpackChunkName: "features" */ '../views/Inspirations.vue')
 
 const routes = [
   {

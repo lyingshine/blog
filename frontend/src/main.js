@@ -8,12 +8,23 @@ import { initializeApp, healthCheck } from './core'
 import { monitorAvatarLoading } from './utils/avatar-debug'
 import { testAvatarUrls } from './utils/url-test'
 
+// 导入监控服务
+import { monitoringService, apmService, errorHandler } from './utils/monitoring'
+import { performanceMonitor, LazyLoader } from './utils/performance'
+
 console.log('🚀 开始启动应用...')
 
 const app = createApp(App)
 
+// 配置全局错误处理
+app.config.errorHandler = errorHandler
+
 // 使用路由
 app.use(router)
+
+// 初始化监控服务
+monitoringService.init(app, router)
+apmService.init()
 
 // 应用初始化
 const startApp = async () => {
@@ -49,10 +60,22 @@ const startApp = async () => {
         healthCheck,
         initResult,
         healthResult,
-        testAvatarUrls
+        testAvatarUrls,
+        performance: performanceMonitor,
+        monitoring: monitoringService,
+        apm: apmService
       }
       console.log('🛠️ 调试工具已挂载到 window.__APP_DEBUG__')
     }
+
+    // 预加载关键组件
+    LazyLoader.preloadRouteComponents([
+      { component: () => import('./views/Home.vue'), meta: { priority: 'high' } },
+      { component: () => import('./views/Article.vue'), meta: { priority: 'high' } }
+    ])
+
+    // 设置图片懒加载
+    LazyLoader.setupImageLazyLoading()
     
   } catch (error) {
     console.error('❌ 应用启动失败:', error)
