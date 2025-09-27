@@ -91,17 +91,12 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
-  const { isAuthenticated, checkLocalAuth, initAuth, initialized } = useAuthStore()
-  
-  // 如果还没有初始化，先检查本地认证状态
-  if (!initialized.value) {
-    checkLocalAuth()
-  }
+  const authStore = useAuthStore()
   
   // 检查路由是否需要认证
-  if (to.meta.requiresAuth && !isAuthenticated.value) {
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login')
-  } else if (to.name === 'Login' && isAuthenticated.value) {
+  } else if (to.name === 'Login' && authStore.isAuthenticated) {
     // 已登录用户访问登录页面时重定向到首页
     next('/')
   } else {

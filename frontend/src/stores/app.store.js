@@ -18,16 +18,17 @@ export const useAppStore = () => {
 
   // 全局加载状态
   const globalLoading = computed(() => 
-    authStore.loading.value || 
-    articleStore.loading.value || 
-    uiStore.loading.value
+    (authStore.loading?.value || false) || 
+    (articleStore.loading?.value || false) || 
+    (uiStore.loading?.value || false)
   )
 
   // 全局错误状态
   const globalError = computed(() => 
-    authStore.error.value || 
-    articleStore.error.value || 
-    uiStore.error.value
+    authStore.error?.value || 
+    articleStore.error?.value || 
+    uiStore.error?.value || 
+    null
   )
 
   // 应用初始化状态
@@ -50,7 +51,7 @@ export const useAppStore = () => {
       console.log('✅ UI状态初始化完成')
       
       // 3. 如果用户已登录，预加载一些数据
-      if (authStore.isAuthenticated.value) {
+      if (authStore.isAuthenticated?.value) {
         console.log('👤 用户已登录，预加载数据...')
         // 可以在这里预加载用户相关数据
       }
@@ -84,13 +85,22 @@ export const useAppStore = () => {
 
   // 获取应用统计信息
   const getAppStats = computed(() => ({
-    isAuthenticated: authStore.isAuthenticated.value,
-    user: authStore.user.value,
-    articlesCount: articleStore.articles.value.length,
-    isDarkMode: uiStore.isDarkMode.value,
+    isAuthenticated: authStore.isAuthenticated?.value || false,
+    user: authStore.user?.value || null,
+    articlesCount: articleStore.articles?.value?.length || 0,
+    isDarkMode: uiStore.isDarkMode?.value || false,
     initialized: initialized.value,
-    hasErrors: !!globalError.value
+    hasErrors: !!(globalError.value)
   }))
+
+  // 获取应用状态
+  const getState = () => ({
+    initialized: initialized.value,
+    initError: initError.value,
+    globalLoading: globalLoading.value,
+    globalError: globalError.value,
+    stats: getAppStats.value
+  })
 
   appStoreInstance = {
     // 子stores
@@ -105,9 +115,12 @@ export const useAppStore = () => {
     initError,
 
     // 方法
+    init: initApp,  // 添加 init 别名
     initApp,
+    reset: resetApp,  // 添加 reset 别名
     resetApp,
     clearAllErrors,
+    getState,
 
     // 计算属性
     getAppStats
