@@ -6,6 +6,7 @@ export { default as ComponentManager } from './component-manager'
 import { componentManager } from './component-manager'
 import { appService } from '../services/app.service'
 import { getAppStore } from '../stores/app.store'
+import { healthCheckService } from '../services/health-check.service'
 
 export async function initializeApp() {
   console.log('🚀 开始初始化应用核心...')
@@ -46,20 +47,28 @@ export async function healthCheck() {
   console.log('🔍 执行应用健康检查...')
   
   try {
+    // 使用新的健康检查服务
+    const healthResults = await healthCheckService.runAllChecks()
+    
     const results = {
       timestamp: new Date().toISOString(),
       services: await appService.healthCheck(),
       components: componentManager.getStats(),
-      stores: getAppStore().getState()
+      stores: getAppStore().getState(),
+      health: healthResults
     }
     
-    const allHealthy = Object.values(results.services).every(
+    // 综合评估健康状态
+    const servicesHealthy = Object.values(results.services).every(
       service => service.status === 'ok'
     )
     
-    results.overall = allHealthy ? 'healthy' : 'unhealthy'
+    const systemHealthy = healthResults.overall === 'healthy'
     
-    console.log(`${allHealthy ? '✅' : '❌'} 应用健康检查完成:`, results.overall)
+    results.overall = servicesHealthy && systemHealthy ? 'healthy' : 
+                     healthResults.overall === 'critical' ? 'critical' : 'degraded'
+    
+    console.log(`${results.overall === 'healthy' ? '✅' : results.overall === 'critical' ? '🚨' : '⚠️'} 应用健康检查完成:`, results.overall)
     
     return results
     

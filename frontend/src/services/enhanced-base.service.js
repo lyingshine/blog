@@ -107,6 +107,11 @@ export class EnhancedBaseService {
 
   // 子类重写的健康检查方法
   async onHealthCheck() {
+    // 默认返回健康状态
+    return {
+      status: 'ok',
+      message: '服务运行正常'
+    }
     return {}
   }
 

@@ -11,6 +11,7 @@ import { testAvatarUrls } from './utils/url-test'
 // 导入监控服务
 import { monitoringService, apmService, errorHandler } from './utils/monitoring'
 import { performanceMonitor, LazyLoader } from './utils/performance'
+import { performanceOptimizer } from './utils/performance-optimizer'
 
 console.log('🚀 开始启动应用...')
 
@@ -63,7 +64,8 @@ const startApp = async () => {
         testAvatarUrls,
         performance: performanceMonitor,
         monitoring: monitoringService,
-        apm: apmService
+        apm: apmService,
+        optimizer: performanceOptimizer
       }
       console.log('🛠️ 调试工具已挂载到 window.__APP_DEBUG__')
     }
@@ -76,6 +78,10 @@ const startApp = async () => {
 
     // 设置图片懒加载
     LazyLoader.setupImageLazyLoading()
+
+    // 启用性能优化
+    performanceOptimizer.optimizeCSSLoading()
+    performanceOptimizer.optimizeMemoryUsage()
     
   } catch (error) {
     console.error('❌ 应用启动失败:', error)
