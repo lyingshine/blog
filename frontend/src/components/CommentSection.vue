@@ -120,6 +120,10 @@ export default {
     await this.loadComments()
   },
   methods: {
+    getAvatarUrl(avatarPath, username) {
+      return getAvatarUrl(avatarPath, username)
+    },
+
     async loadComments() {
       this.loading = true
       this.currentPage = 1
