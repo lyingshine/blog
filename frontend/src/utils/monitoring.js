@@ -5,9 +5,9 @@ class MonitoringService {
   constructor() {
     this.isInitialized = false
     this.config = {
-      dsn: process.env.VITE_SENTRY_DSN,
-      environment: process.env.NODE_ENV || 'development',
-      release: process.env.VITE_APP_VERSION || '1.0.0'
+      dsn: import.meta.env.VITE_SENTRY_DSN,
+      environment: import.meta.env.MODE || 'development',
+      release: import.meta.env.VITE_APP_VERSION || '1.0.0'
     }
   }
 
@@ -36,7 +36,7 @@ class MonitoringService {
         tracesSampleRate: this.config.environment === 'production' ? 0.1 : 1.0,
         
         // 错误过滤
-        beforeSend(event, hint) {
+        beforeSend: (event, hint) => {
           // 过滤掉开发环境的某些错误
           if (this.config.environment === 'development') {
             const error = hint.originalException
@@ -153,7 +153,7 @@ class APMService {
   constructor() {
     this.metrics = new Map()
     this.observers = []
-    this.isEnabled = process.env.NODE_ENV === 'production'
+    this.isEnabled = import.meta.env.PROD
   }
 
   // 初始化 APM
