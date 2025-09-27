@@ -4,6 +4,68 @@ const { authenticateToken, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// 获取所有评论列表（管理员功能）
+router.get('/', optionalAuth, async (req, res) => {
+  try {
+    const { page = 1, limit = 20, status = 'approved' } = req.query;
+    const offset = (page - 1) * limit;
+
+    // 获取评论列表
+    const commentsQuery = `
+      SELECT 
+        c.id, c.content, c.likes, c.status, c.created_at, c.updated_at,
+        c.article_id,
+        u.id as user_id, u.username as author_name, u.avatar as author_avatar,
+        a.title as article_title
+      FROM comments c
+      LEFT JOIN users u ON c.user_id = u.id
+      LEFT JOIN articles a ON c.article_id = a.id
+      WHERE c.status = ?
+      ORDER BY c.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const [comments] = await pool.execute(commentsQuery, [status, parseInt(limit), parseInt(offset)]);
+
+    // 获取总数
+    const [countResult] = await pool.execute(
+      'SELECT COUNT(*) as total FROM comments WHERE status = ?',
+      [status]
+    );
+
+    const processedComments = comments.map(comment => ({
+      id: comment.id,
+      content: comment.content,
+      likes: comment.likes,
+      status: comment.status,
+      created_at: comment.created_at,
+      updated_at: comment.updated_at,
+      author: {
+        id: comment.user_id,
+        name: comment.author_name,
+        avatar: comment.author_avatar || '/default-avatar.svg'
+      },
+      article: {
+        id: comment.article_id,
+        title: comment.article_title
+      }
+    }));
+
+    res.json({
+      comments: processedComments,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: countResult[0].total,
+        pages: Math.ceil(countResult[0].total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('获取评论列表失败:', error);
+    res.status(500).json({ error: '获取评论列表失败' });
+  }
+});
+
 // 获取文章的评论列表
 router.get('/article/:articleId', optionalAuth, async (req, res) => {
   try {
@@ -309,6 +371,43 @@ router.delete('/:commentId', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('删除评论失败:', error);
     res.status(500).json({ error: '删除评论失败' });
+  }
+});
+
+// 更新评论状态（管理员功能）
+router.put('/:commentId/status', optionalAuth, async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { status } = req.body;
+
+    // 验证状态值
+    if (!['approved', 'pending', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: '无效的状态值' });
+    }
+
+    // 检查评论是否存在
+    const [comments] = await pool.execute(
+      'SELECT id FROM comments WHERE id = ?',
+      [commentId]
+    );
+
+    if (comments.length === 0) {
+      return res.status(404).json({ error: '评论不存在' });
+    }
+
+    // 更新评论状态
+    await pool.execute(
+      'UPDATE comments SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [status, commentId]
+    );
+
+    res.json({
+      message: '评论状态更新成功',
+      status
+    });
+  } catch (error) {
+    console.error('更新评论状态失败:', error);
+    res.status(500).json({ error: '更新评论状态失败' });
   }
 });
 

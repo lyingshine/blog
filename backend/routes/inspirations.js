@@ -276,7 +276,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
     if (result.length === 0) {
       return res.status(404).json({
         success: false,
-        message: '灵感不存在'
+        message: '灵感不存在',
+        error: 'INSPIRATION_NOT_FOUND'
       });
     }
 
@@ -681,19 +682,26 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     if (inspiration.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: '无权删除此灵感'
+        message: '无权删除此灵感',
+        error: 'PERMISSION_DENIED'
       });
     }
 
     // 删除相关的图片文件
     if (inspiration.images) {
-      const images = JSON.parse(inspiration.images);
-      images.forEach(imagePath => {
-        const fullPath = path.join(__dirname, '..', imagePath);
-        if (fs.existsSync(fullPath)) {
-          fs.unlinkSync(fullPath);
+      try {
+        const images = typeof inspiration.images === 'string' ? JSON.parse(inspiration.images) : inspiration.images;
+        if (Array.isArray(images)) {
+          images.forEach(imagePath => {
+            const fullPath = path.join(__dirname, '..', imagePath);
+            if (fs.existsSync(fullPath)) {
+              fs.unlinkSync(fullPath);
+            }
+          });
         }
-      });
+      } catch (e) {
+        console.warn('解析图片数据失败:', e.message);
+      }
     }
 
     // 删除灵感（级联删除会自动删除相关的点赞和评论）

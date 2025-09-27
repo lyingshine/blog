@@ -104,6 +104,7 @@
             :inspiration="inspiration"
             @like="handleLike"
             @delete="handleDelete"
+            @delete-error="handleDeleteError"
           />
         </div>
 
@@ -273,18 +274,26 @@ export default {
       // 这个方法保留是为了兼容，但实际不执行任何操作
     },
 
-    async handleDelete(inspirationId) {
-      if (!confirm('确定要删除这条灵感吗？')) return
+    handleDelete(inspirationId) {
+      // 从子组件成功删除后的处理
+      this.inspirations = this.inspirations.filter(i => i.id !== inspirationId)
+      this.$message?.success('删除成功')
+    },
 
-      try {
-        await inspirationsAPI.deleteInspiration(inspirationId)
-        
-        // 从列表中移除
+    handleDeleteError({ inspirationId, error }) {
+      // 处理子组件传递的删除错误
+      console.error('删除失败:', error)
+      
+      // 处理不同类型的错误
+      if (error.response?.status === 404) {
+        this.$message?.warning('该灵感已不存在，将从列表中移除')
+        // 即使后端返回404，也从前端列表中移除
         this.inspirations = this.inspirations.filter(i => i.id !== inspirationId)
-        this.$message?.success('删除成功')
-        
-      } catch (error) {
-        console.error('删除失败:', error)
+      } else if (error.response?.status === 403) {
+        this.$message?.error('无权删除此灵感')
+      } else if (error.response?.status === 401) {
+        this.$message?.error('请先登录')
+      } else {
         this.$message?.error('删除失败')
       }
     },

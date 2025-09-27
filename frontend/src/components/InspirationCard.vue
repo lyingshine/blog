@@ -390,12 +390,17 @@ export default {
       try {
         const response = await inspirationsAPI.deleteInspiration(this.inspiration.id)
         if (response.success) {
+          // 只发送事件给父组件，不显示提示消息
           this.$emit('delete', this.inspiration.id)
-          this.$message?.success('删除成功')
         }
       } catch (error) {
         console.error('删除失败:', error)
-        this.$message?.error('删除失败，请重试')
+        
+        // 将错误信息传递给父组件处理
+        this.$emit('delete-error', {
+          inspirationId: this.inspiration.id,
+          error: error
+        })
       }
       
       this.showMenu = false

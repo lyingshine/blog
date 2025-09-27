@@ -80,7 +80,7 @@ router.post('/login', async (req, res) => {
 
     // 查找用户
     const [users] = await pool.execute(
-      'SELECT id, username, email, password, avatar FROM users WHERE username = ?',
+      'SELECT id, username, email, password, avatar, role FROM users WHERE username = ?',
       [username]
     );
 
@@ -105,7 +105,8 @@ router.post('/login', async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        avatar: user.avatar
+        avatar: user.avatar,
+        role: user.role
       }
     });
   } catch (error) {
@@ -118,7 +119,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const [users] = await pool.execute(
-      'SELECT id, username, email, avatar, bio, created_at FROM users WHERE id = ?',
+      'SELECT id, username, email, avatar, bio, role, created_at FROM users WHERE id = ?',
       [req.user.id]
     );
 
@@ -183,7 +184,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
 
     // 返回更新后的用户信息
     const [users] = await pool.execute(
-      'SELECT id, username, email, avatar, bio FROM users WHERE id = ?',
+      'SELECT id, username, email, avatar, bio, role FROM users WHERE id = ?',
       [userId]
     );
 

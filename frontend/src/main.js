@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import './utils/console-optimizer' // 优化控制台输出
@@ -16,6 +17,11 @@ const startApp = async () => {
     app.config.errorHandler = (error, instance, info) => {
       logger.error('Vue应用错误', { error: error.message, info })
     }
+    
+    // 创建并使用 Pinia
+    const pinia = createPinia()
+    app.use(pinia)
+    logger.debug('Pinia 状态管理已加载')
     
     // 使用路由
     app.use(router)
