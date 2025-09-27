@@ -49,6 +49,18 @@
         <div class="stat-card">
           <div class="stat-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3>{{ stats.inspirations }}</h3>
+            <p>灵感总数</p>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
             </svg>
           </div>
@@ -66,6 +78,13 @@
           <div class="section-header">
             <h2>文章管理</h2>
             <div class="section-actions">
+              <button @click="openTrashModal('articles')" class="btn btn-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                回收站
+              </button>
               <button @click="refreshArticles" class="btn btn-secondary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="23 4 23 10 17 10"></polyline>
@@ -158,7 +177,15 @@
         <div class="admin-section">
           <div class="section-header">
             <h2>用户管理</h2>
-            <button @click="refreshUsers" class="btn btn-secondary">
+            <div class="section-actions">
+              <button @click="openTrashModal('users')" class="btn btn-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                回收站
+              </button>
+              <button @click="refreshUsers" class="btn btn-secondary">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <polyline points="1 20 1 14 7 14"></polyline>
@@ -217,6 +244,169 @@
           </div>
         </div>
 
+        <!-- 灵感管理 -->
+        <div class="admin-section">
+          <div class="section-header">
+            <h2>灵感管理</h2>
+            <div class="section-actions">
+              <button @click="openTrashModal('inspirations')" class="btn btn-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                回收站
+              </button>
+              <button @click="refreshInspirations" class="btn btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+              </svg>
+              刷新
+            </button>
+          </div>
+
+          <div class="table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>内容</th>
+                  <th>作者</th>
+                  <th>点赞数</th>
+                  <th>转发数</th>
+                  <th>创建时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="inspiration in inspirations" :key="inspiration.id">
+                  <td>
+                    <div class="inspiration-content">
+                      <p>{{ inspiration.content }}</p>
+                      <div v-if="inspiration.images && inspiration.images.length > 0" class="inspiration-images">
+                        <img v-for="(image, index) in inspiration.images.slice(0, 3)" 
+                             :key="index" 
+                             :src="image" 
+                             :alt="`图片${index + 1}`" 
+                             class="inspiration-thumb">
+                        <span v-if="inspiration.images.length > 3" class="more-images">
+                          +{{ inspiration.images.length - 3 }}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{{ inspiration.author?.name || '未知' }}</td>
+                  <td>{{ inspiration.likes || 0 }}</td>
+                  <td>{{ inspiration.shares || 0 }}</td>
+                  <td>{{ formatDate(inspiration.created_at) }}</td>
+                  <td>
+                    <div class="action-buttons">
+                      <button @click="viewInspiration(inspiration)" class="btn-icon" title="查看详情">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                      </button>
+                      <button @click="deleteInspiration(inspiration)" class="btn-icon btn-danger" title="删除">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3,6 5,6 21,6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            
+            <div v-if="inspirations.length === 0" class="empty-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <p>暂无灵感</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 评论管理 -->
+        <div class="admin-section">
+          <div class="section-header">
+            <h2>评论管理</h2>
+            <div class="section-actions">
+              <button @click="openTrashModal('comments')" class="btn btn-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                回收站
+              </button>
+              <button @click="refreshComments" class="btn btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                </svg>
+                刷新
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>评论者</th>
+                  <th>内容</th>
+                  <th>所属文章</th>
+                  <th>状态</th>
+                  <th>日期</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="comment in comments" :key="comment.id">
+                  <td>
+                    <div class="user-info">
+                      <img :src="comment.author?.avatar" :alt="comment.author?.name" class="user-avatar">
+                      <div>
+                        <div class="username">{{ comment.author?.name || '未知' }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="comment-content">{{ comment.content }}</td>
+                  <td>
+                    <a :href="`/article/${comment.article?.id}`" target="_blank" class="title-link">
+                      {{ comment.article?.title || '未知文章' }}
+                    </a>
+                  </td>
+                  <td>
+                    <span :class="['status-badge', comment.status]">
+                      {{ comment.status === 'approved' ? '已批准' : '待审核' }}
+                    </span>
+                  </td>
+                  <td>{{ formatDate(comment.created_at) }}</td>
+                  <td>
+                    <div class="action-buttons">
+                      <button @click="toggleCommentStatus(comment)" class="btn-icon" :title="comment.status === 'approved' ? '设为待审核' : '批准'">
+                        <!-- Icons for approve/unapprove -->
+                      </button>
+                      <button @click="deleteComment(comment)" class="btn-icon btn-danger" title="删除">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3,6 5,6 21,6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-if="comments.length === 0" class="empty-state">
+              <p>暂无评论</p>
+            </div>
+          </div>
+        </div>
+
         <!-- 系统工具 -->
         <div class="admin-section">
           <div class="section-header">
@@ -266,235 +456,450 @@
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
     </div>
+
+    <!-- 回收站弹窗 -->
+    <div v-if="trashModal.isOpen" class="modal-overlay" @click.self="closeTrashModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3>{{ trashModal.title }}</h3>
+          <button @click="closeTrashModal" class="btn-icon close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <!-- 文章回收站 -->
+          <div v-if="trashModal.type === 'articles'">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>标题</th>
+                  <th>删除时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="article in trashArticles" :key="article.id">
+                  <td>{{ article.title }}</td>
+                  <td>{{ formatDate(article.deleted_at) }}</td>
+                  <td>
+                    <div class="action-buttons">
+                      <button @click="restoreArticle(article)" class="btn-icon btn-success" title="恢复">
+                        <!-- Restore Icon -->
+                      </button>
+                      <button @click="permanentDeleteArticle(article)" class="btn-icon btn-danger" title="永久删除">
+                        <!-- Delete Icon -->
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-if="trashArticles.length === 0" class="empty-state">
+              <p>文章回收站为空</p>
+            </div>
+          </div>
+          <!-- 其他类型的回收站 (users, comments, etc.) -->
+          <div v-else>
+            <p class="empty-state">此功能暂未实现。</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="closeTrashModal" class="btn btn-outline">关闭</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth.store'
+import { useArticleStore } from '../stores/article.store'
 import message from '../utils/message.js'
 
-export default {
-  name: 'Admin',
-  setup() {
-    const { user } = useAuthStore()
-    return { currentUser: user }
-  },
-  data() {
-    return {
-      loading: false,
-      stats: {
-        articles: 0,
-        users: 0,
-        comments: 0,
-        views: 0
-      },
-      articles: [],
-      users: [],
-      serverStatus: 'online',
-      dbStatus: 'connected'
+const router = useRouter()
+const { user: currentUser } = useAuthStore()
+const { 
+  articles,
+  trashArticles,
+  loading,
+  fetchArticles,
+  fetchTrashArticles,
+  updateArticle,
+  deleteArticle: deleteArticleFromStore,
+  restoreArticle: restoreArticleFromStore,
+  permanentDeleteArticle: permanentDeleteArticleFromStore,
+  clearTrash
+} = useArticleStore()
+
+const stats = reactive({
+  articles: 0,
+  users: 0,
+  comments: 0,
+  inspirations: 0,
+  views: 0
+})
+const users = ref([])
+const inspirations = ref([])
+const comments = ref([])
+const trashModal = reactive({
+  isOpen: false,
+  type: '',
+  title: ''
+})
+const serverStatus = ref('online')
+const dbStatus = ref('connected')
+
+const formatDate = (dateString) => {
+  if (!dateString) return '-'
+  return new Date(dateString).toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const loadStats = async () => {
+  try {
+    const response = await fetch('/api/admin/stats', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      if (data.stats) {
+        stats.articles = data.stats.articles || 0
+        stats.users = data.stats.users || 0
+        stats.comments = data.stats.comments || 0
+        stats.inspirations = data.stats.inspirations || 0
+        stats.views = data.stats.views || 0
+      }
     }
-  },
-  async mounted() {
-    await this.loadData()
-  },
-  methods: {
-    async loadData() {
-      this.loading = true
-      try {
-        await Promise.all([
-          this.loadStats(),
-          this.loadArticles(),
-          this.loadUsers()
-        ])
-      } catch (error) {
-        console.error('加载数据失败:', error)
-        message.error('加载数据失败')
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async loadStats() {
-      try {
-        const response = await fetch('/api/admin/stats', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
-          }
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          this.stats = data.stats
-        }
-      } catch (error) {
-        console.error('获取统计数据失败:', error)
-      }
-    },
-
-    async loadArticles() {
-      try {
-        const response = await fetch('/api/articles?limit=50', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
-          }
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          this.articles = data.articles
-        }
-      } catch (error) {
-        console.error('获取文章列表失败:', error)
-      }
-    },
-
-    async loadUsers() {
-      try {
-        const response = await fetch('/api/users', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
-          }
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          this.users = data.users
-        }
-      } catch (error) {
-        console.error('获取用户列表失败:', error)
-      }
-    },
-
-    async refreshArticles() {
-      await this.loadArticles()
-      message.success('文章列表已刷新')
-    },
-
-    async refreshUsers() {
-      await this.loadUsers()
-      message.success('用户列表已刷新')
-    },
-
-    async toggleArticleStatus(article) {
-      try {
-        const newStatus = article.status === 'published' ? 'draft' : 'published'
-        const response = await fetch(`/api/articles/${article.id}/status`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
-          },
-          body: JSON.stringify({ status: newStatus })
-        })
-
-        if (response.ok) {
-          article.status = newStatus
-          message.success(`文章已${newStatus === 'published' ? '发布' : '设为草稿'}`)
-        } else {
-          throw new Error('操作失败')
-        }
-      } catch (error) {
-        console.error('切换文章状态失败:', error)
-        message.error('操作失败')
-      }
-    },
-
-    async deleteArticle(article) {
-      if (!confirm(`确定要删除文章"${article.title}"吗？此操作不可恢复。`)) {
-        return
-      }
-
-      try {
-        const response = await fetch(`/api/articles/${article.id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
-          }
-        })
-
-        if (response.ok) {
-          this.articles = this.articles.filter(a => a.id !== article.id)
-          message.success('文章已删除')
-        } else {
-          throw new Error('删除失败')
-        }
-      } catch (error) {
-        console.error('删除文章失败:', error)
-        message.error('删除失败')
-      }
-    },
-
-    viewUserProfile(user) {
-      // 这里可以打开用户详情模态框或跳转到用户页面
-      message.info(`查看用户: ${user.username}`)
-    },
-
-    async initDatabase() {
-      if (!confirm('确定要初始化数据库吗？这将重置所有数据结构。')) {
-        return
-      }
-
-      try {
-        const response = await fetch('/api/admin/init-database', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
-          }
-        })
-
-        if (response.ok) {
-          message.success('数据库初始化成功')
-          await this.loadData()
-        } else {
-          throw new Error('初始化失败')
-        }
-      } catch (error) {
-        console.error('数据库初始化失败:', error)
-        message.error('初始化失败')
-      }
-    },
-
-    async createSampleData() {
-      if (!confirm('确定要创建示例数据吗？')) {
-        return
-      }
-
-      try {
-        const response = await fetch('/api/admin/sample-data', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
-          }
-        })
-
-        if (response.ok) {
-          message.success('示例数据创建成功')
-          await this.loadData()
-        } else {
-          throw new Error('创建失败')
-        }
-      } catch (error) {
-        console.error('创建示例数据失败:', error)
-        message.error('创建失败')
-      }
-    },
-
-    clearCache() {
-      localStorage.clear()
-      message.success('缓存已清理')
-    },
-
-    formatDate(dateString) {
-      if (!dateString) return '-'
-      return new Date(dateString).toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    }
+  } catch (error) {
+    console.error('获取统计数据失败:', error)
   }
+}
+
+const loadUsers = async () => {
+  try {
+    const response = await fetch('/api/users', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      users.value = data.users
+    }
+  } catch (error) {
+    console.error('获取用户列表失败:', error)
+  }
+}
+
+const loadInspirations = async () => {
+  try {
+    const response = await fetch('/api/inspirations?limit=50', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      inspirations.value = data.inspirations || []
+    }
+  } catch (error) {
+    console.error('获取灵感列表失败:', error)
+  }
+}
+
+const loadComments = async () => {
+  try {
+    const response = await fetch('/api/comments', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      comments.value = data.comments || []
+    }
+  } catch (error) {
+    console.error('获取评论列表失败:', error)
+  }
+}
+
+const loadData = async () => {
+  loading.value = true
+  try {
+    const promises = [
+      loadStats(),
+      loadUsers(),
+      loadInspirations(),
+      loadComments(),
+    ];
+
+    if (!articles.value || articles.value.length === 0) {
+      promises.push(fetchArticles({ limit: 50 }));
+    }
+
+    if (!trashArticles.value || trashArticles.value.length === 0) {
+      promises.push(fetchTrashArticles());
+    }
+
+    await Promise.all(promises);
+  } catch (error) {
+    console.error('加载数据失败:', error)
+    message.error('加载数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadData)
+
+const refreshArticles = async () => {
+  await fetchArticles({ limit: 50 })
+  message.success('文章列表已刷新')
+}
+
+const refreshUsers = async () => {
+  await loadUsers()
+  message.success('用户列表已刷新')
+}
+
+const refreshComments = async () => {
+  await loadComments()
+  message.success('评论列表已刷新')
+}
+
+const refreshInspirations = async () => {
+  await loadInspirations()
+  message.success('灵感列表已刷新')
+}
+
+const openTrashModal = (type) => {
+  trashModal.type = type;
+  const typeMap = {
+    articles: '文章回收站',
+    users: '已删除用户',
+    inspirations: '灵感回收站',
+    comments: '评论回收站',
+  };
+  trashModal.title = typeMap[type] || '回收站';
+  trashModal.isOpen = true;
+}
+
+const closeTrashModal = () => {
+  trashModal.isOpen = false;
+}
+
+const refreshTrash = async () => {
+  await fetchTrashArticles()
+  message.success('回收站列表已刷新')
+}
+
+const toggleArticleStatus = async (article) => {
+  const newStatus = article.status === 'published' ? 'draft' : 'published'
+  const result = await updateArticle(article.id, { status: newStatus })
+  if (result.success) {
+    message.success(`文章已${newStatus === 'published' ? '发布' : '设为草稿'}`)
+  } else {
+    message.error('操作失败')
+  }
+}
+
+const deleteArticle = async (article) => {
+  if (!confirm(`确定要将文章 "${article.title}" 移至回收站吗？`)) {
+    return
+  }
+  const result = await deleteArticleFromStore(article.id)
+  if (result.success) {
+    message.success('文章已移至回收站')
+  } else {
+    message.error('删除失败')
+  }
+}
+
+const viewUserProfile = (user) => {
+  message.info(`查看用户: ${user.username}`)
+}
+
+const viewInspiration = (inspiration) => {
+  router.push(`/inspirations/${inspiration.id}`)
+}
+
+const deleteInspiration = async (inspiration) => {
+  if (!confirm(`确定要删除这条灵感吗？此操作不可恢复。`)) {
+    return
+  }
+
+  try {
+    const response = await fetch(`/api/inspirations/${inspiration.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
+      }
+    })
+
+    if (response.ok) {
+      inspirations.value = inspirations.value.filter(i => i.id !== inspiration.id)
+      message.success('灵感已删除')
+    }
+    else {
+      throw new Error('删除失败')
+    }
+  } catch (error) {
+    console.error('删除灵感失败:', error)
+    message.error('删除失败')
+  }
+}
+
+const restoreArticle = async (article) => {
+  const result = await restoreArticleFromStore(article.id)
+  if (result.success) {
+    message.success('文章已恢复')
+    await fetchArticles({ limit: 50 })
+  } else {
+    message.error('恢复失败')
+  }
+}
+
+const permanentDeleteArticle = async (article) => {
+  if (!confirm(`确定要永久删除文章 "${article.title}" 吗？此操作不可恢复。`)) {
+    return
+  }
+  const result = await permanentDeleteArticleFromStore(article.id)
+  if (result.success) {
+    message.success('文章已永久删除')
+  } else {
+    message.error('删除失败')
+  }
+}
+
+const clearAllTrash = async () => {
+  if (!confirm('确定要清空回收站吗？这将永久删除所有回收站中的文章，此操作不可恢复。')) {
+    return
+  }
+  const result = await clearTrash()
+  if (result.success) {
+    message.success('回收站已清空')
+  } else {
+    message.error('清空失败')
+  }
+}
+
+const initDatabase = async () => {
+  if (!confirm('确定要初始化数据库吗？这将重置所有数据结构。')) {
+    return
+  }
+
+  try {
+    const response = await fetch('/api/admin/init-database', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
+      }
+    })
+
+    if (response.ok) {
+      message.success('数据库初始化成功')
+      await loadData()
+    } else {
+      throw new Error('初始化失败')
+    }
+  } catch (error) {
+    console.error('数据库初始化失败:', error)
+    message.error('初始化失败')
+  }
+}
+
+const createSampleData = async () => {
+  if (!confirm('确定要创建示例数据吗？')) {
+    return
+  }
+
+  try {
+    const response = await fetch('/api/admin/sample-data', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
+      }
+    })
+
+    if (response.ok) {
+      message.success('示例数据创建成功')
+      await loadData()
+    } else {
+      throw new Error('创建失败')
+    }
+  } catch (error) {
+    console.error('创建示例数据失败:', error)
+    message.error('创建失败')
+  }
+}
+
+const toggleCommentStatus = async (comment) => {
+  const newStatus = comment.status === 'approved' ? 'pending' : 'approved'
+  try {
+    const response = await fetch(`/api/comments/${comment.id}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
+      },
+      body: JSON.stringify({ status: newStatus })
+    })
+
+    if (response.ok) {
+      const updatedComment = await response.json()
+      const index = comments.value.findIndex(c => c.id === comment.id)
+      if (index !== -1) {
+        comments.value.splice(index, 1, updatedComment)
+      }
+      message.success(`评论状态已更新为 ${newStatus === 'approved' ? '已批准' : '待审核'}`)
+    } else {
+      throw new Error('更新失败')
+    }
+  } catch (error) {
+    console.error('更新评论状态失败:', error)
+    message.error('更新失败')
+  }
+}
+
+const deleteComment = async (comment) => {
+  if (!confirm(`确定要删除这条评论吗？`)) {
+    return
+  }
+
+  try {
+    const response = await fetch(`/api/comments/${comment.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('blog_token')}`
+      }
+    })
+
+    if (response.ok) {
+      comments.value = comments.value.filter(c => c.id !== comment.id)
+      message.success('评论已删除')
+    } else {
+      throw new Error('删除失败')
+    }
+  } catch (error) {
+    console.error('删除评论失败:', error)
+    message.error('删除失败')
+  }
+}
+
+const clearCache = () => {
+  localStorage.clear()
+  message.success('缓存已清理')
 }
 </script>
 
@@ -692,6 +1097,16 @@ export default {
   color: #dc2626;
 }
 
+.btn-icon.btn-success {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.btn-icon.btn-success:hover {
+  background: #dcfce7;
+  color: #15803d;
+}
+
 .user-info {
   display: flex;
   align-items: center;
@@ -713,6 +1128,46 @@ export default {
 .user-bio {
   font-size: 0.875rem;
   color: #6b7280;
+}
+
+.inspiration-content {
+  max-width: 300px;
+}
+
+.inspiration-content p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.inspiration-images {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.inspiration-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 0.375rem;
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+}
+
+.more-images {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.title-text {
+  color: #1f2937;
+  font-weight: 500;
 }
 
 .empty-state {
@@ -814,6 +1269,68 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.close-btn {
+  font-size: 1.5rem;
+  font-weight: bold;
+  line-height: 1;
+  color: #9ca3af;
+  text-shadow: 0 1px 0 #fff;
+  opacity: 0.5;
+}
+.close-btn:hover {
+  opacity: 1;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
 @media (max-width: 768px) {
   .admin-header h1 {
     font-size: 2rem;
@@ -839,3 +1356,4 @@ export default {
   }
 }
 </style>
+</template>

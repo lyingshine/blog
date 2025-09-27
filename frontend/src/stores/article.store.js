@@ -84,7 +84,7 @@ const fetchArticle = async (id) => {
     loading.value = true
     error.value = null
     
-    const result = await articleService.getArticle(id)
+    const result = await articleService.getArticleById(id)
     if (result.success) {
       currentArticle.value = result.article
       return result
@@ -199,7 +199,7 @@ const deleteArticle = async (id) => {
 // 点赞文章
 const likeArticle = async (id) => {
   try {
-    const result = await articleService.toggleLike(id)
+    const result = await articleService.likeArticle(id)
     if (result.success) {
       // 更新本地状态
       const index = articles.value.findIndex(article => article.id === id)

@@ -51,6 +51,11 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
       SELECT COUNT(*) as total_comments FROM comments
     `);
 
+    // 获取灵感统计
+    const [inspirationStats] = await pool.execute(`
+      SELECT COUNT(*) as total_inspirations FROM inspirations
+    `);
+
     // 获取今日新增统计
     const [todayStats] = await pool.execute(`
       SELECT 
@@ -67,6 +72,7 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
       articles: articleStats[0].total_articles || 0,
       users: userStats[0].total_users || 0,
       comments: commentStats[0].total_comments || 0,
+      inspirations: inspirationStats[0].total_inspirations || 0,
       views: articleStats[0].total_views || 0,
       published: articleStats[0].published_articles || 0,
       drafts: articleStats[0].draft_articles || 0,

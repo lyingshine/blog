@@ -10,14 +10,14 @@ const About = () => import('../views/About.vue')
 const Login = () => import('../views/Login.vue')
 
 // 管理员相关页面 - 单独的 chunk
-const Admin = () => import(/* webpackChunkName: "admin" */ '../views/Admin.vue')
-const CreatePost = () => import(/* webpackChunkName: "admin" */ '../views/CreatePost.vue')
-const MyPosts = () => import(/* webpackChunkName: "admin" */ '../views/MyPosts.vue')
-const Trash = () => import(/* webpackChunkName: "admin" */ '../views/Trash.vue')
-const Profile = () => import(/* webpackChunkName: "admin" */ '../views/Profile.vue')
+const Admin = () => import('../views/Admin.vue')
+const CreatePost = () => import('../views/CreatePost.vue')
+const MyPosts = () => import('../views/MyPosts.vue')
+const Trash = () => import('../views/Trash.vue')
+const Profile = () => import('../views/Profile.vue')
 
 // 其他功能页面
-const Inspirations = () => import(/* webpackChunkName: "features" */ '../views/Inspirations.vue')
+const Inspirations = () => import('../views/Inspirations.vue')
 
 const routes = [
   {

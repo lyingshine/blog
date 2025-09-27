@@ -5,7 +5,7 @@ export const API_CONFIG = {
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
   // 开发环境直接连接后端
-  DIRECT_URL: import.meta.env.DEV ? 'http://localhost:3000/api' : '/api'
+  DIRECT_URL: import.meta.env.DEV ? 'http://127.0.0.1:3000/api' : '/api'
 }
 
 // 存储键名常量

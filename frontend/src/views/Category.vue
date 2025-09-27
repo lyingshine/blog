@@ -10,26 +10,6 @@
         </div>
       </header>
 
-      <!-- Filter and Sort -->
-      <div class="category-controls">
-        <div class="search-box">
-          <input 
-            type="text" 
-            placeholder="搜索文章..." 
-            v-model="searchQuery"
-            class="search-input"
-          >
-        </div>
-        
-        <div class="sort-options">
-          <select v-model="sortBy" class="sort-select">
-            <option value="date">按日期排序</option>
-            <option value="title">按标题排序</option>
-            <option value="likes">按热度排序</option>
-          </select>
-        </div>
-      </div>
-
       <!-- Articles List -->
       <div v-if="loading" class="loading">
         <div class="spinner"></div>
@@ -76,7 +56,7 @@
 
       <div v-else class="no-articles">
         <h3>暂无文章</h3>
-        <p>该分类下还没有文章，或者没有匹配的搜索结果。</p>
+        <p>该分类下还没有文章。</p>
         <router-link to="/" class="btn">返回首页</router-link>
       </div>
 
@@ -121,7 +101,6 @@ export default {
     return {
       loading: true,
       articles: [],
-      searchQuery: '',
       sortBy: 'date',
       currentPage: 1,
       articlesPerPage: 6
@@ -133,20 +112,8 @@ export default {
     },
     
     filteredArticles() {
-      let filtered = this.articles
-      
-      // 搜索过滤
-      if (this.searchQuery.trim()) {
-        const query = this.searchQuery.toLowerCase()
-        filtered = filtered.filter(article => 
-          article.title.toLowerCase().includes(query) ||
-          article.excerpt.toLowerCase().includes(query) ||
-          article.tags.some(tag => tag.toLowerCase().includes(query))
-        )
-      }
-      
-      // 排序
-      return filtered.sort((a, b) => {
+      // 直接返回排序后的文章，不再进行搜索过滤
+      return this.articles.sort((a, b) => {
         switch (this.sortBy) {
           case 'date':
             return new Date(b.date) - new Date(a.date)
@@ -176,10 +143,6 @@ export default {
         this.fetchArticles()
       },
       immediate: true
-    },
-    
-    searchQuery() {
-      this.currentPage = 1
     },
     
     sortBy() {
@@ -321,85 +284,6 @@ export default {
 .category-stats::before {
   content: '📊';
   font-size: var(--text-base);
-}
-
-.category-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-12);
-  gap: var(--space-6);
-  padding: var(--space-6);
-  background: var(--bg-elevated);
-  border-radius: var(--radius-2xl);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.search-box {
-  flex: 1;
-  max-width: 420px;
-  position: relative;
-}
-
-.search-box::before {
-  content: '🔍';
-  position: absolute;
-  left: var(--space-4);
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: var(--text-base);
-  z-index: 1;
-}
-
-.search-input {
-  width: 100%;
-  padding: var(--space-4) var(--space-5) var(--space-4) var(--space-12);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-2xl);
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  transition: all var(--transition-fast);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  background: var(--bg-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 15%, transparent);
-}
-
-.search-input::placeholder {
-  color: var(--text-tertiary);
-  font-weight: var(--font-weight-normal);
-}
-
-.sort-select {
-  padding: var(--space-4) var(--space-6);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-2xl);
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  min-width: 140px;
-}
-
-.sort-select:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 15%, transparent);
-}
-
-.sort-select:hover {
-  border-color: var(--border-hover);
-  background: var(--bg-tertiary);
 }
 
 .loading {
@@ -799,21 +683,6 @@ export default {
     font-size: var(--text-base);
   }
   
-  .category-controls {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-4);
-    padding: var(--space-4);
-  }
-  
-  .search-box {
-    max-width: none;
-  }
-  
-  .sort-select {
-    min-width: auto;
-  }
-  
   .articles-grid {
     grid-template-columns: 1fr;
     gap: var(--space-6);
@@ -835,10 +704,6 @@ export default {
 @media (max-width: 639px) {
   .category-header {
     padding: var(--space-8) var(--space-3);
-  }
-  
-  .category-controls {
-    padding: var(--space-3);
   }
   
   .article-image {
@@ -900,7 +765,6 @@ export default {
 /* 高对比度模式支持 */
 @media (prefers-contrast: high) {
   .category-header,
-  .category-controls,
   .article-card,
   .no-articles,
   .pagination {

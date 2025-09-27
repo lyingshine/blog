@@ -116,16 +116,16 @@ export default {
     const { 
       articles, 
       loading: articlesLoading, 
-      fetchArticles, 
-      moveToTrash 
+      fetchUserArticles,
+      deleteArticle 
     } = useArticleStore()
     
     return {
       currentUser: user,
       articles,
       articlesLoading,
-      fetchArticles,
-      moveToTrash
+      fetchUserArticles,
+      deleteArticle
     }
   },
   computed: {
@@ -155,18 +155,25 @@ export default {
     async fetchMyPosts() {
       this.loading = true
       try {
-        await this.fetchArticles()
+        if (!this.currentUser || !this.currentUser.username) {
+          console.error('用户信息不完整')
+          return
+        }
+
+        // 获取用户的所有文章（包括草稿和已发布）
+        const result = await this.fetchUserArticles(this.currentUser.username)
         
-        // 只显示当前用户的文章（非回收站）
-        this.allPosts = this.articles
-          .filter(article => 
-            article.author_id === this.currentUser.id && 
-            !article.deleted_at
-          )
-          .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
+        if (result.success) {
+          this.allPosts = result.articles
+            .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
+        } else {
+          console.error('获取文章失败:', result.message)
+          this.allPosts = []
+        }
           
       } catch (error) {
         console.error('获取文章失败:', error)
+        this.allPosts = []
       } finally {
         this.loading = false
       }
@@ -178,12 +185,15 @@ export default {
       }
       
       try {
-        await this.moveToTrash(postId)
+        const result = await this.deleteArticle(postId)
         
-        // 从列表中移除
-        this.allPosts = this.allPosts.filter(post => post.id !== postId)
-        
-        alert('文章已移至回收站')
+        if (result.success) {
+          // 从列表中移除
+          this.allPosts = this.allPosts.filter(post => post.id !== postId)
+          alert('文章已移至回收站')
+        } else {
+          alert('操作失败：' + result.message)
+        }
       } catch (error) {
         console.error('移至回收站失败:', error)
         alert('操作失败：' + error.message)

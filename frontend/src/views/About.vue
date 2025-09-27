@@ -337,14 +337,31 @@ export default {
   background: var(--bg-secondary);
   padding: var(--space-8);
   border-radius: var(--radius-2xl);
-  border: 2px dashed var(--border-color);
+  border: 1px solid var(--border-color);
   text-align: center;
   transition: all var(--transition-fast);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .placeholder-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--color-accent) 5%, transparent) 0%, 
+    color-mix(in srgb, var(--color-primary) 3%, transparent) 100%);
+  opacity: 0;
+  transition: all var(--transition-fast);
+  pointer-events: none;
+}
+
+.placeholder-content::after {
   content: '✨';
   position: absolute;
   top: var(--space-4);
@@ -356,11 +373,15 @@ export default {
 
 .placeholder-content:hover {
   border-color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 10%, var(--bg-secondary));
   transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .placeholder-content:hover::before {
+  opacity: 1;
+}
+
+.placeholder-content:hover::after {
   opacity: 0.6;
   transform: scale(1.2) rotate(15deg);
 }
@@ -387,6 +408,8 @@ export default {
   overflow: hidden;
   box-shadow: var(--shadow-xl);
   border: 1px solid color-mix(in srgb, var(--color-primary) 80%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .edit-hint::before {
@@ -442,6 +465,13 @@ export default {
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
   border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all var(--transition-fast);
+}
+
+.edit-hint:hover .hint-icon {
+  transform: scale(1.05);
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .hint-content h3 {

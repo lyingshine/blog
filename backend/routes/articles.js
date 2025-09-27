@@ -53,7 +53,7 @@ router.get('/', optionalAuth, async (req, res) => {
     // 获取文章列表
     const articlesQuery = `
       SELECT 
-        a.id, a.title, a.excerpt, a.category, a.image, a.featured,
+        a.id, a.title, a.excerpt, a.category, a.image, a.featured, a.status,
         a.likes, a.views, a.reading_time, a.created_at, a.updated_at,
         u.username as author_name, u.avatar as author_avatar,
         GROUP_CONCAT(t.name) as tags
@@ -103,6 +103,98 @@ router.get('/', optionalAuth, async (req, res) => {
   } catch (error) {
     console.error('获取文章列表失败:', error);
     res.status(500).json({ error: '获取文章列表失败' });
+  }
+});
+
+// 获取回收站文章列表
+router.get('/trash', authenticateToken, async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+    let whereConditions = ['a.deleted_at IS NOT NULL', 'a.author_id = ?'];
+    let queryParams = [req.user.id];
+
+    if (search) {
+      whereConditions.push('(a.title LIKE ? OR a.excerpt LIKE ?)');
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm);
+    }
+
+    const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
+
+    // 获取回收站文章列表
+    const articlesQuery = `
+      SELECT 
+        a.id, a.title, a.excerpt, a.category, a.image, a.featured,
+        a.likes, a.views, a.reading_time, a.status, a.created_at, a.deleted_at,
+        u.username as author_name, u.avatar as author_avatar,
+        GROUP_CONCAT(t.name) as tags
+      FROM articles a
+      LEFT JOIN users u ON a.author_id = u.id
+      LEFT JOIN article_tags at ON a.id = at.article_id
+      LEFT JOIN tags t ON at.tag_id = t.id
+      ${whereClause}
+      GROUP BY a.id
+      ORDER BY a.deleted_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    queryParams.push(parseInt(limit), parseInt(offset));
+    const [articles] = await pool.execute(articlesQuery, queryParams);
+
+    // 获取总数
+    const countQuery = `
+      SELECT COUNT(DISTINCT a.id) as total
+      FROM articles a
+      ${whereClause}
+    `;
+
+    const [countResult] = await pool.execute(countQuery, queryParams.slice(0, -2));
+    const total = countResult[0].total;
+
+    // 处理文章数据
+    const processedArticles = articles.map(article => ({
+      ...article,
+      tags: article.tags ? article.tags.split(',') : [],
+      author: {
+        name: article.author_name,
+        avatar: article.author_avatar
+      }
+    }));
+
+    res.json({
+      articles: processedArticles,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('获取回收站文章失败:', error);
+    res.status(500).json({ error: '获取回收站文章失败' });
+  }
+});
+
+// 清空回收站
+router.delete('/trash/clear', authenticateToken, async (req, res) => {
+  try {
+    // 永久删除当前用户回收站中的所有文章
+    await pool.execute(
+      'DELETE FROM articles WHERE author_id = ? AND deleted_at IS NOT NULL',
+      [req.user.id]
+    );
+
+    res.json({ message: '回收站清空成功' });
+  } catch (error) {
+    console.error('清空回收站失败:', error);
+    res.status(500).json({ error: '清空回收站失败' });
   }
 });
 
@@ -394,82 +486,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// 获取回收站文章列表
-router.get('/trash', authenticateToken, async (req, res) => {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      search
-    } = req.query;
-
-    const offset = (page - 1) * limit;
-    let whereConditions = ['a.deleted_at IS NOT NULL', 'a.author_id = ?'];
-    let queryParams = [req.user.id];
-
-    if (search) {
-      whereConditions.push('(a.title LIKE ? OR a.excerpt LIKE ?)');
-      const searchTerm = `%${search}%`;
-      queryParams.push(searchTerm, searchTerm);
-    }
-
-    const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
-
-    // 获取回收站文章列表
-    const articlesQuery = `
-      SELECT 
-        a.id, a.title, a.excerpt, a.category, a.image, a.featured,
-        a.likes, a.views, a.reading_time, a.status, a.created_at, a.deleted_at,
-        u.username as author_name, u.avatar as author_avatar,
-        GROUP_CONCAT(t.name) as tags
-      FROM articles a
-      LEFT JOIN users u ON a.author_id = u.id
-      LEFT JOIN article_tags at ON a.id = at.article_id
-      LEFT JOIN tags t ON at.tag_id = t.id
-      ${whereClause}
-      GROUP BY a.id
-      ORDER BY a.deleted_at DESC
-      LIMIT ? OFFSET ?
-    `;
-
-    queryParams.push(parseInt(limit), parseInt(offset));
-    const [articles] = await pool.execute(articlesQuery, queryParams);
-
-    // 获取总数
-    const countQuery = `
-      SELECT COUNT(DISTINCT a.id) as total
-      FROM articles a
-      ${whereClause}
-    `;
-
-    const [countResult] = await pool.execute(countQuery, queryParams.slice(0, -2));
-    const total = countResult[0].total;
-
-    // 处理文章数据
-    const processedArticles = articles.map(article => ({
-      ...article,
-      tags: article.tags ? article.tags.split(',') : [],
-      author: {
-        name: article.author_name,
-        avatar: article.author_avatar
-      }
-    }));
-
-    res.json({
-      articles: processedArticles,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
-  } catch (error) {
-    console.error('获取回收站文章失败:', error);
-    res.status(500).json({ error: '获取回收站文章失败' });
-  }
-});
-
 // 从回收站恢复文章
 router.post('/:id/restore', authenticateToken, async (req, res) => {
   try {
@@ -539,22 +555,6 @@ router.delete('/:id/permanent', authenticateToken, async (req, res) => {
   }
 });
 
-// 清空回收站
-router.delete('/trash/clear', authenticateToken, async (req, res) => {
-  try {
-    // 永久删除当前用户回收站中的所有文章
-    await pool.execute(
-      'DELETE FROM articles WHERE author_id = ? AND deleted_at IS NOT NULL',
-      [req.user.id]
-    );
-
-    res.json({ message: '回收站清空成功' });
-  } catch (error) {
-    console.error('清空回收站失败:', error);
-    res.status(500).json({ error: '清空回收站失败' });
-  }
-});
-
 // 切换文章点赞状态
 router.post('/:id/like', authenticateToken, async (req, res) => {
   try {
@@ -618,20 +618,25 @@ router.get('/user/:username', optionalAuth, async (req, res) => {
     let statusCondition = "a.status = 'published'";
     
     // 如果是查看自己的文章，可以看到草稿
-    if (req.user && req.user.username === username && status) {
-      statusCondition = `a.status = '${status}'`;
+    if (req.user && req.user.username === username) {
+      if (status) {
+        statusCondition = `a.status = '${status}'`;
+      } else {
+        // 如果没有指定状态，显示所有状态的文章（已发布和草稿）
+        statusCondition = "a.status IN ('published', 'draft')";
+      }
     }
 
     const [articles] = await pool.execute(`
       SELECT 
         a.id, a.title, a.excerpt, a.category, a.image, a.featured,
-        a.likes, a.views, a.reading_time, a.status, a.created_at,
+        a.likes, a.views, a.reading_time, a.status, a.created_at, a.updated_at,
         GROUP_CONCAT(t.name) as tags
       FROM articles a
       LEFT JOIN users u ON a.author_id = u.id
       LEFT JOIN article_tags at ON a.id = at.article_id
       LEFT JOIN tags t ON at.tag_id = t.id
-      WHERE u.username = ? AND ${statusCondition}
+      WHERE u.username = ? AND ${statusCondition} AND a.deleted_at IS NULL
       GROUP BY a.id
       ORDER BY a.created_at DESC
       LIMIT ? OFFSET ?
@@ -642,7 +647,7 @@ router.get('/user/:username', optionalAuth, async (req, res) => {
       SELECT COUNT(a.id) as total
       FROM articles a
       LEFT JOIN users u ON a.author_id = u.id
-      WHERE u.username = ? AND ${statusCondition}
+      WHERE u.username = ? AND ${statusCondition} AND a.deleted_at IS NULL
     `, [username]);
 
     const total = countResult[0].total;

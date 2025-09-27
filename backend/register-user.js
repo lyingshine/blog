@@ -11,13 +11,13 @@ async function registerUser() {
     
     console.log('正在注册用户:', userData.username);
     
-    const response = await axios.post('http://localhost:3000/api/auth/register', userData);
+    const response = await axios.post('http://127.0.0.1:3000/api/auth/register', userData);
     
     console.log('✅ 注册成功:', response.data);
     
     // 测试登录
     console.log('\n正在测试登录...');
-    const loginResponse = await axios.post('http://localhost:3000/api/auth/login', {
+    const loginResponse = await axios.post('http://127.0.0.1:3000/api/auth/login', {
       username: userData.username,
       password: userData.password
     });
