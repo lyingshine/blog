@@ -1,5 +1,4 @@
 import BaseService from './base'
-import { Comment, Pagination, SearchParams } from '../types'
 
 class CommentService extends BaseService {
   constructor() {
@@ -7,21 +6,14 @@ class CommentService extends BaseService {
   }
 
   // 获取文章的评论列表
-  async getComments(articleId, searchParams = new SearchParams()) {
+  async getComments(articleId, searchParams = {}) {
     try {
-      const params = searchParams instanceof SearchParams 
-        ? searchParams.toQueryParams() 
-        : searchParams
-        
-      const response = await this.get(`/comments/article/${articleId}`, params)
-      if (response.isSuccess) {
-        const comments = (response.data.comments || []).map(comment => new Comment(comment))
-        const pagination = new Pagination(response.data.pagination || {})
-        
+      const response = await this.get(`/comments/article/${articleId}`, searchParams)
+      if (response.success) {
         return {
           success: true,
-          comments,
-          pagination,
+          comments: response.data.comments || [],
+          pagination: response.data.pagination || {},
           message: response.message
         }
       }
@@ -30,28 +22,21 @@ class CommentService extends BaseService {
       return {
         success: false,
         comments: [],
-        pagination: new Pagination(),
+        pagination: {},
         message: error.error || '获取评论失败'
       }
     }
   }
 
   // 获取评论的回复列表
-  async getReplies(commentId, searchParams = new SearchParams()) {
+  async getReplies(commentId, searchParams = {}) {
     try {
-      const params = searchParams instanceof SearchParams 
-        ? searchParams.toQueryParams() 
-        : searchParams
-        
-      const response = await this.get(`/comments/${commentId}/replies`, params)
-      if (response.isSuccess) {
-        const replies = (response.data.replies || []).map(reply => new Comment(reply))
-        const pagination = new Pagination(response.data.pagination || {})
-        
+      const response = await this.get(`/comments/${commentId}/replies`, searchParams)
+      if (response.success) {
         return {
           success: true,
-          replies,
-          pagination,
+          replies: response.data.replies || [],
+          pagination: response.data.pagination || {},
           message: response.message
         }
       }
@@ -60,7 +45,7 @@ class CommentService extends BaseService {
       return {
         success: false,
         replies: [],
-        pagination: new Pagination(),
+        pagination: {},
         message: error.error || '获取回复失败'
       }
     }
@@ -70,13 +55,11 @@ class CommentService extends BaseService {
   async createComment(commentData) {
     try {
       const response = await this.post('/comments', commentData)
-      if (response.isSuccess) {
-        const comment = new Comment(response.data.comment)
-        
+      if (response.success) {
         return {
           success: true,
-          comment,
-          message: response.message || '评论发布成功'
+          comment: response.data.comment,
+          message: response.message || '评论发表成功'
         }
       }
       throw response
@@ -84,7 +67,7 @@ class CommentService extends BaseService {
       return {
         success: false,
         comment: null,
-        message: error.error || '发布评论失败'
+        message: error.error || '发表评论失败'
       }
     }
   }
@@ -93,12 +76,10 @@ class CommentService extends BaseService {
   async updateComment(commentId, commentData) {
     try {
       const response = await this.put(`/comments/${commentId}`, commentData)
-      if (response.isSuccess) {
-        const comment = new Comment(response.data.comment)
-        
+      if (response.success) {
         return {
           success: true,
-          comment,
+          comment: response.data.comment,
           message: response.message || '评论更新成功'
         }
       }
@@ -116,7 +97,7 @@ class CommentService extends BaseService {
   async deleteComment(commentId) {
     try {
       const response = await this.delete(`/comments/${commentId}`)
-      if (response.isSuccess) {
+      if (response.success) {
         return {
           success: true,
           message: response.message || '评论删除成功'
@@ -131,43 +112,35 @@ class CommentService extends BaseService {
     }
   }
 
-  // 切换评论点赞
-  async toggleLike(commentId) {
+  // 点赞评论
+  async likeComment(commentId) {
     try {
       const response = await this.post(`/comments/${commentId}/like`)
-      if (response.isSuccess) {
+      if (response.success) {
         return {
           success: true,
-          totalLikes: response.data.totalLikes,
-          isLiked: response.data.isLiked,
-          message: response.message
+          likes: response.data.likes,
+          message: response.message || '点赞成功'
         }
       }
       throw response
     } catch (error) {
       return {
         success: false,
-        message: error.error || '点赞操作失败'
+        message: error.error || '点赞失败'
       }
     }
   }
 
   // 获取用户的评论列表
-  async getUserComments(username, searchParams = new SearchParams()) {
+  async getUserComments(username, searchParams = {}) {
     try {
-      const params = searchParams instanceof SearchParams 
-        ? searchParams.toQueryParams() 
-        : searchParams
-        
-      const response = await this.get(`/comments/user/${username}`, params)
-      if (response.isSuccess) {
-        const comments = (response.data.comments || []).map(comment => new Comment(comment))
-        const pagination = new Pagination(response.data.pagination || {})
-        
+      const response = await this.get(`/comments/user/${username}`, searchParams)
+      if (response.success) {
         return {
           success: true,
-          comments,
-          pagination,
+          comments: response.data.comments || [],
+          pagination: response.data.pagination || {},
           message: response.message
         }
       }
@@ -176,7 +149,7 @@ class CommentService extends BaseService {
       return {
         success: false,
         comments: [],
-        pagination: new Pagination(),
+        pagination: {},
         message: error.error || '获取用户评论失败'
       }
     }

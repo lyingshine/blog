@@ -1,5 +1,4 @@
 import BaseService from './base'
-import { SearchParams, Pagination } from '../types'
 
 class TagService extends BaseService {
   constructor() {
@@ -7,21 +6,14 @@ class TagService extends BaseService {
   }
 
   // 获取所有标签
-  async getTags(searchParams = new SearchParams()) {
+  async getTags(searchParams = {}) {
     try {
-      const params = searchParams instanceof SearchParams 
-        ? searchParams.toQueryParams() 
-        : searchParams
-        
-      const response = await this.get('/tags', params)
-      if (response.isSuccess) {
-        const tags = response.data.tags || []
-        const pagination = new Pagination(response.data.pagination || {})
-        
+      const response = await this.get('/tags', searchParams)
+      if (response.success) {
         return {
           success: true,
-          tags,
-          pagination,
+          tags: response.data.tags || [],
+          pagination: response.data.pagination || {},
           message: response.message
         }
       }
@@ -30,28 +22,21 @@ class TagService extends BaseService {
       return {
         success: false,
         tags: [],
-        pagination: new Pagination(),
+        pagination: {},
         message: error.error || '获取标签失败'
       }
     }
   }
 
   // 根据标签获取文章
-  async getTagArticles(tagName, searchParams = new SearchParams()) {
+  async getTagArticles(tagName, searchParams = {}) {
     try {
-      const params = searchParams instanceof SearchParams 
-        ? searchParams.toQueryParams() 
-        : searchParams
-        
-      const response = await this.get(`/tags/${tagName}/articles`, params)
-      if (response.isSuccess) {
-        const articles = response.data.articles || []
-        const pagination = new Pagination(response.data.pagination || {})
-        
+      const response = await this.get(`/tags/${tagName}/articles`, searchParams)
+      if (response.success) {
         return {
           success: true,
-          articles,
-          pagination,
+          articles: response.data.articles || [],
+          pagination: response.data.pagination || {},
           message: response.message
         }
       }
@@ -60,26 +45,20 @@ class TagService extends BaseService {
       return {
         success: false,
         articles: [],
-        pagination: new Pagination(),
+        pagination: {},
         message: error.error || '获取标签文章失败'
       }
     }
   }
 
   // 搜索标签
-  async searchTags(query, searchParams = new SearchParams()) {
+  async searchTags(query, searchParams = {}) {
     try {
-      const params = searchParams instanceof SearchParams 
-        ? searchParams.toQueryParams() 
-        : searchParams
-        
-      const response = await this.get(`/tags/search/${query}`, params)
-      if (response.isSuccess) {
-        const tags = response.data.tags || []
-        
+      const response = await this.get(`/tags/search/${query}`, searchParams)
+      if (response.success) {
         return {
           success: true,
-          tags,
+          tags: response.data.tags || [],
           message: response.message
         }
       }
@@ -94,19 +73,13 @@ class TagService extends BaseService {
   }
 
   // 获取标签云数据
-  async getTagCloud(searchParams = new SearchParams()) {
+  async getTagCloud(searchParams = {}) {
     try {
-      const params = searchParams instanceof SearchParams 
-        ? searchParams.toQueryParams() 
-        : searchParams
-        
-      const response = await this.get('/tags/cloud/data', params)
-      if (response.isSuccess) {
-        const tagCloud = response.data.tagCloud || []
-        
+      const response = await this.get('/tags/cloud/data', searchParams)
+      if (response.success) {
         return {
           success: true,
-          tagCloud,
+          tagCloud: response.data.tagCloud || [],
           message: response.message
         }
       }

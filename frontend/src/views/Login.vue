@@ -353,30 +353,23 @@ export default {
     },
     
     async handleSubmit() {
-      console.log('表单提交开始')
-      
       // 清除之前的错误和成功消息
       this.errors = {}
       this.successMessage = ''
       
       if (!this.validateForm()) {
-        console.log('表单验证失败')
         return
       }
-      
-      console.log('表单验证通过，开始认证')
       
       try {
         let result
         if (this.isLogin) {
-          console.log('执行登录操作')
           // 登录
           result = await this.login({
             username: this.form.username,
             password: this.form.password
           })
         } else {
-          console.log('执行注册操作')
           // 注册
           result = await this.register({
             username: this.form.username,
@@ -385,21 +378,21 @@ export default {
           })
         }
         
-        console.log('认证结果:', result)
-        
         if (result && result.success) {
           this.successMessage = this.isLogin ? '登录成功！正在跳转...' : '注册成功！正在跳转...'
           
           // 延迟跳转，让用户看到成功消息
           setTimeout(() => {
-            this.$router.push('/')
+            this.$router.push('/').catch(err => {
+              console.error('路由跳转失败:', err)
+            })
           }, 1500)
         } else {
           this.errors.general = result?.message || '操作失败，请检查输入信息'
         }
       } catch (error) {
-        console.error('认证失败:', error)
-        this.errors.general = error.response?.data?.message || '网络错误，请稍后重试'
+        console.error('认证异常:', error)
+        this.errors.general = error.response?.data?.message || error.message || '网络错误，请稍后重试'
       }
     }
   }

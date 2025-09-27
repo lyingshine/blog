@@ -40,24 +40,24 @@ export const useAppStore = () => {
     if (initialized.value) return
 
     try {
-      console.log('🚀 开始初始化应用...')
+
       
       // 1. 初始化认证状态
       await authStore.initAuth()
-      console.log('✅ 认证状态初始化完成')
+
       
       // 2. 初始化UI状态
       await uiStore.initUI()
-      console.log('✅ UI状态初始化完成')
+
       
       // 3. 如果用户已登录，预加载一些数据
       if (authStore.isAuthenticated?.value) {
-        console.log('👤 用户已登录，预加载数据...')
+
         // 可以在这里预加载用户相关数据
       }
 
       initialized.value = true
-      console.log('✅ 应用初始化完成')
+
       
     } catch (error) {
       console.error('❌ 应用初始化失败:', error)

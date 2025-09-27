@@ -30,20 +30,20 @@ class AppService {
 
   async _doInit() {
     try {
-      console.log('🔧 开始初始化服务层...')
+
       
       // 初始化各个服务
       const initPromises = Object.entries(this.services).map(async ([name, service]) => {
         if (service.init && typeof service.init === 'function') {
           await service.init()
-          console.log(`✅ ${name} 服务初始化完成`)
+
         }
       })
 
       await Promise.all(initPromises)
       
       this.initialized = true
-      console.log('✅ 所有服务初始化完成')
+
       
     } catch (error) {
       console.error('❌ 服务层初始化失败:', error)
@@ -85,13 +85,13 @@ class AppService {
 
   // 重置所有服务
   async reset() {
-    console.log('🔄 重置所有服务...')
+
     
     const resetPromises = Object.entries(this.services).map(async ([name, service]) => {
       try {
         if (service.reset && typeof service.reset === 'function') {
           await service.reset()
-          console.log(`✅ ${name} 服务重置完成`)
+
         }
       } catch (error) {
         console.error(`❌ ${name} 服务重置失败:`, error)
@@ -103,7 +103,7 @@ class AppService {
     this.initialized = false
     this.initPromise = null
     
-    console.log('✅ 所有服务重置完成')
+
   }
 
   // 获取所有服务状态

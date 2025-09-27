@@ -39,6 +39,7 @@ export default {
   flex: 1;
   padding: var(--space-2xl) 0;
   background: var(--bg-primary);
+  width: 100%;
 }
 
 /* 确保所有页面都有统一的背景 */

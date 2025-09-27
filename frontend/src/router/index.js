@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth.store'
+import logger from '../utils/logger'
 
 // 懒加载组件 - 代码分割
 const Home = () => import('../views/Home.vue')
@@ -99,13 +100,28 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   
+  // 确保认证状态已初始化
+  if (!authStore.initialized.value) {
+    logger.debug('等待认证状态初始化...')
+    await authStore.initAuth()
+  }
+  
+  // 路由调试信息
+  logger.route(from.name || 'unknown', to.name || 'unknown', {
+    isAuthenticated: authStore.isAuthenticated.value,
+    requiresAuth: to.meta.requiresAuth
+  })
+  
   // 检查路由是否需要认证
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+  if (to.meta.requiresAuth && !authStore.isAuthenticated.value) {
+    logger.warn('需要认证但未登录，重定向到登录页')
     next('/login')
-  } else if (to.name === 'Login' && authStore.isAuthenticated) {
+  } else if (to.name === 'Login' && authStore.isAuthenticated.value) {
     // 已登录用户访问登录页面时重定向到首页
+    logger.debug('已登录用户访问登录页，重定向到首页')
     next('/')
   } else {
+    logger.debug('路由检查通过，允许访问')
     next()
   }
 })

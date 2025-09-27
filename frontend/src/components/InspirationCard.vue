@@ -319,7 +319,9 @@ export default {
           this.originalLikeState = null
           this.originalLikeCount = null
           
-          console.log('点赞状态已同步到服务器:', {
+          // 更新UI状态
+          this.$emit('update-inspiration', {
+            id: this.inspiration.id,
             isLiked: response.data.isLiked,
             likes_count: response.data.likes_count
           })
@@ -330,7 +332,6 @@ export default {
         // 网络错误时，保持用户的UI状态，稍后重试
         if (this.likeRetryCount < 3) {
           this.likeRetryCount++
-          console.log(`点赞同步失败，2秒后重试 (${this.likeRetryCount}/3)`)
           
           // 2秒后重试
           setTimeout(() => {

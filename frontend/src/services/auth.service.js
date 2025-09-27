@@ -1,57 +1,17 @@
 import BaseService from './base'
-import { User } from '../types'
 import { STORAGE_KEYS } from '../constants'
-import { EnhancedBaseService } from './enhanced-base.service'
-import { cached, cache } from '../utils/cache'
-import { handleErrors } from '../utils/error-handler'
 
-class AuthService extends EnhancedBaseService {
+class AuthService extends BaseService {
   constructor() {
-    super('AuthService', {
-      enableCache: false, // 认证信息不缓存
-      enableRetry: true,
-      maxRetries: 2
-    })
-  }
-
-  // 初始化认证服务
-  async onInit() {
-    console.log('🔐 初始化认证服务...')
-    
-    // 检查本地认证状态
-    const localAuth = this.checkLocalAuth()
-    if (localAuth.success) {
-      console.log('✅ 发现本地认证信息')
-      
-      // 验证token有效性
-      try {
-        await this.getCurrentUser()
-        console.log('✅ 本地认证有效')
-      } catch (error) {
-        console.warn('⚠️ 本地认证已过期，清除认证信息')
-        this.logout()
-      }
-    }
-  }
-
-  // 健康检查
-  async onHealthCheck() {
-    const isAuth = this.isAuthenticated()
-    const user = this.getStoredUser()
-    
-    return {
-      authenticated: isAuth,
-      user: user ? { id: user.id, username: user.username } : null,
-      tokenExists: !!this.getStoredToken()
-    }
+    super()
   }
 
   // 用户注册
   async register(userData) {
     try {
       const response = await this.post('/auth/register', userData)
-      if (response.isSuccess) {
-        const user = new User(response.data.user)
+      if (response.success) {
+        const user = response.data.user
         const token = response.data.token
         
         // 存储认证信息
@@ -77,8 +37,8 @@ class AuthService extends EnhancedBaseService {
   async login(credentials) {
     try {
       const response = await this.post('/auth/login', credentials)
-      if (response.isSuccess) {
-        const user = new User(response.data.user)
+      if (response.success) {
+        const user = response.data.user
         const token = response.data.token
         
         // 存储认证信息
@@ -104,8 +64,8 @@ class AuthService extends EnhancedBaseService {
   async getCurrentUser() {
     try {
       const response = await this.get('/auth/me')
-      if (response.isSuccess) {
-        const user = new User(response.data.user)
+      if (response.success) {
+        const user = response.data.user
         
         // 更新本地存储的用户信息
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user))
@@ -129,8 +89,8 @@ class AuthService extends EnhancedBaseService {
   async updateProfile(profileData) {
     try {
       const response = await this.put('/auth/profile', profileData)
-      if (response.isSuccess) {
-        const user = new User(response.data.user)
+      if (response.success) {
+        const user = response.data.user
         
         // 更新本地存储的用户信息
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user))
@@ -154,7 +114,7 @@ class AuthService extends EnhancedBaseService {
   async changePassword(passwordData) {
     try {
       const response = await this.put('/auth/password', passwordData)
-      if (response.isSuccess) {
+      if (response.success) {
         return {
           success: true,
           message: response.message || '密码修改成功'
@@ -188,7 +148,7 @@ class AuthService extends EnhancedBaseService {
     
     if (token && userData) {
       try {
-        const user = new User(JSON.parse(userData))
+        const user = JSON.parse(userData)
         return {
           success: true,
           user,
@@ -218,7 +178,7 @@ class AuthService extends EnhancedBaseService {
     const userData = localStorage.getItem(STORAGE_KEYS.USER)
     if (userData) {
       try {
-        return new User(JSON.parse(userData))
+        return JSON.parse(userData)
       } catch (error) {
         console.error('解析用户数据失败:', error)
         return null

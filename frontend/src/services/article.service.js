@@ -1,52 +1,18 @@
 import BaseService from './base'
-import { Article, Pagination, SearchParams } from '../types'
-import { EnhancedBaseService } from './enhanced-base.service'
-import { cached, cache } from '../utils/cache'
-import { handleErrors } from '../utils/error-handler'
 
-class ArticleService extends EnhancedBaseService {
+class ArticleService extends BaseService {
   constructor() {
-    super('ArticleService', {
-      enableCache: true,
-      enableRetry: true,
-      maxRetries: 2
-    })
-  }
-
-  // 初始化文章服务
-  async onInit() {
-    console.log('📝 初始化文章服务...')
-    // 预加载热门文章等
-  }
-
-  // 健康检查
-  async onHealthCheck() {
-    try {
-      // 简单的健康检查：获取文章数量
-      const response = await this.get('/articles', { page: 1, limit: 1 })
-      return {
-        articlesAccessible: response.success,
-        lastCheck: new Date().toISOString()
-      }
-    } catch (error) {
-      return {
-        articlesAccessible: false,
-        error: error.message
-      }
-    }
+    super()
   }
 
   // 获取文章列表
-  async getArticles(searchParams = new SearchParams()) {
+  async getArticles(searchParams = {}) {
     try {
-      const params = searchParams instanceof SearchParams 
-        ? searchParams.toQueryParams() 
-        : searchParams
-        
+      const params = searchParams
       const response = await this.get('/articles', params)
-      if (response.isSuccess) {
-        const articles = (response.data.articles || []).map(article => new Article(article))
-        const pagination = new Pagination(response.data.pagination || {})
+      if (response.success) {
+        const articles = response.data.articles || []
+        const pagination = response.data.pagination || {}
         
         return {
           success: true,
@@ -60,18 +26,18 @@ class ArticleService extends EnhancedBaseService {
       return {
         success: false,
         articles: [],
-        pagination: new Pagination(),
+        pagination: {},
         message: error.error || '获取文章列表失败'
       }
     }
   }
 
-  // 获取单篇文章
-  async getArticle(id) {
+  // 根据ID获取文章
+  async getArticleById(id) {
     try {
       const response = await this.get(`/articles/${id}`)
-      if (response.isSuccess) {
-        const article = new Article(response.data.article)
+      if (response.success) {
+        const article = response.data.article
         
         return {
           success: true,
@@ -93,8 +59,8 @@ class ArticleService extends EnhancedBaseService {
   async createArticle(articleData) {
     try {
       const response = await this.post('/articles', articleData)
-      if (response.isSuccess) {
-        const article = new Article(response.data.article)
+      if (response.success) {
+        const article = response.data.article
         
         return {
           success: true,
@@ -116,8 +82,8 @@ class ArticleService extends EnhancedBaseService {
   async updateArticle(id, articleData) {
     try {
       const response = await this.put(`/articles/${id}`, articleData)
-      if (response.isSuccess) {
-        const article = new Article(response.data.article)
+      if (response.success) {
+        const article = response.data.article
         
         return {
           success: true,
@@ -135,14 +101,14 @@ class ArticleService extends EnhancedBaseService {
     }
   }
 
-  // 删除文章（移到回收站）
+  // 删除文章
   async deleteArticle(id) {
     try {
       const response = await this.delete(`/articles/${id}`)
-      if (response.isSuccess) {
+      if (response.success) {
         return {
           success: true,
-          message: response.message || '文章已移到回收站'
+          message: response.message || '文章删除成功'
         }
       }
       throw response
@@ -155,16 +121,13 @@ class ArticleService extends EnhancedBaseService {
   }
 
   // 获取回收站文章列表
-  async getTrashArticles(searchParams = new SearchParams()) {
+  async getTrashArticles(searchParams = {}) {
     try {
-      const params = searchParams instanceof SearchParams 
-        ? searchParams.toQueryParams() 
-        : searchParams
-        
+      const params = searchParams
       const response = await this.get('/articles/trash', params)
-      if (response.isSuccess) {
-        const articles = (response.data.articles || []).map(article => new Article(article))
-        const pagination = new Pagination(response.data.pagination || {})
+      if (response.success) {
+        const articles = response.data.articles || []
+        const pagination = response.data.pagination || {}
         
         return {
           success: true,
@@ -178,17 +141,17 @@ class ArticleService extends EnhancedBaseService {
       return {
         success: false,
         articles: [],
-        pagination: new Pagination(),
+        pagination: {},
         message: error.error || '获取回收站文章失败'
       }
     }
   }
 
-  // 从回收站恢复文章
+  // 恢复文章
   async restoreArticle(id) {
     try {
       const response = await this.post(`/articles/${id}/restore`)
-      if (response.isSuccess) {
+      if (response.success) {
         return {
           success: true,
           message: response.message || '文章恢复成功'
@@ -207,7 +170,7 @@ class ArticleService extends EnhancedBaseService {
   async permanentDeleteArticle(id) {
     try {
       const response = await this.delete(`/articles/${id}/permanent`)
-      if (response.isSuccess) {
+      if (response.success) {
         return {
           success: true,
           message: response.message || '文章永久删除成功'
@@ -226,7 +189,7 @@ class ArticleService extends EnhancedBaseService {
   async clearTrash() {
     try {
       const response = await this.delete('/articles/trash/clear')
-      if (response.isSuccess) {
+      if (response.success) {
         return {
           success: true,
           message: response.message || '回收站清空成功'
@@ -241,38 +204,34 @@ class ArticleService extends EnhancedBaseService {
     }
   }
 
-  // 切换文章点赞
-  async toggleLike(id) {
+  // 点赞文章
+  async likeArticle(id) {
     try {
       const response = await this.post(`/articles/${id}/like`)
-      if (response.isSuccess) {
+      if (response.success) {
         return {
           success: true,
-          totalLikes: response.data.totalLikes,
-          isLiked: response.data.isLiked,
-          message: response.message
+          likes: response.data.likes,
+          message: response.message || '点赞成功'
         }
       }
       throw response
     } catch (error) {
       return {
         success: false,
-        message: error.error || '点赞操作失败'
+        message: error.error || '点赞失败'
       }
     }
   }
 
   // 获取用户的文章
-  async getUserArticles(username, searchParams = new SearchParams()) {
+  async getUserArticles(username, searchParams = {}) {
     try {
-      const params = searchParams instanceof SearchParams 
-        ? searchParams.toQueryParams() 
-        : searchParams
-        
+      const params = searchParams
       const response = await this.get(`/articles/user/${username}`, params)
-      if (response.isSuccess) {
-        const articles = (response.data.articles || []).map(article => new Article(article))
-        const pagination = new Pagination(response.data.pagination || {})
+      if (response.success) {
+        const articles = response.data.articles || []
+        const pagination = response.data.pagination || {}
         
         return {
           success: true,
@@ -286,25 +245,20 @@ class ArticleService extends EnhancedBaseService {
       return {
         success: false,
         articles: [],
-        pagination: new Pagination(),
+        pagination: {},
         message: error.error || '获取用户文章失败'
       }
     }
   }
 
   // 搜索文章
-  async searchArticles(query, searchParams = new SearchParams()) {
+  async searchArticles(query, searchParams = {}) {
     try {
-      const params = searchParams instanceof SearchParams 
-        ? searchParams.toQueryParams() 
-        : searchParams
-      
-      params.q = query
-      
+      const params = { ...searchParams, q: query }
       const response = await this.get('/articles', params)
-      if (response.isSuccess) {
-        const articles = (response.data.articles || []).map(article => new Article(article))
-        const pagination = new Pagination(response.data.pagination || {})
+      if (response.success) {
+        const articles = response.data.articles || []
+        const pagination = response.data.pagination || {}
         
         return {
           success: true,
@@ -318,7 +272,7 @@ class ArticleService extends EnhancedBaseService {
       return {
         success: false,
         articles: [],
-        pagination: new Pagination(),
+        pagination: {},
         message: error.error || '搜索文章失败'
       }
     }

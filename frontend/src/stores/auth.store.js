@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
-import { User } from '../types'
 import { EVENTS } from '../constants'
+import logger from '../utils/logger'
 
 // 全局认证状态
 const user = ref(null)
@@ -33,13 +33,18 @@ const initAuth = async () => {
     loading.value = true
     error.value = null
     
+    logger.debug('开始初始化认证状态...')
+    
     const authService = await getAuthService()
     
     // 首先检查本地存储
     const localAuth = authService.checkLocalAuth()
+    logger.debug('本地认证检查结果', localAuth.success ? '有效' : '无效')
+    
     if (localAuth.success) {
       user.value = localAuth.user
       isAuthenticated.value = true
+      logger.debug('设置认证状态为已登录', localAuth.user.username)
       
       // 尝试刷新用户信息
       try {
@@ -47,17 +52,33 @@ const initAuth = async () => {
         if (result.success) {
           user.value = result.user
           emit(EVENTS.USER_UPDATE, result.user)
+          logger.debug('用户信息刷新成功')
         }
       } catch (refreshError) {
-        console.warn('刷新用户信息失败:', refreshError)
+        logger.warn('刷新用户信息失败', refreshError.message)
+        // 如果刷新失败，清除认证状态
+        user.value = null
+        isAuthenticated.value = false
+        authService.logout()
+        logger.debug('已清除无效的认证状态')
       }
+    } else {
+      logger.debug('未发现有效的本地认证信息')
+      user.value = null
+      isAuthenticated.value = false
     }
   } catch (err) {
-    console.error('初始化认证状态失败:', err)
+    logger.error('初始化认证状态失败', err.message)
     error.value = err.message
+    user.value = null
+    isAuthenticated.value = false
   } finally {
     loading.value = false
     initialized.value = true
+    logger.debug('认证状态初始化完成', {
+      isAuthenticated: isAuthenticated.value,
+      user: user.value?.username || 'null'
+    })
   }
 }
 
@@ -148,7 +169,7 @@ const logout = async () => {
       message: '已成功登出'
     }
   } catch (err) {
-    console.error('登出失败:', err)
+    logger.warn('登出失败', err.message)
     // 即使服务器登出失败，也要清除本地状态
     user.value = null
     isAuthenticated.value = false
@@ -210,7 +231,7 @@ const refreshUser = async () => {
     
     return result
   } catch (err) {
-    console.error('刷新用户信息失败:', err)
+    logger.warn('刷新用户信息失败', err.message)
     return {
       success: false,
       message: err.message || '刷新用户信息失败'

@@ -163,7 +163,7 @@ export const isProd = config.getEnvironment().isProduction
 // 调试工具
 export const debug = (...args) => {
   if (config.isFeatureEnabled('debugMode')) {
-    console.log('[DEBUG]', ...args)
+    // 调试输出已优化
   }
 }
 

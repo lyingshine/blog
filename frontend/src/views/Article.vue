@@ -134,11 +134,11 @@ export default {
     async fetchArticle() {
       this.loading = true
       try {
-        console.log('正在获取文章，ID:', this.id)
-        console.log('API基础URL:', import.meta.env.VITE_API_BASE_URL || '/api')
+
+
         
         const response = await articlesAPI.getArticle(this.id)
-        console.log('API响应:', response)
+
         
         this.article = {
           ...response.article,

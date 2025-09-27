@@ -1,8 +1,6 @@
 import axios from 'axios'
 import { API_CONFIG, STORAGE_KEYS, ERROR_CODES } from '../constants'
-import { ApiResponse } from '../types'
-import { cache, cached } from '../utils/cache'
-import { errorHandler, handleErrors } from '../utils/error-handler'
+
 
 // 创建axios实例
 const createApiClient = () => {
@@ -11,7 +9,9 @@ const createApiClient = () => {
     timeout: API_CONFIG.TIMEOUT,
     headers: {
       'Content-Type': 'application/json'
-    }
+    },
+    // 开发环境允许跨域
+    withCredentials: false
   })
 
   // 请求拦截器
@@ -31,11 +31,11 @@ const createApiClient = () => {
   // 响应拦截器
   client.interceptors.response.use(
     (response) => {
-      return new ApiResponse({
+      return {
         success: true,
         data: response.data,
         message: response.data.message || 'Success'
-      })
+      }
     },
     (error) => {
       console.error('API请求错误:', error)
@@ -78,11 +78,11 @@ const createApiClient = () => {
         }
       }
 
-      return Promise.reject(new ApiResponse({
+      return Promise.reject({
         success: false,
         error: errorMessage,
         code: errorCode
-      }))
+      })
     }
   )
 

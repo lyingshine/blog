@@ -1,114 +1,80 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+import './utils/console-optimizer' // 优化控制台输出
+import logger from './utils/logger'
 import './style.css'
 
-// 导入核心模块
-import { initializeApp, healthCheck } from './core'
-import { monitorAvatarLoading } from './utils/avatar-debug'
-import { testAvatarUrls } from './utils/url-test'
-
-// 导入监控服务
-import { monitoringService, apmService, errorHandler } from './utils/monitoring'
-import { performanceMonitor, LazyLoader } from './utils/performance'
-import { performanceOptimizer } from './utils/performance-optimizer'
-
-console.log('🚀 开始启动应用...')
-
-const app = createApp(App)
-
-// 配置全局错误处理
-app.config.errorHandler = errorHandler
-
-// 使用路由
-app.use(router)
-
-// 初始化监控服务
-monitoringService.init(app, router)
-apmService.init()
-
-// 应用初始化
+// 简化的应用启动
 const startApp = async () => {
   try {
-    // 初始化应用核心
-    const initResult = await initializeApp()
+    logger.debug('开始启动应用...')
     
-    if (!initResult.success) {
-      throw new Error(`应用核心初始化失败: ${initResult.error}`)
+    const app = createApp(App)
+    
+    // 配置全局错误处理
+    app.config.errorHandler = (error, instance, info) => {
+      logger.error('Vue应用错误', { error: error.message, info })
     }
     
-    console.log('📊 初始化结果:', initResult)
+    // 使用路由
+    app.use(router)
+    logger.debug('路由系统已加载')
     
-    // 执行健康检查
-    const healthResult = await healthCheck()
-    console.log('🔍 健康检查结果:', healthResult)
+    // 确保认证状态初始化
+    const { useAuthStore } = await import('./stores/auth.store')
+    const authStore = useAuthStore()
+    if (!authStore.initialized.value) {
+      logger.debug('初始化认证状态...')
+      await authStore.initAuth()
+    }
     
-    // 清空所有预置文章，确保从空白状态开始
+    // 清空预置文章数据
     localStorage.removeItem('blog_articles')
     localStorage.setItem('blog_articles', JSON.stringify([]))
+    logger.debug('本地存储已初始化')
     
     // 挂载应用
     app.mount('#app')
-    console.log('✅ 应用启动完成')
     
-    // 开发环境下的调试工具
-    if (import.meta.env.DEV) {
-      // 启用头像调试监控
-      monitorAvatarLoading()
-      
-      // 暴露调试工具到全局
-      window.__APP_DEBUG__ = {
-        healthCheck,
-        initResult,
-        healthResult,
-        testAvatarUrls,
-        performance: performanceMonitor,
-        monitoring: monitoringService,
-        apm: apmService,
-        optimizer: performanceOptimizer
-      }
-      console.log('🛠️ 调试工具已挂载到 window.__APP_DEBUG__')
-    }
-
-    // 预加载关键组件
-    LazyLoader.preloadRouteComponents([
-      { component: () => import('./views/Home.vue'), meta: { priority: 'high' } },
-      { component: () => import('./views/Article.vue'), meta: { priority: 'high' } }
-    ])
-
-    // 设置图片懒加载
-    LazyLoader.setupImageLazyLoading()
-
-    // 启用性能优化
-    performanceOptimizer.optimizeCSSLoading()
-    performanceOptimizer.optimizeMemoryUsage()
+    logger.success('应用启动成功')
     
   } catch (error) {
-    console.error('❌ 应用启动失败:', error)
+    logger.error('应用启动失败', error.message)
     
-    // 显示错误页面或降级处理
+    // 显示简化的错误页面
     const appElement = document.getElementById('app')
     if (appElement) {
       appElement.innerHTML = `
-        <div style="padding: 40px; text-align: center; font-family: Arial, sans-serif;">
-          <div style="max-width: 500px; margin: 0 auto;">
-            <h2 style="color: #e74c3c; margin-bottom: 20px;">🚨 应用启动失败</h2>
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-              <p style="color: #666; margin: 0;">${error.message}</p>
-            </div>
+        <div style="
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          min-height: 100vh; 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: #f8f9fa;
+        ">
+          <div style="text-align: center; max-width: 400px; padding: 2rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">😵</div>
+            <h2 style="color: #dc3545; margin-bottom: 1rem; font-weight: 600;">启动失败</h2>
+            <p style="color: #6c757d; margin-bottom: 2rem; line-height: 1.5;">${error.message}</p>
             <button 
               onclick="location.reload()" 
               style="
-                background: #3498db; 
+                background: #007bff; 
                 color: white; 
                 border: none; 
-                padding: 12px 24px; 
-                border-radius: 6px; 
+                padding: 0.75rem 1.5rem; 
+                border-radius: 0.5rem; 
                 cursor: pointer;
-                font-size: 16px;
+                font-size: 1rem;
+                font-weight: 500;
+                transition: background-color 0.2s;
               "
+              onmouseover="this.style.background='#0056b3'"
+              onmouseout="this.style.background='#007bff'"
             >
-              🔄 重新加载
+              重新加载
             </button>
           </div>
         </div>

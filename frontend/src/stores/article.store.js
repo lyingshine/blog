@@ -1,6 +1,5 @@
 import { ref, computed } from 'vue'
 import { articleService } from '../services'
-import { Article, Pagination, SearchParams } from '../types'
 import { EVENTS } from '../constants'
 
 // 全局文章状态
@@ -9,8 +8,8 @@ const trashArticles = ref([])
 const currentArticle = ref(null)
 const loading = ref(false)
 const error = ref(null)
-const pagination = ref(new Pagination())
-const trashPagination = ref(new Pagination())
+const pagination = ref({})
+const trashPagination = ref({})
 
 // 计算属性
 const featuredArticles = computed(() => 
@@ -37,12 +36,18 @@ const emit = (eventName, data) => {
 }
 
 // 获取文章列表
-const fetchArticles = async (searchParams = new SearchParams()) => {
+const fetchArticles = async (searchParams = {}) => {
   try {
     loading.value = true
     error.value = null
     
-    const result = await articleService.getArticles(searchParams)
+    // 添加超时控制
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
+    
+    const result = await articleService.getArticles(searchParams, { signal: controller.signal })
+    clearTimeout(timeoutId)
+    
     if (result.success) {
       articles.value = result.articles
       pagination.value = result.pagination
@@ -52,10 +57,21 @@ const fetchArticles = async (searchParams = new SearchParams()) => {
       return result
     }
   } catch (err) {
-    error.value = err.message || '获取文章列表失败'
+    if (err.name === 'AbortError') {
+      error.value = '请求超时，请检查网络连接'
+    } else {
+      error.value = err.message || '获取文章列表失败'
+    }
+    
+    // 超时或错误时返回空数据，避免无限加载
+    articles.value = []
+    pagination.value = {}
+    
     return {
       success: false,
-      message: error.value
+      message: error.value,
+      articles: [],
+      pagination: {}
     }
   } finally {
     loading.value = false
@@ -212,7 +228,7 @@ const likeArticle = async (id) => {
 }
 
 // 搜索文章
-const searchArticles = async (query, searchParams = new SearchParams()) => {
+const searchArticles = async (query, searchParams = {}) => {
   try {
     loading.value = true
     error.value = null
@@ -238,7 +254,7 @@ const searchArticles = async (query, searchParams = new SearchParams()) => {
 }
 
 // 获取回收站文章列表
-const fetchTrashArticles = async (searchParams = new SearchParams()) => {
+const fetchTrashArticles = async (searchParams = {}) => {
   try {
     loading.value = true
     error.value = null
@@ -341,7 +357,7 @@ const clearTrash = async () => {
 }
 
 // 获取用户文章
-const fetchUserArticles = async (username, searchParams = new SearchParams()) => {
+const fetchUserArticles = async (username, searchParams = {}) => {
   try {
     loading.value = true
     error.value = null
@@ -377,8 +393,8 @@ const resetState = () => {
   trashArticles.value = []
   currentArticle.value = null
   error.value = null
-  pagination.value = new Pagination()
-  trashPagination.value = new Pagination()
+  pagination.value = {}
+  trashPagination.value = {}
 }
 
 // 导出文章store

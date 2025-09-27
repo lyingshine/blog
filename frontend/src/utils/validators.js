@@ -1,5 +1,4 @@
 import { VALIDATION_RULES } from '../constants'
-import { ValidationResult } from '../types'
 
 // 验证用户名
 export const validateUsername = (username) => {

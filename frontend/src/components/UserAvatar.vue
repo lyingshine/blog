@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import { getAvatarUrl, generateDefaultAvatar, handleImageError } from '@/utils/image-url';
+import { getAvatarUrl, generateDefaultAvatar, handleImageError } from '../utils/image-url';
 
 export default {
   name: 'UserAvatar',

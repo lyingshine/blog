@@ -192,7 +192,7 @@
 import AvatarUploader from '../components/AvatarUploader.vue'
 import message from '../utils/message.js'
 import { useAuthStore } from '../stores/auth.store'
-import { refreshAllAvatars } from '../utils/cache-buster.js'
+
 
 export default {
   name: 'Profile',
@@ -237,7 +237,7 @@ export default {
     async loadUserProfile() {
       try {
         const token = localStorage.getItem('blog_token')
-        console.log('当前token:', token)
+
         
         if (!token) {
           message.error('请先登录')
@@ -251,12 +251,12 @@ export default {
           }
         })
 
-        console.log('API响应状态:', response.status)
-        console.log('API响应头:', response.headers)
+
+
 
         if (response.ok) {
           const data = await response.json()
-          console.log('用户数据:', data)
+
           this.user = data.user
           this.profileForm = {
             username: data.user.username,
