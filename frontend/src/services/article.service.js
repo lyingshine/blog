@@ -37,8 +37,6 @@ class ArticleService extends EnhancedBaseService {
   }
 
   // 获取文章列表
-  @cached(3 * 60 * 1000) // 缓存3分钟
-  @handleErrors({ success: false, articles: [], pagination: new Pagination(), message: '获取文章列表失败' })
   async getArticles(searchParams = new SearchParams()) {
     try {
       const params = searchParams instanceof SearchParams 
@@ -69,8 +67,6 @@ class ArticleService extends EnhancedBaseService {
   }
 
   // 获取单篇文章
-  @cached(5 * 60 * 1000) // 缓存5分钟
-  @handleErrors({ success: false, article: null, message: '获取文章失败' })
   async getArticle(id) {
     try {
       const response = await this.get(`/articles/${id}`)
@@ -94,7 +90,6 @@ class ArticleService extends EnhancedBaseService {
   }
 
   // 创建文章
-  @handleErrors({ success: false, article: null, message: '创建文章失败' })
   async createArticle(articleData) {
     try {
       const response = await this.post('/articles', articleData)

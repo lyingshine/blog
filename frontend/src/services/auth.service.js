@@ -47,7 +47,6 @@ class AuthService extends EnhancedBaseService {
   }
 
   // 用户注册
-  @handleErrors({ success: false, message: '注册失败，请稍后重试' })
   async register(userData) {
     try {
       const response = await this.post('/auth/register', userData)
@@ -75,7 +74,6 @@ class AuthService extends EnhancedBaseService {
   }
 
   // 用户登录
-  @handleErrors({ success: false, message: '登录失败，请检查用户名和密码' })
   async login(credentials) {
     try {
       const response = await this.post('/auth/login', credentials)
@@ -103,8 +101,6 @@ class AuthService extends EnhancedBaseService {
   }
 
   // 获取当前用户信息
-  @cached(2 * 60 * 1000) // 缓存2分钟
-  @handleErrors({ success: false, message: '获取用户信息失败' })
   async getCurrentUser() {
     try {
       const response = await this.get('/auth/me')

@@ -111,7 +111,6 @@ export class EnhancedBaseService {
   }
 
   // 发送HTTP请求（带缓存和错误处理）
-  @handleErrors()
   async request(config, options = {}) {
     const {
       useCache = this.options.enableCache,
