@@ -11,18 +11,18 @@ export default defineConfig({
     }
   },
   server: {
-    host: '127.0.0.1',
+    host: 'localhost',
     port: 5173,
     open: true,
     cors: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:3000',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false
       },
       '/uploads': {
-        target: 'http://127.0.0.1:3000',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false
       }

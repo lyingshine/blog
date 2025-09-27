@@ -21,14 +21,14 @@ if (import.meta.env.PROD) {
   console.error = (...args) => {
     logger.error(args.join(' '))
     // 在开发工具中仍然显示原始错误
-    if (window.location.hostname === '127.0.0.1') {
+    if (window.location.hostname === 'localhost') {
       originalError(...args)
     }
   }
   
   console.warn = (...args) => {
     logger.warn(args.join(' '))
-    if (window.location.hostname === '127.0.0.1') {
+    if (window.location.hostname === 'localhost') {
       originalWarn(...args)
     }
   }

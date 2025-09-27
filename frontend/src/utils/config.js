@@ -15,7 +15,7 @@ class ConfigManager {
 
       // API 配置
       api: {
-        baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:3000/api',
+        baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
         timeout: parseInt(import.meta.env.VITE_API_TIMEOUT) || 10000,
         retryTimes: 3,
         retryDelay: 1000
