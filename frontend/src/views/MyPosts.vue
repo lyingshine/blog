@@ -99,8 +99,8 @@
 
 <script>
 import dayjs from 'dayjs'
-import { useAuth } from '../composables/useAuth'
-import { useArticles } from '../composables/useArticles'
+import { useAuthStore } from '../stores/auth.store'
+import { useArticleStore } from '../stores/article.store'
 
 export default {
   name: 'MyPosts',
@@ -112,13 +112,13 @@ export default {
     }
   },
   setup() {
-    const { user } = useAuth()
+    const { user } = useAuthStore()
     const { 
       articles, 
       loading: articlesLoading, 
       fetchArticles, 
       moveToTrash 
-    } = useArticles()
+    } = useArticleStore()
     
     return {
       currentUser: user,

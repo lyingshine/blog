@@ -182,6 +182,26 @@ const closeAllMenus = () => {
   mobileMenuOpen.value = false
 }
 
+// 初始化UI
+const initUI = async () => {
+  initTheme()
+  // 可以在这里添加其他UI初始化逻辑
+}
+
+// 重置UI状态
+const resetState = () => {
+  theme.value = THEMES.LIGHT
+  sidebarOpen.value = false
+  mobileMenuOpen.value = false
+  loading.value = false
+  notifications.value = []
+}
+
+// 清除错误（UI store 没有错误状态，但为了接口一致性）
+const clearError = () => {
+  // UI store 没有错误状态，空实现
+}
+
 // 导出UI store
 export const useUIStore = () => {
   return {
@@ -196,8 +216,10 @@ export const useUIStore = () => {
     isDark,
     isLight,
     isAuto,
+    isDarkMode: isDark, // 别名，兼容旧代码
     
     // 方法
+    initUI,
     initTheme,
     toggleTheme,
     setTheme,
@@ -215,6 +237,8 @@ export const useUIStore = () => {
     showError,
     showWarning,
     showInfo,
-    closeAllMenus
+    closeAllMenus,
+    resetState,
+    clearError
   }
 }

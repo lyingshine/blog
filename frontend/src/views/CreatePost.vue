@@ -123,8 +123,8 @@
 </template>
 
 <script>
-import { useAuth } from '../composables/useAuth'
-import { useArticles } from '../composables/useArticles'
+import { useAuthStore } from '../stores/auth.store'
+import { useArticleStore } from '../stores/article.store'
 
 export default {
   name: 'CreatePost',
@@ -149,8 +149,8 @@ export default {
     }
   },
   setup() {
-    const { user } = useAuth()
-    const { createArticle, updateArticle, fetchArticle, loading } = useArticles()
+    const { user } = useAuthStore()
+    const { createArticle, updateArticle, fetchArticle, loading } = useArticleStore()
     return {
       currentUser: user,
       createArticle,

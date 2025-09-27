@@ -143,7 +143,7 @@
 </template>
 
 <script>
-import { useAuth } from '../composables/useAuth'
+import { useAuthStore } from '../stores/auth.store'
 
 export default {
   name: 'Footer',
@@ -156,7 +156,7 @@ export default {
     }
   },
   setup() {
-    const { isAuthenticated } = useAuth()
+    const { isAuthenticated } = useAuthStore()
     return {
       isAuthenticated
     }

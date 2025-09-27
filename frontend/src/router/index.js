@@ -10,7 +10,7 @@ import MyPosts from '../views/MyPosts.vue'
 import Trash from '../views/Trash.vue'
 import Profile from '../views/Profile.vue'
 import Inspirations from '../views/Inspirations.vue'
-import { useAuth } from '../composables/useAuth'
+import { useAuthStore } from '../stores/auth.store'
 
 const routes = [
   {
@@ -91,7 +91,7 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
-  const { isAuthenticated, checkLocalAuth, initAuth, initialized } = useAuth()
+  const { isAuthenticated, checkLocalAuth, initAuth, initialized } = useAuthStore()
   
   // 如果还没有初始化，先检查本地认证状态
   if (!initialized.value) {

@@ -2,3 +2,4 @@
 export { useAuthStore } from './auth.store'
 export { useArticleStore } from './article.store'
 export { useUIStore } from './ui.store'
+export { useAppStore, getAppStore } from './app.store'

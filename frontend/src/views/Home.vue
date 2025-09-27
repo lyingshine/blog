@@ -179,14 +179,14 @@
 
 <script>
 import dayjs from 'dayjs'
-import { useAuth } from '../composables/useAuth'
-import { useArticles } from '../composables/useArticles'
+import { useAuthStore } from '../stores/auth.store'
+import { useArticleStore } from '../stores/article.store'
 
 export default {
   name: 'Home',
   setup() {
-    const { isAuthenticated } = useAuth()
-    const { articles, loading, fetchArticles } = useArticles()
+    const { isAuthenticated } = useAuthStore()
+    const { articles, loading, fetchArticles } = useArticleStore()
     
     return {
       isAuthenticated,

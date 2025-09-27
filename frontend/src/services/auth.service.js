@@ -1,13 +1,53 @@
 import BaseService from './base'
 import { User } from '../types'
 import { STORAGE_KEYS } from '../constants'
+import { EnhancedBaseService } from './enhanced-base.service'
+import { cached, cache } from '../utils/cache'
+import { handleErrors } from '../utils/error-handler'
 
-class AuthService extends BaseService {
+class AuthService extends EnhancedBaseService {
   constructor() {
-    super()
+    super('AuthService', {
+      enableCache: false, // 认证信息不缓存
+      enableRetry: true,
+      maxRetries: 2
+    })
+  }
+
+  // 初始化认证服务
+  async onInit() {
+    console.log('🔐 初始化认证服务...')
+    
+    // 检查本地认证状态
+    const localAuth = this.checkLocalAuth()
+    if (localAuth.success) {
+      console.log('✅ 发现本地认证信息')
+      
+      // 验证token有效性
+      try {
+        await this.getCurrentUser()
+        console.log('✅ 本地认证有效')
+      } catch (error) {
+        console.warn('⚠️ 本地认证已过期，清除认证信息')
+        this.logout()
+      }
+    }
+  }
+
+  // 健康检查
+  async onHealthCheck() {
+    const isAuth = this.isAuthenticated()
+    const user = this.getStoredUser()
+    
+    return {
+      authenticated: isAuth,
+      user: user ? { id: user.id, username: user.username } : null,
+      tokenExists: !!this.getStoredToken()
+    }
   }
 
   // 用户注册
+  @handleErrors({ success: false, message: '注册失败，请稍后重试' })
   async register(userData) {
     try {
       const response = await this.post('/auth/register', userData)
@@ -35,6 +75,7 @@ class AuthService extends BaseService {
   }
 
   // 用户登录
+  @handleErrors({ success: false, message: '登录失败，请检查用户名和密码' })
   async login(credentials) {
     try {
       const response = await this.post('/auth/login', credentials)
@@ -62,6 +103,8 @@ class AuthService extends BaseService {
   }
 
   // 获取当前用户信息
+  @cached(2 * 60 * 1000) // 缓存2分钟
+  @handleErrors({ success: false, message: '获取用户信息失败' })
   async getCurrentUser() {
     try {
       const response = await this.get('/auth/me')

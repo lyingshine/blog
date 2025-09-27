@@ -291,7 +291,7 @@
 </template>
 
 <script>
-import { useArticles } from '../composables/useArticles'
+import { useArticleStore } from '../stores/article.store'
 
 export default {
   name: 'Trash',
@@ -318,7 +318,7 @@ export default {
       permanentDeleteArticle,
       clearTrash,
       initTrashFeature
-    } = useArticles()
+    } = useArticleStore()
 
     return {
       trashArticles,

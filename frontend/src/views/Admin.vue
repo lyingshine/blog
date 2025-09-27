@@ -270,13 +270,13 @@
 </template>
 
 <script>
-import { useAuth } from '../composables/useAuth'
+import { useAuthStore } from '../stores/auth.store'
 import message from '../utils/message.js'
 
 export default {
   name: 'Admin',
   setup() {
-    const { user } = useAuth()
+    const { user } = useAuthStore()
     return { currentUser: user }
   },
   data() {

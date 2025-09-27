@@ -1,12 +1,44 @@
 import BaseService from './base'
 import { Article, Pagination, SearchParams } from '../types'
+import { EnhancedBaseService } from './enhanced-base.service'
+import { cached, cache } from '../utils/cache'
+import { handleErrors } from '../utils/error-handler'
 
-class ArticleService extends BaseService {
+class ArticleService extends EnhancedBaseService {
   constructor() {
-    super()
+    super('ArticleService', {
+      enableCache: true,
+      enableRetry: true,
+      maxRetries: 2
+    })
+  }
+
+  // 初始化文章服务
+  async onInit() {
+    console.log('📝 初始化文章服务...')
+    // 预加载热门文章等
+  }
+
+  // 健康检查
+  async onHealthCheck() {
+    try {
+      // 简单的健康检查：获取文章数量
+      const response = await this.get('/articles', { page: 1, limit: 1 })
+      return {
+        articlesAccessible: response.success,
+        lastCheck: new Date().toISOString()
+      }
+    } catch (error) {
+      return {
+        articlesAccessible: false,
+        error: error.message
+      }
+    }
   }
 
   // 获取文章列表
+  @cached(3 * 60 * 1000) // 缓存3分钟
+  @handleErrors({ success: false, articles: [], pagination: new Pagination(), message: '获取文章列表失败' })
   async getArticles(searchParams = new SearchParams()) {
     try {
       const params = searchParams instanceof SearchParams 
@@ -37,6 +69,8 @@ class ArticleService extends BaseService {
   }
 
   // 获取单篇文章
+  @cached(5 * 60 * 1000) // 缓存5分钟
+  @handleErrors({ success: false, article: null, message: '获取文章失败' })
   async getArticle(id) {
     try {
       const response = await this.get(`/articles/${id}`)
@@ -60,6 +94,7 @@ class ArticleService extends BaseService {
   }
 
   // 创建文章
+  @handleErrors({ success: false, article: null, message: '创建文章失败' })
   async createArticle(articleData) {
     try {
       const response = await this.post('/articles', articleData)

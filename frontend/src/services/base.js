@@ -1,6 +1,8 @@
 import axios from 'axios'
 import { API_CONFIG, STORAGE_KEYS, ERROR_CODES } from '../constants'
 import { ApiResponse } from '../types'
+import { cache, cached } from '../utils/cache'
+import { errorHandler, handleErrors } from '../utils/error-handler'
 
 // 创建axios实例
 const createApiClient = () => {

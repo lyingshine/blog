@@ -283,7 +283,7 @@
 </template>
 
 <script>
-import { useAuth } from '../composables/useAuth'
+import { useAuthStore } from '../stores/auth.store'
 import { useDarkMode } from '../composables/useDarkMode'
 import { getAvatarUrl } from '../utils/image-url'
 
@@ -291,7 +291,7 @@ export default {
   name: 'Header',
 
   setup() {
-    const { user, isAuthenticated, logout } = useAuth()
+    const { user, isAuthenticated, logout } = useAuthStore()
     const { isDark, toggleDarkMode } = useDarkMode()
     
     return {

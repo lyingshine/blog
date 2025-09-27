@@ -191,7 +191,7 @@
 <script>
 import AvatarUploader from '../components/AvatarUploader.vue'
 import message from '../utils/message.js'
-import { useAuth } from '../composables/useAuth.js'
+import { useAuthStore } from '../stores/auth.store'
 import { refreshAllAvatars } from '../utils/cache-buster.js'
 
 export default {
@@ -200,7 +200,7 @@ export default {
     AvatarUploader
   },
   setup() {
-    const { user: authUser, refreshUser, updateAvatar } = useAuth()
+    const { user: authUser, refreshUser, updateAvatar } = useAuthStore()
     return {
       authUser,
       refreshUser,

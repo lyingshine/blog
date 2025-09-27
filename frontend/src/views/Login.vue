@@ -247,7 +247,7 @@
 </template>
 
 <script>
-import { useAuth } from '../composables/useAuth'
+import { useAuthStore } from '../stores/auth.store'
 
 export default {
   name: 'Login',
@@ -266,7 +266,7 @@ export default {
     }
   },
   setup() {
-    const { login, register, loading } = useAuth()
+    const { login, register, loading } = useAuthStore()
     return {
       login,
       register,
