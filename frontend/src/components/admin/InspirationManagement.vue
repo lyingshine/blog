@@ -23,7 +23,7 @@
           <p class="inspiration-content">{{ inspiration.content }}</p>
           <p class="inspiration-meta">
             <span>作者: {{ inspiration.author?.username || '匿名' }}</span>
-            <span>时间: {{ formatDate(inspiration.createdAt) }}</span>
+            <span>时间: {{ formatDate(inspiration.created_at) }}</span>
           </p>
         </div>
         <div class="inspiration-actions">

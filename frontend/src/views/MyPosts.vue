@@ -70,7 +70,7 @@
             <div class="post-stats">
               <span class="stat">👁️ {{ post.views || 0 }}</span>
               <span class="stat">❤️ {{ post.likes || 0 }}</span>
-              <span class="stat">📖 {{ post.readingTime || 1 }}分钟</span>
+              <span class="stat">📖 {{ post.reading_time || 1 }}分钟</span>
             </div>
             
             <div class="post-tags">

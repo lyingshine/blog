@@ -235,7 +235,7 @@ export default {
       }
 
       // 按时间排序（最新在前）
-      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
       return filtered
     },

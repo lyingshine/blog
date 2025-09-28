@@ -24,7 +24,7 @@
           <p class="comment-content">{{ comment.content }}</p>
           <p class="comment-meta">
             <span>文章: {{ comment.article?.title || '未知文章' }}</span>
-            <span>时间: {{ formatDate(comment.createdAt) }}</span>
+            <span>时间: {{ formatDate(comment.created_at) }}</span>
             <span :class="['status', `status-${comment.status}`]">
               {{ getStatusText(comment.status) }}
             </span>

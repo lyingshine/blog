@@ -41,8 +41,8 @@
           <div class="sort-filter">
             <div class="filter-label">排序方式</div>
             <select v-model="sortBy" class="sort-select">
-              <option value="createdAt">最新发布</option>
-              <option value="updatedAt">最近更新</option>
+              <option value="created_at">最新发布</option>
+              <option value="updated_at">最近更新</option>
               <option value="title">标题排序</option>
             </select>
           </div>
@@ -114,8 +114,8 @@
               <!-- 文章元信息 -->
               <div class="article-meta">
                 <div class="meta-left">
-                  <time class="article-date">{{ formatDate(article.createdAt) }}</time>
-                  <span v-if="article.readTime" class="read-time">{{ article.readTime }}分钟阅读</span>
+                  <time class="article-date">{{ formatDate(article.created_at) }}</time>
+                  <span v-if="article.reading_time" class="read-time">{{ article.reading_time }}分钟阅读</span>
                 </div>
                 <div class="meta-right">
                   <span class="view-count">
@@ -199,7 +199,7 @@ export default {
   data() {
     return {
       selectedCategory: null,
-      sortBy: 'createdAt',
+      sortBy: 'created_at',
       currentPage: 1,
       articlesPerPage: 12
     }
@@ -231,10 +231,10 @@ export default {
       // 排序
       filtered.sort((a, b) => {
         switch (this.sortBy) {
-          case 'createdAt':
-            return new Date(b.createdAt) - new Date(a.createdAt)
-          case 'updatedAt':
-            return new Date(b.updatedAt) - new Date(a.updatedAt)
+          case 'created_at':
+            return new Date(b.created_at) - new Date(a.created_at)
+          case 'updated_at':
+            return new Date(b.updated_at) - new Date(a.updated_at)
           case 'title':
             return a.title.localeCompare(b.title, 'zh-CN')
           default:

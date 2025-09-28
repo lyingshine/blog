@@ -26,7 +26,7 @@
           <h4 class="user-name">{{ user.username }}</h4>
           <p class="user-meta">
             <span>邮箱: {{ user.email }}</span>
-            <span>注册时间: {{ formatDate(user.createdAt) }}</span>
+            <span>注册时间: {{ formatDate(user.created_at) }}</span>
             <span :class="['role', `role-${user.role}`]">
               {{ getRoleText(user.role) }}
             </span>

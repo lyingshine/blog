@@ -23,7 +23,7 @@
           <h4 class="article-title">{{ article.title }}</h4>
           <p class="article-meta">
             <span>作者: {{ article.author?.username || '未知' }}</span>
-            <span>创建时间: {{ formatDate(article.createdAt) }}</span>
+            <span>创建时间: {{ formatDate(article.created_at) }}</span>
             <span :class="['status', `status-${article.status}`]">
               {{ getStatusText(article.status) }}
             </span>
