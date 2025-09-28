@@ -45,7 +45,7 @@
               <li><router-link to="/" class="nav-link">首页</router-link></li>
               <li><router-link to="/category/技术" class="nav-link">技术</router-link></li>
               <li><router-link to="/category/生活" class="nav-link">生活</router-link></li>
-              <li><router-link to="/about" class="nav-link">关于</router-link></li>
+
             </ul>
           </div>
 

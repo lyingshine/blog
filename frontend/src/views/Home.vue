@@ -1,4 +1,4 @@
-<template>
+g<template>
   <div class="home">
     <!-- Hero Section -->
     <section class="hero">
@@ -25,9 +25,9 @@
             <span class="subtitle-text">出发就走得到，来时的路不会被剪断</span>
           </p>
           <div class="hero-actions">
-            <router-link to="/about" class="btn btn-primary hero-btn">
+            <router-link to="/articles" class="btn btn-primary hero-btn">
               <span class="btn-content">
-                <span>了解更多</span>
+                <span>浏览文章</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="7" y1="17" x2="17" y2="7"/>
                   <polyline points="7,7 17,7 17,17"/>

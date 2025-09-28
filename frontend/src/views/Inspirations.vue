@@ -1,105 +1,129 @@
 <template>
   <div class="inspirations-page">
-    <div class="container">
-      <!-- Hero Section -->
-      <section class="inspirations-hero">
-        <div class="hero-content">
-          <div class="hero-badge">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <span>光的瞬间</span>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="container">
+        <div class="header-content">
+          <div class="header-text">
+            <h1 class="page-title">灵感</h1>
+            <p class="page-description">记录生活中的美好瞬间，分享你的创意想法和思考感悟</p>
           </div>
-          <h1 class="hero-title">
-            <span class="title-line">分享你的</span>
-            <span class="title-highlight">灵感时刻</span>
-          </h1>
-          <p class="hero-subtitle">记录生活的美好瞬间，分享创意想法，连接志同道合的人</p>
-          <div class="hero-actions">
-            <button 
-              v-if="isLoggedIn" 
-              @click="showCreateModal = true"
-              class="btn btn-primary"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              发布灵感
-            </button>
-            <router-link v-else to="/login" class="btn btn-primary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                <polyline points="10,17 15,12 10,7"/>
-                <line x1="15" y1="12" x2="3" y2="12"/>
-              </svg>
-              登录分享
-            </router-link>
-            <router-link to="/about" class="btn btn-outline">
-              寻光之旅
-            </router-link>
-          </div>
-        </div>
-      </section>
-
-      <!-- Filter Section -->
-      <section class="filter-section">
-        <div class="section-header">
-          <h2 class="section-title">浏览灵感</h2>
-          <p class="section-subtitle">发现精彩的创意和想法</p>
-        </div>
-        
-        <div class="filter-tabs">
-          <button 
-            :class="{ active: currentFilter === 'all' }"
-            @click="setFilter('all')"
-            class="filter-btn"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 6h18"/>
-              <path d="M3 12h18"/>
-              <path d="M3 18h18"/>
-            </svg>
-            全部
-          </button>
-          <button 
-            v-if="isLoggedIn"
-            :class="{ active: currentFilter === 'mine' }"
-            @click="setFilter('mine')"
-            class="filter-btn"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            我的灵感
-          </button>
-          <button 
-            :class="{ active: currentFilter === 'following' }"
-            @click="setFilter('following')"
-            class="filter-btn"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-            关注的人
-          </button>
-        </div>
-      </section>
-
-      <!-- Loading State -->
-      <div v-if="loading && inspirations.length === 0" class="loading-section">
-        <div class="loading">
-          <div class="spinner"></div>
-          <p>加载精彩内容中...</p>
         </div>
       </div>
+    </div>
 
-      <!-- Inspirations Section -->
-      <section v-else-if="inspirations.length > 0" class="inspirations-section">
-        <div class="inspirations-list">
+    <!-- 筛选区域 -->
+    <div class="filter-section">
+      <div class="container">
+        <div class="filter-content">
+          <!-- 发布区域 -->
+          <div class="publish-filter">
+            <div class="filter-label">发布灵感</div>
+            <div class="publish-form">
+              <textarea
+                v-model="newInspiration"
+                placeholder="分享你的灵感时刻..."
+                class="inspiration-input"
+                rows="2"
+                maxlength="500"
+                :disabled="!isLoggedIn"
+              ></textarea>
+              <div class="form-row">
+                <select v-model="inspirationCategory" class="category-select" :disabled="!isLoggedIn">
+                  <option value="">选择分类</option>
+                  <option value="技术">技术</option>
+                  <option value="生活">生活</option>
+                  <option value="随笔">随笔</option>
+                  <option value="教程">教程</option>
+                </select>
+                <div class="char-count" :class="{ warning: newInspiration.length > 450 }">
+                  {{ newInspiration.length }}/500
+                </div>
+              </div>
+              <div class="publish-actions">
+                <button 
+                  v-if="!isLoggedIn"
+                  @click="$router.push('/login')"
+                  class="btn btn-primary"
+                >
+                  登录发布
+                </button>
+                <button 
+                  v-else
+                  @click="publishInspiration"
+                  :disabled="!newInspiration.trim() || !inspirationCategory || publishing"
+                  class="btn btn-primary"
+                >
+                  <svg v-if="publishing" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                  </svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                  </svg>
+                  {{ publishing ? '发布中...' : '发布灵感' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 分类筛选 -->
+          <div class="category-filter-section">
+            <div class="filter-label">分类筛选</div>
+            <div class="category-list">
+              <button 
+                @click="selectCategory(null)"
+                :class="['category-btn', { active: selectedCategory === null }]"
+              >
+                全部
+              </button>
+              <button 
+                v-for="category in availableCategories"
+                :key="category"
+                @click="selectCategory(category)"
+                :class="['category-btn', { active: selectedCategory === category }]"
+              >
+                {{ category }}
+              </button>
+            </div>
+          </div>
+
+          <!-- 筛选选项 -->
+          <div class="sort-filter">
+            <div class="filter-label">筛选方式</div>
+            <select v-model="currentFilter" class="sort-select">
+              <option value="all">全部灵感</option>
+              <option v-if="isLoggedIn" value="mine">我的灵感</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 灵感列表 -->
+    <div class="inspirations-section">
+      <div class="container">
+        <!-- 加载状态 -->
+        <div v-if="loading && inspirations.length === 0" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>加载中...</p>
+        </div>
+
+        <!-- 空状态 -->
+        <div v-else-if="inspirations.length === 0" class="empty-state">
+          <div class="empty-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h3>{{ getEmptyStateTitle() }}</h3>
+          <p>{{ getEmptyStateDescription() }}</p>
+        </div>
+
+        <!-- 灵感网格 -->
+        <div v-else class="inspirations-grid">
           <InspirationCard
-            v-for="inspiration in inspirations"
+            v-for="inspiration in paginatedInspirations"
             :key="inspiration.id"
             :inspiration="inspiration"
             @like="handleLike"
@@ -108,92 +132,68 @@
           />
         </div>
 
-        <!-- Load More -->
-        <div v-if="hasMore" class="section-footer">
+        <!-- 分页 -->
+        <div v-if="totalPages > 1" class="pagination">
           <button 
-            @click="loadMore" 
-            :disabled="loading"
-            class="btn btn-outline"
+            @click="goToPage(currentPage - 1)"
+            :disabled="currentPage === 1"
+            class="pagination-btn"
           >
-            <svg v-if="loading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 12a9 9 0 11-6.219-8.56"/>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15,18 9,12 15,6"/>
             </svg>
-            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M7 13l3 3 7-7"/>
+            上一页
+          </button>
+
+          <div class="pagination-numbers">
+            <button 
+              v-for="page in visiblePages"
+              :key="page"
+              @click="goToPage(page)"
+              :class="['pagination-number', { active: page === currentPage }]"
+            >
+              {{ page }}
+            </button>
+          </div>
+
+          <button 
+            @click="goToPage(currentPage + 1)"
+            :disabled="currentPage === totalPages"
+            class="pagination-btn"
+          >
+            下一页
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9,6 15,12 9,18"/>
             </svg>
-            {{ loading ? '加载中...' : '加载更多' }}
           </button>
         </div>
-      </section>
-
-      <!-- Empty State -->
-      <section v-else class="empty-state">
-        <div class="empty-content">
-          <div class="empty-visual">
-            <div class="empty-icon">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-            </div>
-          </div>
-          <h3>还没有灵感</h3>
-          <p>成为第一个分享灵感的人吧！在这里记录你的想法和创意。</p>
-          <div class="empty-actions">
-            <button 
-              v-if="isLoggedIn" 
-              @click="showCreateModal = true"
-              class="btn btn-primary"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              发布灵感
-            </button>
-            <router-link v-else to="/login" class="btn btn-primary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                <polyline points="10,17 15,12 10,7"/>
-                <line x1="15" y1="12" x2="3" y2="12"/>
-              </svg>
-              登录分享
-            </router-link>
-            <router-link to="/" class="btn btn-outline">
-              返回首页
-            </router-link>
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
-
-    <!-- 发布灵感弹窗 -->
-    <CreateInspirationModal
-      v-if="showCreateModal"
-      @close="showCreateModal = false"
-      @created="handleInspirationCreated"
-    />
   </div>
 </template>
 
 <script>
 import { inspirationsAPI } from '../utils/inspirations-api'
+import { getAvatarUrl } from '../utils/image-url'
 import InspirationCard from '../components/InspirationCard.vue'
-import CreateInspirationModal from '../components/CreateInspirationModal.vue'
+import message from '../utils/message'
 
 export default {
   name: 'Inspirations',
   components: {
-    InspirationCard,
-    CreateInspirationModal
+    InspirationCard
   },
   data() {
     return {
+      newInspiration: '',
+      inspirationCategory: '',
+      publishing: false,
       inspirations: [],
       loading: false,
+      selectedCategory: null,
       currentFilter: 'all',
       currentPage: 1,
-      hasMore: true,
-      showCreateModal: false
+      inspirationsPerPage: 12
     }
   },
   computed: {
@@ -203,106 +203,230 @@ export default {
     currentUser() {
       const userStr = localStorage.getItem('blog_user')
       return userStr ? JSON.parse(userStr) : null
+    },
+
+    // 获取所有可用分类
+    availableCategories() {
+      const categories = new Set()
+      this.inspirations.forEach(inspiration => {
+        if (inspiration.category) {
+          categories.add(inspiration.category)
+        }
+      })
+      return Array.from(categories).sort()
+    },
+
+    // 筛选后的灵感
+    filteredInspirations() {
+      let filtered = [...this.inspirations]
+
+      // 按分类筛选
+      if (this.selectedCategory) {
+        filtered = filtered.filter(inspiration => 
+          inspiration.category === this.selectedCategory
+        )
+      }
+
+      // 按筛选条件筛选
+      if (this.currentFilter === 'mine' && this.currentUser) {
+        filtered = filtered.filter(inspiration => 
+          inspiration.user_id === this.currentUser.id
+        )
+      }
+
+      // 按时间排序（最新在前）
+      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+
+      return filtered
+    },
+
+    // 分页后的灵感
+    paginatedInspirations() {
+      const start = (this.currentPage - 1) * this.inspirationsPerPage
+      const end = start + this.inspirationsPerPage
+      return this.filteredInspirations.slice(start, end)
+    },
+
+    // 总页数
+    totalPages() {
+      return Math.ceil(this.filteredInspirations.length / this.inspirationsPerPage)
+    },
+
+    // 可见页码
+    visiblePages() {
+      const pages = []
+      const total = this.totalPages
+      const current = this.currentPage
+      
+      if (total <= 7) {
+        for (let i = 1; i <= total; i++) {
+          pages.push(i)
+        }
+      } else {
+        if (current <= 4) {
+          for (let i = 1; i <= 5; i++) {
+            pages.push(i)
+          }
+          pages.push('...')
+          pages.push(total)
+        } else if (current >= total - 3) {
+          pages.push(1)
+          pages.push('...')
+          for (let i = total - 4; i <= total; i++) {
+            pages.push(i)
+          }
+        } else {
+          pages.push(1)
+          pages.push('...')
+          for (let i = current - 1; i <= current + 1; i++) {
+            pages.push(i)
+          }
+          pages.push('...')
+          pages.push(total)
+        }
+      }
+      
+      return pages
     }
   },
+
+  watch: {
+    selectedCategory() {
+      this.currentPage = 1
+    },
+    
+    currentFilter() {
+      this.currentPage = 1
+    }
+  },
+
   async created() {
     await this.loadInspirations()
   },
+
   methods: {
-    async loadInspirations(reset = true) {
+    getAvatarUrl(avatarPath, username) {
+      return getAvatarUrl(avatarPath, username)
+    },
+
+    selectCategory(category) {
+      this.selectedCategory = category
+      this.currentPage = 1
+      
+      // 更新URL参数
+      const query = { ...this.$route.query }
+      if (category) {
+        query.category = category
+      } else {
+        delete query.category
+      }
+      
+      this.$router.replace({ query })
+    },
+
+    async publishInspiration() {
+      if (!this.newInspiration.trim() || !this.inspirationCategory || this.publishing) return
+
+      this.publishing = true
+      try {
+        const response = await inspirationsAPI.createInspiration({
+          content: this.newInspiration.trim(),
+          category: this.inspirationCategory
+        })
+
+        // 将新灵感添加到列表顶部
+        this.inspirations.unshift(response.data.inspiration)
+        this.newInspiration = ''
+        this.inspirationCategory = ''
+        
+        message.success('灵感发布成功！')
+      } catch (error) {
+        console.error('发布灵感失败:', error)
+        message.error(error.response?.data?.error || '发布失败，请重试')
+      } finally {
+        this.publishing = false
+      }
+    },
+
+    async loadInspirations() {
       if (this.loading) return
 
       this.loading = true
       
       try {
-        if (reset) {
-          this.currentPage = 1
-          this.inspirations = []
-        }
-
         const params = {
-          page: this.currentPage,
-          limit: 20
-        }
-
-        if (this.currentFilter === 'mine' && this.currentUser) {
-          params.user_id = this.currentUser.id
+          page: 1,
+          limit: 100 // 加载更多数据用于前端分页
         }
 
         const response = await inspirationsAPI.getInspirations(params)
-        
-        if (reset) {
-          this.inspirations = response.data.inspirations
-        } else {
-          this.inspirations.push(...response.data.inspirations)
-        }
-
-        this.hasMore = this.currentPage < response.data.totalPages
+        this.inspirations = response.data.inspirations
         
       } catch (error) {
         console.error('加载灵感失败:', error)
-        this.$message?.error('加载灵感失败')
+        message.error('加载灵感失败')
       } finally {
         this.loading = false
       }
     },
 
-    async loadMore() {
-      if (!this.hasMore || this.loading) return
-      
-      this.currentPage++
-      await this.loadInspirations(false)
-    },
-
-    async setFilter(filter) {
-      if (filter === 'following') {
-        this.$message?.info('关注功能即将上线')
-        return
+    goToPage(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' })
       }
-      
-      this.currentFilter = filter
-      await this.loadInspirations()
     },
 
     handleLike() {
       if (!this.isLoggedIn) {
-        this.$message?.warning('请先登录')
+        message.warning('请先登录')
         return
       }
-      
-      // 父组件不需要处理点赞逻辑，完全由子组件处理
-      // 这个方法保留是为了兼容，但实际不执行任何操作
     },
 
     handleDelete(inspirationId) {
-      // 从子组件成功删除后的处理
       this.inspirations = this.inspirations.filter(i => i.id !== inspirationId)
-      this.$message?.success('删除成功')
+      message.success('删除成功')
     },
 
     handleDeleteError({ inspirationId, error }) {
-      // 处理子组件传递的删除错误
       console.error('删除失败:', error)
       
-      // 处理不同类型的错误
       if (error.response?.status === 404) {
-        this.$message?.warning('该灵感已不存在，将从列表中移除')
-        // 即使后端返回404，也从前端列表中移除
+        message.warning('该灵感已不存在，将从列表中移除')
         this.inspirations = this.inspirations.filter(i => i.id !== inspirationId)
       } else if (error.response?.status === 403) {
-        this.$message?.error('无权删除此灵感')
+        message.error('无权删除此灵感')
       } else if (error.response?.status === 401) {
-        this.$message?.error('请先登录')
+        message.error('请先登录')
       } else {
-        this.$message?.error('删除失败')
+        message.error('删除失败')
       }
     },
 
-    handleInspirationCreated(newInspiration) {
-      // 将新灵感添加到列表顶部
-      this.inspirations.unshift(newInspiration)
-      this.showCreateModal = false
-      this.$message?.success('发布成功')
+    getEmptyStateTitle() {
+      if (this.selectedCategory && this.currentFilter === 'mine') {
+        return `在"${this.selectedCategory}"分类中还没有发布灵感`
+      } else if (this.selectedCategory) {
+        return `"${this.selectedCategory}"分类暂无灵感`
+      } else if (this.currentFilter === 'mine') {
+        return '还没有发布灵感'
+      } else {
+        return '暂无灵感'
+      }
+    },
+
+    getEmptyStateDescription() {
+      if (this.selectedCategory && this.currentFilter === 'mine') {
+        return '在上方编辑框中分享你在这个分类的第一个灵感吧！'
+      } else if (this.selectedCategory) {
+        return '成为第一个在这个分类分享灵感的人'
+      } else if (this.currentFilter === 'mine') {
+        return '在上方编辑框中分享你的第一个灵感吧！'
+      } else {
+        return '成为第一个分享灵感的人'
+      }
     }
   }
 }
@@ -314,417 +438,505 @@ export default {
   background: var(--bg-primary);
 }
 
-/* Hero Section - 简约现代化 */
-.inspirations-hero {
-  padding: var(--space-5xl) 0 var(--space-4xl);
-  text-align: center;
-  background: var(--bg-primary);
-  position: relative;
+/* 页面头部 - 完全复制文章页面样式 */
+.page-header {
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--space-16) 0 var(--space-12);
 }
 
-.hero-content {
-  max-width: 680px;
-  margin: 0 auto;
-}
-
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  border-radius: var(--radius-full);
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  margin-bottom: var(--space-8);
-  border: 1px solid var(--border-color);
-  transition: all var(--transition-fast);
-}
-
-.hero-badge:hover {
-  background: var(--bg-tertiary);
-  transform: translateY(-1px);
-}
-
-.hero-title {
-  font-size: var(--text-6xl);
-  font-weight: var(--font-weight-extrabold);
-  color: var(--text-primary);
-  margin-bottom: var(--space-6);
-  line-height: var(--leading-none);
-  letter-spacing: -0.05em;
-}
-
-.title-line {
-  display: block;
-  color: var(--text-secondary);
-  font-weight: var(--font-weight-bold);
-}
-
-.title-highlight {
-  background: linear-gradient(135deg, var(--color-accent) 0%, color-mix(in srgb, var(--color-accent) 80%, var(--color-primary)) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  color: var(--color-accent); /* 回退颜色 */
-}
-
-.hero-subtitle {
-  font-size: var(--text-xl);
-  color: var(--text-secondary);
-  margin-bottom: var(--space-12);
-  line-height: var(--leading-relaxed);
-  max-width: 520px;
-  margin-left: auto;
-  margin-right: auto;
-  font-weight: var(--font-weight-normal);
-}
-
-.hero-actions {
+.header-content {
   display: flex;
-  gap: var(--space-4);
-  justify-content: center;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
 }
 
-/* Filter Section - 简约化 */
-.filter-section {
-  margin-bottom: var(--space-16);
-  padding: 0 var(--space-4);
+.header-text {
+  flex: 1;
 }
 
-.section-header {
-  text-align: center;
-  margin-bottom: var(--space-12);
-}
-
-.section-title {
+.page-title {
   font-size: var(--text-4xl);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
   margin-bottom: var(--space-3);
-  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
-.section-subtitle {
+.page-description {
   font-size: var(--text-lg);
   color: var(--text-secondary);
-  line-height: var(--leading-relaxed);
-  font-weight: var(--font-weight-normal);
+  font-weight: var(--font-weight-medium);
 }
 
-.filter-tabs {
+/* 筛选区域 - 完全复制文章页面样式 */
+.filter-section {
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--space-8) 0;
+  position: sticky;
+  top: 60px;
+  z-index: 10;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.filter-content {
   display: flex;
-  gap: var(--space-2);
-  justify-content: center;
+  align-items: flex-start;
+  gap: var(--space-12);
   flex-wrap: wrap;
-  background: var(--bg-secondary);
-  padding: var(--space-1);
-  border-radius: var(--radius-2xl);
-  max-width: fit-content;
-  margin: 0 auto;
 }
 
-.filter-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-5);
-  background: transparent;
-  border: none;
+.filter-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.publish-filter {
+  flex: 1;
+  min-width: 300px;
+}
+
+.publish-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.inspiration-input {
+  width: 100%;
+  min-height: 60px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  resize: vertical;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.inspiration-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 15%, transparent);
+  background: var(--bg-primary);
+}
+
+.inspiration-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.inspiration-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.category-select {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: all var(--transition-fast);
-  font-weight: var(--font-weight-medium);
+}
+
+.category-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+.category-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.publish-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.char-count {
+  font-size: var(--text-xs);
   color: var(--text-secondary);
-  font-size: var(--text-sm);
-  position: relative;
+  font-weight: var(--font-weight-medium);
   white-space: nowrap;
 }
 
-.filter-btn:hover:not(.active) {
-  color: var(--text-primary);
-  background: var(--bg-tertiary);
+.char-count.warning {
+  color: var(--color-warning);
 }
 
-.filter-btn.active {
-  background: var(--bg-elevated);
+.category-filter-section {
+  flex: 1;
+  min-width: 300px;
+}
+
+.category-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.category-btn {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.category-btn:hover {
+  background: var(--bg-tertiary);
   color: var(--text-primary);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.category-btn.active {
+  background: var(--color-accent);
+  color: var(--text-inverse);
+  border-color: var(--color-accent);
   box-shadow: var(--shadow-sm);
 }
 
-.filter-btn svg {
-  width: 16px;
-  height: 16px;
-  opacity: 0.7;
-  transition: opacity var(--transition-fast);
+.sort-filter {
+  min-width: 160px;
 }
 
-.filter-btn:hover svg,
-.filter-btn.active svg {
-  opacity: 1;
-}
-
-/* Loading Section - 简约化 */
-.loading-section {
-  margin-bottom: var(--space-16);
-  padding: 0 var(--space-4);
-}
-
-.loading {
-  text-align: center;
-  padding: var(--space-20);
-  background: var(--bg-elevated);
-  border-radius: var(--radius-3xl);
+.sort-select {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--border-color);
-  max-width: 480px;
-  margin: 0 auto;
-}
-
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 2px solid var(--border-color);
-  border-top: 2px solid var(--color-accent);
-  border-radius: 50%;
-  animation: spin var(--duration-1000) linear infinite;
-  margin: 0 auto var(--space-6);
-}
-
-.loading p {
-  color: var(--text-secondary);
-  font-size: var(--text-base);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-sm);
   font-weight: var(--font-weight-medium);
-  margin: 0;
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
-/* Inspirations Section - 优化布局 */
+.sort-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+/* 灵感区域 - 完全复制文章页面样式 */
 .inspirations-section {
-  margin-bottom: var(--space-16);
-  padding: 0 var(--space-4);
+  padding: var(--space-12) 0;
 }
 
-.inspirations-list {
-  display: grid;
-  gap: var(--space-8);
-  max-width: 720px;
-  margin: 0 auto var(--space-16);
+/* 加载状态 - 完全复制文章页面样式 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-20) 0;
+  color: var(--text-secondary);
 }
 
-.section-footer {
-  text-align: center;
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--color-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--space-4);
 }
 
-/* Empty State - 现代化设计 */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 空状态 - 完全复制文章页面样式 */
 .empty-state {
-  margin-bottom: var(--space-16);
-  padding: 0 var(--space-4);
-}
-
-.empty-content {
   text-align: center;
-  padding: var(--space-20) var(--space-8);
-  background: var(--bg-elevated);
-  border-radius: var(--radius-3xl);
-  border: 1px solid var(--border-color);
-  max-width: 560px;
-  margin: 0 auto;
-}
-
-.empty-visual {
-  margin-bottom: var(--space-12);
+  padding: var(--space-20) 0;
+  color: var(--text-secondary);
 }
 
 .empty-icon {
-  width: 96px;
-  height: 96px;
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-  border-radius: var(--radius-3xl);
+  margin-bottom: var(--space-6);
+  opacity: 0.6;
+}
+
+.empty-state h3 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.empty-state p {
+  font-size: var(--text-base);
+  margin-bottom: var(--space-8);
+}
+
+/* 灵感网格 - 完全复制文章页面样式 */
+.inspirations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: var(--space-8);
+}
+
+/* 分页 - 完全复制文章页面样式 */
+.pagination {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto var(--space-8);
-  color: var(--text-tertiary);
-  border: 1px solid var(--border-color);
-}
-
-.empty-content h3 {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-  margin-bottom: var(--space-4);
-  letter-spacing: -0.02em;
-}
-
-.empty-content p {
-  color: var(--text-secondary);
-  font-size: var(--text-base);
-  margin-bottom: var(--space-12);
-  line-height: var(--leading-relaxed);
-  max-width: 420px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.empty-actions {
-  display: flex;
   gap: var(--space-4);
-  justify-content: center;
-  flex-wrap: wrap;
+  margin-top: var(--space-16);
 }
 
-/* 现代响应式设计 */
-@media (max-width: 639px) {
-  .inspirations-hero {
-    padding: var(--space-20) 0 var(--space-16);
-  }
-  
-  .hero-title {
-    font-size: var(--text-4xl);
-    margin-bottom: var(--space-4);
-  }
-  
-  .hero-subtitle {
-    font-size: var(--text-lg);
-    margin-bottom: var(--space-8);
-  }
-  
-  .hero-actions {
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-3);
-  }
-  
-  .hero-actions .btn {
-    width: 100%;
-    max-width: 280px;
-    justify-content: center;
-  }
-  
-  .section-title {
-    font-size: var(--text-3xl);
-  }
-  
-  .section-subtitle {
-    font-size: var(--text-base);
-  }
-  
-  .filter-tabs {
-    gap: var(--space-1);
-    padding: var(--space-1);
-  }
-  
-  .filter-btn {
-    padding: var(--space-2_5) var(--space-4);
-    font-size: var(--text-xs);
-  }
-  
-  .inspirations-list {
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-numbers {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.pagination-number {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pagination-number:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.pagination-number.active {
+  background: var(--color-accent);
+  color: var(--text-inverse);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 按钮样式 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-xl);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 90%, black);
+  transform: translateY(-1px);
+}
+
+/* 响应式设计 - 完全复制文章页面样式 */
+@media (max-width: 1023px) {
+  .inspirations-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: var(--space-6);
   }
   
-  .loading {
-    padding: var(--space-16);
-  }
-  
-  .empty-content {
-    padding: var(--space-16) var(--space-6);
-  }
-  
-  .empty-icon {
-    width: 80px;
-    height: 80px;
-    margin-bottom: var(--space-6);
-  }
-  
-  .empty-content h3 {
-    font-size: var(--text-xl);
-  }
-  
-  .empty-actions {
+  .header-content {
     flex-direction: column;
-    align-items: center;
-    gap: var(--space-3);
-  }
-  
-  .empty-actions .btn {
-    width: 100%;
-    max-width: 240px;
+    align-items: flex-start;
+    gap: var(--space-6);
   }
 }
 
-@media (min-width: 640px) and (max-width: 1023px) {
-  .hero-title {
-    font-size: var(--text-5xl);
+@media (max-width: 767px) {
+  .page-header {
+    padding: var(--space-12) 0 var(--space-8);
   }
   
-  .section-title {
+  .page-title {
     font-size: var(--text-3xl);
   }
   
-  .filter-tabs {
-    gap: var(--space-1_5);
-  }
-}
-
-@media (min-width: 1024px) {
-  .inspirations-hero {
-    padding: var(--space-32) 0 var(--space-20);
+  .filter-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-6);
   }
   
-  .hero-title {
-    font-size: var(--text-7xl);
+  .category-filter-section {
+    min-width: auto;
   }
   
-  .hero-subtitle {
-    font-size: var(--text-xl);
+  .publish-filter {
+    min-width: auto;
   }
   
-  .section-title {
-    font-size: var(--text-5xl);
+  .inspirations-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
   }
   
-  .section-subtitle {
-    font-size: var(--text-xl);
+  .filter-section {
+    top: 64px;
+  }
+  
+  .pagination {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  
+  .pagination-numbers {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: var(--space-4);
+  }
+
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .publish-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .char-count {
+    text-align: center;
   }
 }
 
-/* 动画增强 */
-.hero-content {
-  animation: fadeInUp var(--duration-500) var(--ease-out);
-}
-
-.filter-tabs {
-  animation: fadeInUp var(--duration-500) var(--ease-out) 0.1s both;
-}
-
-.inspirations-list {
-  animation: fadeInUp var(--duration-500) var(--ease-out) 0.2s both;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+@media (max-width: 639px) {
+  .publish-form {
+    gap: var(--space-2);
   }
 }
 
 /* 减少动画偏好支持 */
 @media (prefers-reduced-motion: reduce) {
-  .hero-content,
-  .filter-tabs,
-  .inspirations-list {
-    animation: none;
+  .pagination-btn,
+  .pagination-number,
+  .inspiration-input,
+  .btn {
+    transition: none;
   }
   
-  .filter-btn,
-  .hero-badge {
-    transition: none;
+  .pagination-btn:hover,
+  .pagination-number:hover,
+  .btn:hover {
+    transform: none;
+  }
+  
+  .loading-spinner {
+    animation: none;
+  }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  .pagination-btn,
+  .pagination-number,
+  .inspiration-input,
+  .btn {
+    border-width: 2px;
+  }
+  
+  .pagination-btn:hover,
+  .pagination-number:hover {
+    border-color: currentColor;
+  }
+}
+
+/* 容器样式 */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+@media (max-width: 639px) {
+  .container {
+    padding: 0 var(--space-3);
   }
 }
 </style>

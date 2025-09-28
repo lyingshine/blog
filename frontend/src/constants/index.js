@@ -27,7 +27,7 @@ export const ROUTES = {
   MY_POSTS: '/my-posts',
   TRASH: '/trash',
   ADMIN: '/admin',
-  ABOUT: '/about',
+
   ARTICLE: (id) => `/article/${id}`,
   CATEGORY: (name) => `/category/${name}`,
   EDIT_POST: (id) => `/edit/${id}`

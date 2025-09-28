@@ -5,8 +5,9 @@ import logger from '../utils/logger'
 // 懒加载组件 - 代码分割
 const Home = () => import('../views/Home.vue')
 const Article = () => import('../views/Article.vue')
+const Articles = () => import('../views/Articles.vue')
 const Category = () => import('../views/Category.vue')
-const About = () => import('../views/About.vue')
+
 const Login = () => import('../views/Login.vue')
 
 // 管理员相关页面 - 单独的 chunk
@@ -26,6 +27,11 @@ const routes = [
     component: Home
   },
   {
+    path: '/articles',
+    name: 'Articles',
+    component: Articles
+  },
+  {
     path: '/article/:id',
     name: 'Article',
     component: Article,
@@ -37,11 +43,7 @@ const routes = [
     component: Category,
     props: true
   },
-  {
-    path: '/about',
-    name: 'About',
-    component: About
-  },
+
   {
     path: '/login',
     name: 'Login',

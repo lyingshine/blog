@@ -271,7 +271,7 @@ body {
 
 /* 确保所有页面组件都使用统一的背景色 */
 .home,
-.about-page,
+
 .article-page,
 .category-page,
 .login-page,
@@ -291,7 +291,7 @@ body {
 .recent,
 .content-grid,
 .article-content,
-.about-hero,
+
 .login-container,
 .create-container,
 .admin-container {

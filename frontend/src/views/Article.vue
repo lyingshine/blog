@@ -11,11 +11,11 @@
         <header class="article-header">
           <div class="article-meta">
             <span class="category">{{ article.category }}</span>
-            <span class="date">{{ formatDate(article.date) }}</span>
-            <span class="reading-time">{{ article.readingTime }}分钟阅读</span>
+            <span class="date">{{ formatDate(article.created_at) }}</span>
+            <span class="reading-time">{{ article.reading_time }}分钟阅读</span>
           </div>
           <h1 class="article-title">{{ article.title }}</h1>
-          <p class="article-summary">{{ article.summary }}</p>
+          <p class="article-summary">{{ article.excerpt }}</p>
           <div class="article-tags">
             <span v-for="tag in article.tags" :key="tag" class="tag">
               {{ tag }}
@@ -33,16 +33,6 @@
 
         <!-- Article Footer -->
         <footer class="article-footer">
-          <div class="author-info">
-            <div class="author-avatar">
-              <img :src="getAvatarUrl(article.author.avatar, article.author.name)" :alt="article.author.name" />
-            </div>
-            <div class="author-details">
-              <h4>{{ article.author.name }}</h4>
-              <p>{{ article.author.bio }}</p>
-            </div>
-          </div>
-          
           <div class="article-actions">
             <button @click="toggleLike" class="action-btn" :class="{ liked: isLiked }">
               ❤️ {{ article.likes + (isLiked ? 1 : 0) }}
@@ -92,7 +82,8 @@
 
 <script>
 import dayjs from 'dayjs'
-import { articlesAPI } from '../utils/api'
+import { useArticleStore } from '../stores/article.store'
+import { useAuthStore } from '../stores/auth.store'
 import { getAvatarUrl } from '../utils/image-url'
 import CommentSection from '../components/CommentSection.vue'
 
@@ -100,6 +91,20 @@ export default {
   name: 'Article',
   components: {
     CommentSection
+  },
+  
+  setup() {
+    const articleStore = useArticleStore()
+    const authStore = useAuthStore()
+    
+    return {
+      fetchArticleById: articleStore.fetchArticle,
+      likeArticle: articleStore.likeArticle,
+      currentArticle: articleStore.currentArticle,
+      loading: articleStore.loading,
+      isAuthenticated: authStore.isAuthenticated,
+      user: authStore.user
+    }
   },
   props: {
     id: {
@@ -109,16 +114,25 @@ export default {
   },
   data() {
     return {
-      loading: true,
-      article: null,
       isLiked: false,
-      relatedArticles: [],
-      currentUser: null,
-      isLoggedIn: false
+      relatedArticles: []
+    }
+  },
+  
+  computed: {
+    article() {
+      return this.currentArticle
+    },
+    
+    isLoggedIn() {
+      return this.isAuthenticated
+    },
+    
+    currentUser() {
+      return this.user
     }
   },
   async created() {
-    this.checkLoginStatus()
     await this.fetchArticle()
     await this.fetchRelatedArticles()
   },
@@ -132,35 +146,15 @@ export default {
   },
   methods: {
     async fetchArticle() {
-      this.loading = true
       try {
-
-
-        
-        const response = await articlesAPI.getArticle(this.id)
-
-        
-        this.article = {
-          ...response.article,
-          // 适配前端数据结构
-          date: response.article.created_at,
-          summary: response.article.excerpt,
-          readingTime: response.article.reading_time,
-          content: response.article.content,
-          author: response.article.author || {
-            name: response.article.author_name,
-            avatar: response.article.author_avatar || '/default-avatar.png',
-            bio: '博客作者'
-          }
+        const result = await this.fetchArticleById(this.id)
+        if (result.success) {
+          this.isLiked = result.article.isLiked || false
+        } else {
+          console.error('获取文章失败:', result.message)
         }
-        this.isLiked = response.article.isLiked || false
-        
       } catch (error) {
         console.error('获取文章失败:', error)
-        console.error('错误详情:', error.response?.data || error.message)
-        this.article = null
-      } finally {
-        this.loading = false
       }
     },
     
@@ -168,21 +162,8 @@ export default {
       try {
         if (!this.article) return
         
-        const response = await articlesAPI.getArticles({ 
-          category: this.article.category,
-          limit: 4 
-        })
-        
-        // 过滤掉当前文章，最多显示3篇
-        this.relatedArticles = response.articles
-          .filter(article => article.id !== parseInt(this.id))
-          .slice(0, 3)
-          .map(article => ({
-            ...article,
-            date: article.created_at,
-            excerpt: article.excerpt
-          }))
-          
+        // 暂时使用空数组，后续可以实现相关文章推荐逻辑
+        this.relatedArticles = []
       } catch (error) {
         console.error('获取相关文章失败:', error)
         this.relatedArticles = []
@@ -198,17 +179,21 @@ export default {
     },
     
     async toggleLike() {
+      if (!this.isAuthenticated) {
+        this.$router.push('/login')
+        return
+      }
+      
       try {
-        await articlesAPI.toggleLike(this.id)
-        if (this.isLiked) {
-          this.article.likes = Math.max(0, this.article.likes - 1)
+        const result = await this.likeArticle(this.id)
+        
+        if (result.success) {
+          this.isLiked = result.isLiked
         } else {
-          this.article.likes = (this.article.likes || 0) + 1
+          console.error('点赞操作失败:', result.message)
         }
-        this.isLiked = !this.isLiked
       } catch (error) {
         console.error('点赞操作失败:', error)
-        alert('操作失败，请稍后重试')
       }
     },
     
@@ -228,25 +213,6 @@ export default {
     
     goToArticle(id) {
       this.$router.push(`/article/${id}`)
-    },
-
-    checkLoginStatus() {
-      const token = localStorage.getItem('blog_token')
-      const user = localStorage.getItem('blog_user')
-      
-      if (token && user) {
-        try {
-          this.currentUser = JSON.parse(user)
-          this.isLoggedIn = true
-        } catch (error) {
-          console.error('解析用户信息失败:', error)
-          this.isLoggedIn = false
-          this.currentUser = null
-        }
-      } else {
-        this.isLoggedIn = false
-        this.currentUser = null
-      }
     }
   }
 }

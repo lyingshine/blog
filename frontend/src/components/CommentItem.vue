@@ -105,7 +105,7 @@
           v-for="reply in replies"
           :key="reply.id"
           :comment="reply"
-          :inspiration-id="inspirationId"
+          :article-id="articleId"
           :is-reply="true"
           @like="$emit('like', $event)"
           @delete="handleReplyDelete"
@@ -133,7 +133,7 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 import { getAvatarUrl } from '../utils/image-url'
-import { commentsAPI } from '../utils/inspirations-api'
+import { commentsAPI } from '../utils/api'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
@@ -145,7 +145,7 @@ export default {
       type: Object,
       required: true
     },
-    inspirationId: {
+    articleId: {
       type: [String, Number],
       required: true
     },
