@@ -3,7 +3,23 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+
+// 根据环境加载对应的.env文件
+const path = require('path');
+const dotenv = require('dotenv');
+
+const env = process.env.NODE_ENV || 'development';
+const envFile = `.env.${env}`;
+const envPath = path.resolve(__dirname, envFile);
+
+console.log(`🔧 当前环境: ${env}`);
+console.log(`📁 加载环境文件: ${envPath}`);
+
+// 先加载通用.env文件，再加载环境特定文件
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: envPath });
+
+console.log(`✅ 环境变量加载完成`);
 
 const { testConnection } = require('./config/database');
 
@@ -44,6 +60,7 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:5174',
+    'https://blog.lyingshine.top',
     process.env.CORS_ORIGIN || 'http://localhost:5173'
   ],
   credentials: true,

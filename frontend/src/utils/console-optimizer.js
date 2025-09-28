@@ -19,18 +19,13 @@ if (import.meta.env.PROD) {
   const originalWarn = console.warn
   
   console.error = (...args) => {
-    logger.error(args.join(' '))
-    // 在开发工具中仍然显示原始错误
-    if (window.location.hostname === 'localhost') {
-      originalError(...args)
-    }
+    // 防止无限递归 - 直接使用原始console.error
+    originalError(...args)
   }
   
   console.warn = (...args) => {
-    logger.warn(args.join(' '))
-    if (window.location.hostname === 'localhost') {
-      originalWarn(...args)
-    }
+    // 防止无限递归 - 直接使用原始console.warn
+    originalWarn(...args)
   }
 }
 

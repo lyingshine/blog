@@ -40,7 +40,9 @@ class Logger {
   // 错误日志 - 总是显示
   error(message, ...args) {
     if (this.level >= LOG_LEVELS.ERROR) {
-      console.error(`%c${this.prefix} ❌ ${message}`, LOG_STYLES.error, ...args)
+      // 防止无限递归 - 直接使用原生console.error
+      const originalError = window.console?.error || console.error;
+      originalError(`${this.prefix} ❌ ${message}`, ...args);
     }
   }
 

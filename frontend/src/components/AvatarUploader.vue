@@ -218,7 +218,7 @@ export default {
         const formData = new FormData()
         formData.append('avatar', this.selectedFile)
 
-        const response = await fetch('/api/upload/avatar', {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/upload/avatar`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('blog_token')}`

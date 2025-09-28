@@ -28,6 +28,9 @@ const authenticateToken = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Token验证失败:', error);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: '访问令牌已过期，请重新登录' });
+    }
     return res.status(403).json({ error: '访问令牌无效' });
   }
 };
