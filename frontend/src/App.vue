@@ -37,7 +37,6 @@ export default {
 
 .main-content {
   flex: 1;
-  padding: var(--space-2xl) 0;
   background: var(--bg-primary);
   width: 100%;
 }
