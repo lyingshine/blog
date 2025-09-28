@@ -352,30 +352,43 @@ export default {
           this.currentSection = 0
           this.updateScrollIndicator()
         }
-      } else {
+      } else if (scrollTop < windowHeight + 200) {
+        // 在内容区域
         if (this.currentSection !== 1) {
           this.currentSection = 1
           this.updateScrollIndicator()
         }
+    
+      } else {
+        // 在底部
+        if (this.currentSection !== 2) {
+          this.currentSection = 2
+          this.updateScrollIndicator()
+        }
       }
     },
+
     
     handleWheel(event) {
-      event.preventDefault()
-      
       if (this.isScrolling) return
       
       const delta = event.deltaY
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      const windowHeight = window.innerHeight
       
-      if (delta > 0 && this.currentSection === 0) {
+      // 只在特定条件下阻止默认滚动行为，允许用户滚动到底部
+      if (delta > 0 && this.currentSection === 0 && scrollTop < windowHeight / 2) {
         // 向下滚动，从英雄区域到内容区域
+        event.preventDefault()
         this.currentSection = 1
         this.updatePagePosition()
-      } else if (delta < 0 && this.currentSection === 1) {
-        // 向上滚动，从内容区域到英雄区域
+      } else if (delta < 0 && this.currentSection === 1 && scrollTop > windowHeight / 2 && scrollTop < windowHeight + 100) {
+        // 向上滚动，从内容区域到英雄区域（只在内容区域顶部时触发）
+        event.preventDefault()
         this.currentSection = 0
         this.updatePagePosition()
       }
+      // 其他情况允许正常滚动，这样用户就能滚动到底部
     },
     
     updatePagePosition() {
