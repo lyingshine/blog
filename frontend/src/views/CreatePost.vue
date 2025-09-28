@@ -114,7 +114,7 @@
         <div class="form-group">
           <label>
             <input v-model="post.featured" type="checkbox" />
-            设为精选文章
+            推荐到首页
           </label>
         </div>
       </div>

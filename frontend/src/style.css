@@ -248,6 +248,11 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  background-color: var(--bg-primary);
+  transition: background-color var(--transition-normal);
+}
+
 body {
   font-family: var(--font-sans);
   font-size: var(--text-base);
@@ -260,6 +265,42 @@ body {
   text-rendering: optimizeLegibility;
   transition: background-color var(--transition-normal), color var(--transition-normal);
   min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* 确保所有页面组件都使用统一的背景色 */
+.home,
+.about-page,
+.article-page,
+.category-page,
+.login-page,
+.create-post-page,
+.my-posts-page,
+.profile-page,
+.admin-page,
+.inspirations-page,
+.trash-page {
+  background-color: var(--bg-primary);
+  min-height: 100vh;
+}
+
+/* 确保所有主要容器都继承背景色 */
+.hero,
+.featured,
+.recent,
+.content-grid,
+.article-content,
+.about-hero,
+.login-container,
+.create-container,
+.admin-container {
+  background-color: inherit;
+}
+
+/* 确保所有section都使用统一背景 */
+section {
+  background-color: inherit;
 }
 
 /* 改进的焦点样式 */

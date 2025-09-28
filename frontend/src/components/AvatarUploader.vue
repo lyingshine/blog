@@ -12,100 +12,104 @@
     </div>
 
     <!-- 头像选择模态框 -->
-    <div v-if="showModal" class="modal-overlay" @click="closeModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>选择头像</h3>
-          <button @click="closeModal" class="close-btn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <!-- 上传选项卡 -->
-          <div class="tabs">
-            <button 
-              :class="{ active: activeTab === 'upload' }" 
-              @click="activeTab = 'upload'"
-            >
-              上传图片
-            </button>
-            <button 
-              :class="{ active: activeTab === 'preset' }" 
-              @click="activeTab = 'preset'"
-            >
-              预设头像
+    <Teleport to="body">
+      <div v-if="showModal" class="modal-overlay" @click="closeModal">
+        <div class="modal-content" @click.stop>
+          <div class="modal-header">
+            <h3>选择头像</h3>
+            <button @click="closeModal" class="close-btn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </button>
           </div>
 
-          <!-- 上传图片 -->
-          <div v-if="activeTab === 'upload'" class="upload-section">
-            <div class="upload-area" @click="triggerFileInput" @dragover.prevent @drop="handleDrop">
-              <input 
-                ref="fileInput" 
-                type="file" 
-                accept="image/*" 
-                @change="handleFileSelect" 
-                style="display: none"
-              />
-              
-              <div v-if="!selectedFile" class="upload-placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7,10 12,15 17,10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <p>点击或拖拽图片到此处</p>
-                <p class="upload-hint">支持 JPG、PNG、GIF 格式，最大 5MB</p>
-              </div>
-
-              <div v-else class="file-preview">
-                <img :src="previewUrl" alt="预览" />
-                <p>{{ selectedFile.name }}</p>
-              </div>
-            </div>
-
-            <div v-if="selectedFile" class="upload-actions">
-              <button @click="clearFile" class="btn-secondary">重新选择</button>
-              <button @click="uploadFile" :disabled="uploading" class="btn-primary">
-                {{ uploading ? '上传中...' : '上传头像' }}
+          <div class="modal-body">
+            <!-- 上传选项卡 -->
+            <div class="tabs">
+              <button 
+                :class="{ active: activeTab === 'upload' }" 
+                @click="activeTab = 'upload'"
+              >
+                上传图片
+              </button>
+              <button 
+                :class="{ active: activeTab === 'preset' }" 
+                @click="activeTab = 'preset'"
+              >
+                预设头像
               </button>
             </div>
-          </div>
 
-          <!-- 预设头像 -->
-          <div v-if="activeTab === 'preset'" class="preset-section">
-            <div class="seed-input">
-              <label>个性化种子（可选）：</label>
-              <input 
-                v-model="avatarSeed" 
-                type="text" 
-                placeholder="输入任意文本生成独特头像"
-                @input="generatePresets"
-              />
+            <!-- 上传图片 -->
+            <div v-if="activeTab === 'upload'" class="upload-section">
+              <div class="upload-content">
+                <div class="upload-area" @click="triggerFileInput" @dragover.prevent @drop="handleDrop">
+                  <input 
+                    ref="fileInput" 
+                    type="file" 
+                    accept="image/*" 
+                    @change="handleFileSelect" 
+                    style="display: none"
+                  />
+                  
+                  <div v-if="!selectedFile" class="upload-placeholder">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7,10 12,15 17,10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <p>点击或拖拽图片到此处</p>
+                    <p class="upload-hint">支持 JPG、PNG、GIF 格式，最大 5MB</p>
+                  </div>
+
+                  <div v-else class="file-preview">
+                    <img :src="previewUrl" alt="预览" />
+                    <p>{{ selectedFile.name }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="selectedFile" class="upload-actions">
+                <button @click="clearFile" class="btn-secondary">重新选择</button>
+                <button @click="uploadFile" :disabled="uploading" class="btn-primary">
+                  {{ uploading ? '上传中...' : '上传头像' }}
+                </button>
+              </div>
             </div>
 
-            <div class="preset-grid">
-              <div 
-                v-for="preset in presets" 
-                :key="preset.style"
-                class="preset-item"
-                @click="selectPreset(preset.url)"
-              >
-                <img :src="preset.url" :alt="preset.name" />
-                <div class="preset-info">
-                  <h4>{{ preset.name }}</h4>
-                  <p>{{ preset.description }}</p>
+            <!-- 预设头像 -->
+            <div v-if="activeTab === 'preset'" class="preset-section">
+              <div class="seed-input">
+                <label>个性化种子（可选）：</label>
+                <input 
+                  v-model="avatarSeed" 
+                  type="text" 
+                  placeholder="输入任意文本生成独特头像"
+                  @input="generatePresets"
+                />
+              </div>
+
+              <div class="preset-grid">
+                <div 
+                  v-for="preset in presets" 
+                  :key="preset.style"
+                  class="preset-item"
+                  @click="selectPreset(preset.url)"
+                >
+                  <img :src="preset.url" :alt="preset.name" />
+                  <div class="preset-info">
+                    <h4>{{ preset.name }}</h4>
+                    <p>{{ preset.description }}</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Teleport>
 
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-overlay">
@@ -295,11 +299,11 @@ export default {
   border-radius: 50%;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
 .current-avatar:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
 .avatar-preview {
@@ -321,7 +325,7 @@ export default {
   justify-content: center;
   color: white;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
   font-size: 0.875rem;
   gap: 0.5rem;
 }
@@ -340,18 +344,20 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
+  padding: 1rem;
 }
 
 .modal-content {
   background: white;
   border-radius: 1rem;
-  width: 90%;
+  width: 100%;
   max-width: 600px;
-  max-height: 80vh;
+  max-height: calc(100vh - 2rem);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .modal-header {
@@ -385,6 +391,7 @@ export default {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
+  min-height: 0;
 }
 
 .tabs {
@@ -410,14 +417,17 @@ export default {
   border-bottom-color: #3b82f6;
 }
 
+.upload-content {
+  padding-bottom: 1rem;
+}
+
 .upload-area {
   border: 2px dashed #d1d5db;
   border-radius: 0.75rem;
-  padding: 3rem 2rem;
+  padding: 2rem 1.5rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-bottom: 1.5rem;
 }
 
 .upload-area:hover {
@@ -458,6 +468,12 @@ export default {
   display: flex;
   gap: 1rem;
   justify-content: center;
+  margin-top: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+  position: sticky;
+  bottom: 0;
 }
 
 .seed-input {
@@ -496,7 +512,7 @@ export default {
 
 .preset-item:hover {
   border-color: #3b82f6;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .preset-item img {
@@ -578,9 +594,16 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+  
   .modal-content {
-    width: 95%;
-    margin: 1rem;
+    max-height: calc(100vh - 1rem);
+  }
+  
+  .modal-body {
+    padding: 1rem;
   }
   
   .preset-grid {
@@ -589,6 +612,11 @@ export default {
   
   .upload-actions {
     flex-direction: column;
+    padding: 0.75rem;
+  }
+  
+  .upload-area {
+    padding: 1.5rem 1rem;
   }
 }
 </style>

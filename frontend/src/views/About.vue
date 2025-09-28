@@ -12,8 +12,8 @@
               </svg>
             </div>
           </div>
-          <h1 class="hero-title">关于我</h1>
-          <p class="hero-subtitle">在这里分享你的故事</p>
+          <h1 class="hero-title">关于我们</h1>
+          <p class="hero-subtitle">分享思考，记录成长</p>
         </div>
       </section>
 
@@ -31,11 +31,11 @@
                 <polyline points="10,9 9,9 8,9"/>
               </svg>
             </div>
-            <h2>个人简介</h2>
+            <h2>我的故事</h2>
           </div>
           <div class="placeholder-content">
-            <p>这里可以写你的个人介绍...</p>
-            <p>分享你的故事、经历和想法。</p>
+            <p>每个人都有自己的故事，它可能来自一次偶然的感悟，一段难忘的经历，或是对生活的热爱...</p>
+            <p>在这里，分享你的故事和想法，与更多人交流。</p>
           </div>
         </section>
 
@@ -52,7 +52,7 @@
             <h2>技能专长</h2>
           </div>
           <div class="placeholder-content">
-            <p>展示你的专业技能和特长</p>
+            <p>分享你掌握的技能和专业知识，展示你的能力和经验。</p>
           </div>
         </section>
 
@@ -69,7 +69,7 @@
             <h2>工作经历</h2>
           </div>
           <div class="placeholder-content">
-            <p>分享你的工作经验和成就</p>
+            <p>每一段经历都是成长路上的重要足迹，值得被记录和珍惜。</p>
           </div>
         </section>
 
@@ -82,10 +82,10 @@
                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
               </svg>
             </div>
-            <h2>项目作品</h2>
+            <h2>我的作品</h2>
           </div>
           <div class="placeholder-content">
-            <p>展示你的项目和作品集</p>
+            <p>展示你创造的作品和项目，分享你的创作历程。</p>
           </div>
         </section>
 
@@ -101,7 +101,7 @@
             <h2>联系方式</h2>
           </div>
           <div class="placeholder-content">
-            <p>添加你的联系方式，方便读者与你交流</p>
+            <p>欢迎与我交流分享，一起探讨有趣的话题。</p>
           </div>
         </section>
 
@@ -116,8 +116,8 @@
               </svg>
             </div>
             <div>
-              <h3>自定义提示</h3>
-              <p>这是一个关于页面的模板。你可以根据需要编辑这个页面，添加你的个人信息、技能、经历等内容。</p>
+              <h3>编辑提示</h3>
+              <p>这是关于页面的模板。你可以根据自己的情况，编辑这个页面，分享你的故事、技能专长、工作经历以及作品项目。让访问者更好地了解你。</p>
             </div>
           </div>
         </section>

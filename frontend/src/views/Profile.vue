@@ -364,23 +364,7 @@ export default {
       this.user.avatar = newAvatar
       
       // 使用 useAuth 更新全局状态
-      this.updateAvatar(newAvatar)
-      
-      // 刷新用户信息以确保同步
-      await this.refreshUser()
-      
-      // 如果全局用户状态已更新，同步到本地
-      if (this.authUser) {
-        this.user = { ...this.authUser }
-      }
-      
-      // 强制刷新所有头像图片，清理缓存
-      setTimeout(() => {
-        refreshAllAvatars()
-      }, 100)
-      
-      // 强制刷新页面上的头像显示
-      this.$forceUpdate()
+      await this.updateAvatar(newAvatar)
       
       // 触发全局事件，通知其他组件更新头像
       window.dispatchEvent(new CustomEvent('avatar-updated', { 

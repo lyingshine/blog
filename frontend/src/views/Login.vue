@@ -16,21 +16,12 @@
         <!-- Header -->
         <div class="auth-header">
           <div class="auth-logo">
-            <div class="logo-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14,2 14,8 20,8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-                <polyline points="10,9 9,9 8,9"/>
-              </svg>
-            </div>
-            <span class="logo-text">Vue Blog</span>
+            <Logo size="large" :showText="true" />
           </div>
           
           <div class="auth-title">
             <h1>{{ isLogin ? '欢迎回来' : '加入我们' }}</h1>
-            <p>{{ isLogin ? '登录到你的账户继续创作' : '创建账户开始你的创作之旅' }}</p>
+            <p>{{ isLogin ? '继续你的创作之旅，分享更多想法' : '开始记录你的思考与感悟' }}</p>
           </div>
         </div>
 
@@ -69,7 +60,7 @@
                 type="text"
                 class="form-input"
                 :class="{ 'error': errors.username }"
-                placeholder="输入你的用户名"
+                placeholder="请输入用户名"
                 required
               />
               <div v-if="form.username" class="input-status">
@@ -97,7 +88,7 @@
                 type="email"
                 class="form-input"
                 :class="{ 'error': errors.email }"
-                placeholder="输入你的邮箱地址"
+                placeholder="请输入邮箱地址"
                 required
               />
               <div v-if="form.email && isValidEmail(form.email)" class="input-status">
@@ -126,7 +117,7 @@
                 :type="showPassword ? 'text' : 'password'"
                 class="form-input"
                 :class="{ 'error': errors.password }"
-                :placeholder="isLogin ? '输入你的密码' : '创建一个安全的密码'"
+                :placeholder="isLogin ? '请输入密码' : '设置密码'"
                 required
               />
               <button
@@ -170,7 +161,7 @@
                 type="password"
                 class="form-input"
                 :class="{ 'error': errors.confirmPassword }"
-                placeholder="再次输入密码"
+                placeholder="请再次输入密码"
                 required
               />
               <div v-if="form.confirmPassword && form.password === form.confirmPassword" class="input-status">
@@ -248,9 +239,13 @@
 
 <script>
 import { useAuthStore } from '../stores/auth.store'
+import Logo from '../components/Logo.vue'
 
 export default {
   name: 'Login',
+  components: {
+    Logo
+  },
   data() {
     return {
       isLogin: true,
@@ -551,27 +546,8 @@ export default {
 
 .auth-logo {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: var(--space-md);
   margin-bottom: var(--space-xl);
-}
-
-.logo-icon {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
-  border-radius: var(--radius-xl);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-white);
-}
-
-.logo-text {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--text-primary);
 }
 
 .auth-title h1 {
@@ -893,9 +869,7 @@ export default {
     padding: var(--space-xl);
   }
   
-  .logo-text {
-    display: none;
-  }
+
 }
 
 /* Particle positioning */

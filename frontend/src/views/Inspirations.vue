@@ -8,7 +8,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <span>创意分享平台</span>
+            <span>光的瞬间</span>
           </div>
           <h1 class="hero-title">
             <span class="title-line">分享你的</span>
@@ -36,7 +36,7 @@
               登录分享
             </router-link>
             <router-link to="/about" class="btn btn-outline">
-              了解更多
+              寻光之旅
             </router-link>
           </div>
         </div>

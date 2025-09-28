@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click="handleOverlayClick">
     <div class="modal-content" @click.stop>
       <div class="modal-header">
-        <h3>发布灵感</h3>
+        <h3>分享灵感</h3>
         <button @click="$emit('close')" class="close-btn">
           <i class="fas fa-times"></i>
         </button>
@@ -14,7 +14,7 @@
           <div class="form-group">
             <textarea
               v-model="form.content"
-              placeholder="分享你的想法..."
+              placeholder="分享你的想法和感悟..."
               class="content-input"
               rows="4"
               maxlength="2000"

@@ -3,17 +3,11 @@
     <div class="container">
       <div class="header-content">
         <!-- Logo -->
-        <router-link to="/" class="logo">
-          <div class="logo-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14,2 14,8 20,8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10,9 9,9 8,9"/>
-            </svg>
+        <router-link to="/" class="logo-link">
+          <Logo size="medium" :showText="true" />
+          <div class="logo-subtitle-container">
+            <span class="logo-subtitle">修筑走向自我的阶梯</span>
           </div>
-          <span class="logo-text">Vue Blog</span>
         </router-link>
 
         <!-- Desktop Navigation -->
@@ -117,6 +111,17 @@
             </div>
           </div>
 
+          <!-- Theme Toggle -->
+          <button @click="toggleTheme" class="theme-toggle-btn" :title="isDark ? '切换到亮色模式' : '切换到暗色模式'">
+            <svg v-if="isDark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+
           <!-- User Menu -->
           <div v-if="isAuthenticated" class="user-menu">
             <button @click="toggleUserMenu" class="user-avatar">
@@ -143,19 +148,6 @@
                   </svg>
                   个人设置
                 </router-link>
-                
-
-                
-                <button @click="toggleTheme" class="dropdown-item">
-                  <svg v-if="isDark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="5"/>
-                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                  </svg>
-                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                  </svg>
-                  {{ isDark ? '亮色模式' : '暗色模式' }}
-                </button>
                 
                 <div class="dropdown-divider"></div>
                 
@@ -285,9 +277,13 @@
 import { useAuthStore } from '../stores/auth.store'
 import { useUIStore } from '../stores/ui.store'
 import { getAvatarUrl } from '../utils/image-url'
+import Logo from './Logo.vue'
 
 export default {
   name: 'Header',
+  components: {
+    Logo
+  },
 
   setup() {
     const authStore = useAuthStore()
@@ -316,7 +312,7 @@ export default {
       showUserMenu: false,
       showWriteMenu: false,
       isMobileMenuOpen: false,
-      avatarRefreshKey: Date.now() // 用于强制刷新头像
+      avatarRefreshKey: 0 // 用于强制刷新头像
     }
   },
 
@@ -380,15 +376,18 @@ export default {
     },
     
     getAvatarUrl(avatarPath, username) {
-      // 在头像更新后强制刷新
+      // 只在头像刚更新时强制刷新一次
       const forceRefresh = this.avatarRefreshKey > 0
+      if (forceRefresh) {
+        // 重置刷新键，避免持续刷新
+        this.avatarRefreshKey = 0
+      }
       return getAvatarUrl(avatarPath, username, forceRefresh)
     },
     
     handleAvatarUpdated(event) {
-      // 更新刷新键以强制重新渲染头像
+      // 设置刷新键以触发一次强制刷新
       this.avatarRefreshKey = Date.now()
-
     }
   }
 }
@@ -396,7 +395,7 @@ export default {
 
 <style scoped>
 .header {
-  background: color-mix(in srgb, var(--bg-primary) 95%, transparent);
+  background: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
@@ -415,41 +414,42 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4) 0;
-  min-height: 72px;
+  padding: var(--space-3) 0;
+  min-height: 60px;
+  height: 60px;
 }
 
 /* Logo */
-.logo {
+.logo-link {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  font-weight: var(--font-weight-bold);
-  font-size: var(--text-xl);
-  color: var(--text-primary);
+  gap: var(--space-2);
   transition: all var(--transition-fast);
+  height: 44px;
 }
 
-.logo:hover {
+.logo-link:hover {
   transform: translateY(-1px);
 }
 
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, var(--color-accent) 0%, color-mix(in srgb, var(--color-accent) 80%, var(--color-primary)) 100%);
-  border-radius: var(--radius-xl);
+.logo-subtitle-container {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  height: 44px;
   justify-content: center;
-  color: var(--text-inverse);
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-fast);
 }
 
-.logo:hover .logo-icon {
-  box-shadow: var(--shadow-md);
-  transform: scale(1.05);
+.logo-subtitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+  opacity: 0.8;
+  line-height: 1.2;
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
 }
 
 /* Desktop Navigation */
@@ -462,24 +462,27 @@ export default {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 2px;
   background: var(--bg-secondary);
   border-radius: var(--radius-2xl);
-  padding: var(--space-1);
+  padding: 4px;
+  height: 44px;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-5);
+  gap: 6px;
+  padding: 8px 12px;
   border-radius: var(--radius-xl);
   font-weight: var(--font-weight-medium);
-  font-size: var(--text-sm);
+  font-size: 13px;
   color: var(--text-secondary);
   transition: all var(--transition-fast);
   position: relative;
   white-space: nowrap;
+  height: 36px;
+  line-height: 1;
 }
 
 .nav-link:hover {
@@ -496,17 +499,20 @@ export default {
 .write-btn {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-6);
+  gap: 6px;
+  padding: 8px 16px;
   background: var(--color-accent);
   color: var(--text-inverse);
   border: none;
   border-radius: var(--radius-xl);
   font-weight: var(--font-weight-semibold);
-  font-size: var(--text-sm);
+  font-size: 13px;
   transition: all var(--transition-fast);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
+  height: 44px;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .write-btn:hover {
@@ -591,7 +597,8 @@ export default {
 .user-section {
   display: flex;
   align-items: center;
-  gap: var(--space-lg);
+  gap: 12px;
+  height: 44px;
 }
 
 /* Search */
@@ -607,22 +614,26 @@ export default {
 
 .search-icon {
   position: absolute;
-  left: var(--space-4);
+  left: 12px;
   color: var(--text-tertiary);
   z-index: 1;
   transition: color var(--transition-fast);
+  width: 14px;
+  height: 14px;
 }
 
 .search-input {
-  width: 280px;
-  padding: var(--space-3) var(--space-4) var(--space-3) 2.75rem;
+  width: 240px;
+  height: 40px;
+  padding: 0 12px 0 36px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-2xl);
-  font-size: var(--text-sm);
+  font-size: 13px;
   background: var(--bg-secondary);
   color: var(--text-primary);
   transition: all var(--transition-fast);
   font-weight: var(--font-weight-medium);
+  line-height: 1;
 }
 
 .search-input:focus {
@@ -641,6 +652,38 @@ export default {
   font-weight: var(--font-weight-normal);
 }
 
+/* Theme Toggle */
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-xl);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
 /* User Menu */
 .user-menu {
   position: relative;
@@ -648,8 +691,8 @@ export default {
 
 .user-avatar {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-xl);
   border: 2px solid var(--border-color);
   overflow: hidden;
@@ -674,12 +717,12 @@ export default {
 
 .user-status {
   position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 14px;
-  height: 14px;
+  bottom: -1px;
+  right: -1px;
+  width: 12px;
+  height: 12px;
   background: var(--color-success);
-  border: 3px solid var(--bg-primary);
+  border: 2px solid var(--bg-primary);
   border-radius: 50%;
   box-shadow: var(--shadow-sm);
 }
@@ -772,15 +815,23 @@ export default {
 .login-btn {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-6);
+  gap: 6px;
+  padding: 8px 16px;
   background: var(--color-primary);
   color: var(--text-inverse);
   border-radius: var(--radius-xl);
   font-weight: var(--font-weight-semibold);
-  font-size: var(--text-sm);
+  font-size: 13px;
   transition: all var(--transition-fast);
   box-shadow: var(--shadow-sm);
+  height: 40px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.login-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .login-btn:hover {
@@ -794,14 +845,19 @@ export default {
   display: none;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
   color: var(--text-secondary);
   cursor: pointer;
   border-radius: var(--radius-xl);
   transition: all var(--transition-fast);
+}
+
+.mobile-menu-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .mobile-menu-btn:hover {
@@ -983,6 +1039,11 @@ export default {
   .header-content {
     min-height: 64px;
   }
+  
+  .theme-toggle-btn {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 @media (max-width: 639px) {
@@ -1010,8 +1071,14 @@ export default {
   }
 }
 
+@media (max-width: 639px) {
+  .logo-subtitle {
+    display: none;
+  }
+}
+
 @media (max-width: 479px) {
-  .logo-text {
+  .logo-subtitle-container {
     display: none;
   }
   

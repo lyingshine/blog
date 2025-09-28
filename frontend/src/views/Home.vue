@@ -8,13 +8,13 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
-            <span>现代博客平台</span>
+            <span>心里裹着光的人</span>
           </div>
           <h1 class="hero-title">
-            <span class="title-line">分享你的</span>
-            <span class="title-highlight">精彩故事</span>
+            <span class="title-line">世界</span>
+            <span class="title-highlight">很宽</span>
           </h1>
-          <p class="hero-subtitle">在这里记录想法，分享见解，连接世界</p>
+          <p class="hero-subtitle">出发就走得到，来时的路不会被剪断</p>
           <div class="hero-actions">
             <router-link v-if="!isAuthenticated" to="/login" class="btn btn-primary">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -22,14 +22,14 @@
                 <polyline points="10,17 15,12 10,7"/>
                 <line x1="15" y1="12" x2="3" y2="12"/>
               </svg>
-              开始创作
+              踏上探索之路
             </router-link>
             <router-link v-else to="/create" class="btn btn-primary">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
-              写新文章
+              开始写作
             </router-link>
             <router-link to="/about" class="btn btn-outline">
               了解更多
@@ -44,7 +44,7 @@
       <div class="container">
         <div class="loading">
           <div class="spinner"></div>
-          <p>加载精彩内容中...</p>
+          <p>加载中...</p>
           <p style="font-size: 12px; color: #666; margin-top: 10px;">
             Loading状态: {{ loading }}
           </p>
@@ -57,7 +57,7 @@
       <div class="container">
         <div class="section-header">
           <h2 class="section-title">精选文章</h2>
-          <p class="section-subtitle">发现最受欢迎的内容</p>
+          <p class="section-subtitle">优质内容推荐</p>
         </div>
         <div class="articles-grid">
           <article 
@@ -93,7 +93,7 @@
       <div class="container">
         <div class="section-header">
           <h2 class="section-title">最新文章</h2>
-          <p class="section-subtitle">探索最新发布的内容</p>
+          <p class="section-subtitle">最近发布的内容</p>
         </div>
         <div class="articles-grid recent-grid">
           <article 
@@ -127,7 +127,7 @@
               <path d="M3 12h18"/>
               <path d="M3 18h18"/>
             </svg>
-            查看所有文章
+            查看全部文章
           </router-link>
         </div>
       </div>
@@ -148,14 +148,14 @@
               </svg>
             </div>
           </div>
-          <h3 class="empty-title">开启你的创作之旅</h3>
+          <h3 class="empty-title">开始创作</h3>
           <p v-if="!isAuthenticated" class="empty-description">
-            这里还没有任何文章。<br>
-            加入我们，成为第一个分享故事的作者！
+            这里还没有任何内容。<br>
+            成为第一个分享想法的人吧！
           </p>
           <p v-else class="empty-description">
             还没有发布任何文章。<br>
-            现在就开始创作你的第一篇博客吧！
+            开始写下你的第一篇文章吧！
           </p>
           <div class="empty-actions">
             <router-link v-if="!isAuthenticated" to="/login" class="btn btn-primary">
@@ -164,7 +164,7 @@
                 <polyline points="10,17 15,12 10,7"/>
                 <line x1="15" y1="12" x2="3" y2="12"/>
               </svg>
-              立即加入
+              立即注册
             </router-link>
             <router-link v-else to="/create" class="btn btn-primary">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -5,19 +5,10 @@
         <!-- Brand Section -->
         <div class="footer-brand">
           <div class="brand-logo">
-            <div class="logo-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14,2 14,8 20,8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-                <polyline points="10,9 9,9 8,9"/>
-              </svg>
-            </div>
-            <span class="brand-name">Vue Blog</span>
+            <Logo size="large" :showText="true" />
           </div>
           <p class="brand-description">
-            现代化的博客平台，让每个人都能分享自己的故事和见解。
+            修筑走向自我的阶梯，在探索中发现真实的自己。
           </p>
           <div class="social-links">
             <a href="#" class="social-link" aria-label="GitHub">
@@ -63,15 +54,15 @@
             <ul class="nav-list">
               <li><router-link v-if="isAuthenticated" to="/create" class="nav-link">写文章</router-link></li>
               <li><router-link v-if="isAuthenticated" to="/my-posts" class="nav-link">我的文章</router-link></li>
-              <li><router-link v-if="!isAuthenticated" to="/login" class="nav-link">登录</router-link></li>
-              <li><a href="#" class="nav-link">RSS订阅</a></li>
+              <li><router-link v-if="!isAuthenticated" to="/login" class="nav-link">登录注册</router-link></li>
+              <li><a href="#" class="nav-link">订阅更新</a></li>
             </ul>
           </div>
 
           <div class="nav-section">
-            <h4 class="nav-title">支持</h4>
+            <h4 class="nav-title">帮助</h4>
             <ul class="nav-list">
-              <li><a href="#" class="nav-link">帮助中心</a></li>
+              <li><a href="#" class="nav-link">使用指南</a></li>
               <li><a href="#" class="nav-link">隐私政策</a></li>
               <li><a href="#" class="nav-link">服务条款</a></li>
               <li><a href="#" class="nav-link">联系我们</a></li>
@@ -83,14 +74,14 @@
         <div class="newsletter">
           <h4 class="newsletter-title">订阅更新</h4>
           <p class="newsletter-description">
-            订阅我们的邮件列表，获取最新文章和更新通知。
+            订阅我们的内容更新，第一时间获取最新文章和动态。
           </p>
           <form @submit.prevent="handleSubscribe" class="newsletter-form">
             <div class="input-group">
               <input 
                 v-model="email"
                 type="email" 
-                placeholder="输入你的邮箱"
+                placeholder="请输入邮箱地址"
                 class="newsletter-input"
                 required
               />
@@ -109,7 +100,7 @@
       <div class="footer-bottom">
         <div class="footer-info">
           <p class="copyright">
-            © {{ currentYear }} Vue Blog. 保留所有权利。
+            © {{ currentYear }} 寻我. 记录思考，分享智慧。
           </p>
           <p class="powered-by">
             由 
@@ -127,7 +118,7 @@
           </div>
           <div class="stat-item">
             <span class="stat-number">{{ userCount }}</span>
-            <span class="stat-label">位作者</span>
+            <span class="stat-label">位用户</span>
           </div>
         </div>
       </div>
@@ -144,9 +135,13 @@
 
 <script>
 import { useAuthStore } from '../stores/auth.store'
+import Logo from './Logo.vue'
 
 export default {
   name: 'Footer',
+  components: {
+    Logo
+  },
   data() {
     return {
       email: '',
@@ -188,7 +183,7 @@ export default {
 
 <style scoped>
 .footer {
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  background: var(--bg-primary);
   color: var(--text-primary);
   position: relative;
   overflow: hidden;
@@ -217,35 +212,14 @@ export default {
 }
 
 .brand-logo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
   margin-bottom: var(--space-6);
-}
-
-.logo-icon {
-  width: 52px;
-  height: 52px;
-  background: linear-gradient(135deg, var(--color-accent) 0%, color-mix(in srgb, var(--color-accent) 80%, var(--color-primary)) 100%);
-  border-radius: var(--radius-2xl);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-inverse);
-  box-shadow: var(--shadow-md);
-}
-
-.brand-name {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
 }
 
 .brand-description {
   color: var(--text-secondary);
-  line-height: var(--line-height-relaxed);
-  margin-bottom: var(--space-8);
-  font-size: var(--text-base);
+  line-height: 1.6;
+  margin-bottom: var(--space-6);
+  font-size: 14px;
   font-weight: var(--font-weight-medium);
 }
 
@@ -255,8 +229,8 @@ export default {
 }
 
 .social-link {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   background: var(--bg-elevated);
   border-radius: var(--radius-xl);
   display: flex;
@@ -268,6 +242,11 @@ export default {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
+}
+
+.social-link svg {
+  width: 16px;
+  height: 16px;
 }
 
 .social-link:hover {
@@ -284,11 +263,12 @@ export default {
 }
 
 .nav-title {
-  font-size: var(--text-lg);
+  font-size: var(--text-base);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-4);
   position: relative;
+  line-height: 1.4;
 }
 
 .nav-title::after {
@@ -308,18 +288,20 @@ export default {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 8px;
 }
 
 .nav-link {
   color: var(--text-secondary);
   font-weight: var(--font-weight-medium);
-  font-size: var(--text-sm);
+  font-size: 13px;
   transition: all var(--transition-fast);
   display: inline-block;
   position: relative;
-  padding: var(--space-2) 0;
+  padding: 6px 0;
   border-radius: var(--radius-md);
+  line-height: 1.3;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -370,17 +352,18 @@ export default {
 }
 
 .newsletter-title {
-  font-size: var(--text-lg);
+  font-size: var(--text-base);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
+  line-height: 1.4;
 }
 
 .newsletter-description {
   color: var(--text-secondary);
-  font-size: var(--text-sm);
-  line-height: var(--line-height-relaxed);
-  margin-bottom: var(--space-6);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: var(--space-4);
   font-weight: var(--font-weight-medium);
 }
 
@@ -404,12 +387,14 @@ export default {
 
 .newsletter-input {
   flex: 1;
-  padding: var(--space-4) var(--space-5);
+  padding: 10px 12px;
   border: none;
   background: transparent;
   color: var(--text-primary);
-  font-size: var(--text-sm);
+  font-size: 13px;
   font-weight: var(--font-weight-medium);
+  line-height: 1;
+  height: 40px;
 }
 
 .newsletter-input:focus {
@@ -422,7 +407,7 @@ export default {
 }
 
 .newsletter-btn {
-  padding: var(--space-4) var(--space-5);
+  padding: 10px 12px;
   background: var(--color-accent);
   color: var(--text-inverse);
   border: none;
@@ -431,7 +416,13 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 52px;
+  min-width: 40px;
+  height: 40px;
+}
+
+.newsletter-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .newsletter-btn:hover {
@@ -444,10 +435,11 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-8) 0;
+  padding: var(--space-6) 0;
   border-top: 1px solid var(--border-color);
   position: relative;
   z-index: 2;
+  min-height: 60px;
 }
 
 .footer-info {
@@ -456,15 +448,17 @@ export default {
 
 .copyright {
   color: var(--text-tertiary);
-  font-size: var(--text-sm);
+  font-size: 13px;
   font-weight: var(--font-weight-medium);
   margin-bottom: var(--space-2);
+  line-height: 1.4;
 }
 
 .powered-by {
   color: var(--text-tertiary);
-  font-size: var(--text-xs);
+  font-size: 11px;
   font-weight: var(--font-weight-medium);
+  line-height: 1.3;
 }
 
 .tech-link {
@@ -500,33 +494,37 @@ export default {
 
 .stat-item {
   text-align: center;
-  padding: var(--space-4) var(--space-6);
+  padding: 12px 16px;
   background: var(--bg-elevated);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  min-width: 80px;
 }
 
 .stat-number {
   display: block;
-  font-size: var(--text-2xl);
+  font-size: var(--text-xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-accent);
-  margin-bottom: var(--space-1);
+  margin-bottom: 4px;
   background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-primary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  line-height: 1.2;
 }
 
 .stat-label {
-  font-size: var(--text-xs);
+  font-size: 11px;
   color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 /* Decorative Elements */

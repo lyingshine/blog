@@ -22,7 +22,7 @@
         <div v-if="showMenu" class="action-menu">
           <button @click="handleDelete" class="delete-btn">
             <i class="fas fa-trash"></i>
-            删除
+            熄灭这束光
           </button>
         </div>
       </div>
@@ -83,7 +83,7 @@
         
         <button @click="handleShare" class="interaction-btn share-btn">
           <i class="fas fa-share"></i>
-          <span>分享</span>
+          <span>传递光</span>
         </button>
       </div>
     </div>
@@ -102,7 +102,7 @@
     <div v-if="showShareModal" class="share-modal" @click="closeShareModal">
       <div class="share-content" @click.stop>
         <div class="share-header">
-          <h3>转发灵感</h3>
+          <h3>传递这束光</h3>
           <button @click="closeShareModal" class="close-btn">
             <i class="fas fa-times"></i>
           </button>
@@ -126,7 +126,7 @@
         <div class="share-input">
           <textarea 
             v-model="shareContent"
-            placeholder="说点什么..."
+            placeholder="为这束光添加你的感悟..."
             class="share-field"
             rows="3"
           ></textarea>
@@ -143,7 +143,7 @@
             class="confirm-btn"
           >
             <i v-if="sharing" class="fas fa-spinner fa-spin"></i>
-            <span>{{ sharing ? '转发中...' : '转发' }}</span>
+            <span>{{ sharing ? '传递中...' : '传递光' }}</span>
           </button>
         </div>
       </div>
