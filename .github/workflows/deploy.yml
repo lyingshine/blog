@@ -13,41 +13,6 @@ jobs:
   deploy:
     runs-on: [self-hosted, Linux, X64]
     steps:
-      - name: Configure Git Network
-        run: |
-          git config --global http.version HTTP/1.1
-          git config --global http.lowSpeedLimit 1000
-          git config --global http.lowSpeedTime 60
-
-      - name: Checkout
-        id: checkout
-        continue-on-error: true
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          ref: ${{ github.sha }}
-
-      - name: Fallback Download Source Tarball
-        if: steps.checkout.outcome == 'failure'
-        run: |
-          set -euo pipefail
-          archive_url="https://codeload.github.com/${{ github.repository }}/tar.gz/${{ github.sha }}"
-
-          for i in 1 2 3 4 5; do
-            echo "Download attempt $i..."
-            if curl -L --fail --connect-timeout 20 --retry 2 --retry-delay 2 -o source.tar.gz "$archive_url"; then
-              break
-            fi
-            if [ "$i" -eq 5 ]; then
-              echo "Failed to download source after retries."
-              exit 1
-            fi
-            sleep $((i * 2))
-          done
-
-          tar -xzf source.tar.gz --strip-components=1
-          rm -f source.tar.gz
-
       - name: Show commit
         run: echo "Deploying commit $GITHUB_SHA"
 
