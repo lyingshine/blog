@@ -1,8 +1,6 @@
-const CACHE_NAME = 'myself-pwa-v2'
+const CACHE_NAME = 'myself-pwa-v3'
 const OFFLINE_URL = '/offline.html'
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
   '/manifest.webmanifest',
   '/favicon.svg',
   '/pwa-icon.svg',
@@ -59,16 +57,13 @@ self.addEventListener('fetch', (event) => {
 
   if (['style', 'script', 'font', 'image'].includes(request.destination)) {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) {
-          return cached
-        }
-        return fetch(request).then((response) => {
+      fetch(request)
+        .then((response) => {
           const responseClone = response.clone()
           caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone))
           return response
         })
-      })
+        .catch(() => caches.match(request))
     )
     return
   }
