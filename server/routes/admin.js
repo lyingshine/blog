@@ -2,6 +2,8 @@
 const router = express.Router()
 const si = require('systeminformation')
 const os = require('os')
+const fs = require('fs')
+const path = require('path')
 const { readPool, writePool } = require('../db/pool')
 const pool = require('../db/pool')
 const cache = require('../utils/cache')
@@ -10,6 +12,44 @@ const telemetry = require('../utils/telemetry')
 const { authMiddleware, requireAdmin } = require('../middleware/auth')
 
 router.use(authMiddleware, requireAdmin)
+
+const LOG_DIR = path.join(__dirname, '..', 'logs')
+const LOG_TYPE_MAP = {
+  out: 'server.out.log',
+  err: 'server.err.log'
+}
+
+async function readTailLines(filePath, lineCount = 120) {
+  const normalizedCount = Math.max(10, Math.min(400, Number(lineCount) || 120))
+  const estimatedBytes = Math.max(32 * 1024, Math.min(1024 * 1024, normalizedCount * 280))
+  let fh
+
+  try {
+    fh = await fs.promises.open(filePath, 'r')
+    const stat = await fh.stat()
+    if (!stat.size) return { lines: [], size: 0, mtimeMs: stat.mtimeMs, exists: true }
+
+    const toRead = Math.min(stat.size, estimatedBytes)
+    const start = Math.max(0, stat.size - toRead)
+    const buffer = Buffer.alloc(toRead)
+    await fh.read(buffer, 0, toRead, start)
+
+    const text = buffer.toString('utf8')
+    const lines = text
+      .split(/\r?\n/)
+      .filter((line) => line.length > 0)
+      .slice(-normalizedCount)
+
+    return { lines, size: stat.size, mtimeMs: stat.mtimeMs, exists: true }
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      return { lines: [], size: 0, mtimeMs: 0, exists: false }
+    }
+    throw error
+  } finally {
+    if (fh) await fh.close()
+  }
+}
 
 
 const history = {
@@ -161,6 +201,38 @@ router.get('/metrics', authMiddleware, async (req, res) => {
   try {
     const metrics = await getMetrics()
     res.json(metrics)
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.get('/logs', authMiddleware, async (req, res) => {
+  try {
+    const type = String(req.query?.type || 'both').toLowerCase()
+    const lines = Number(req.query?.lines || 120)
+    const wantOut = type === 'out' || type === 'both'
+    const wantErr = type === 'err' || type === 'both'
+
+    if (!wantOut && !wantErr) {
+      return res.status(400).json({ error: 'Invalid type. Use out/err/both.' })
+    }
+
+    const outPath = path.join(LOG_DIR, LOG_TYPE_MAP.out)
+    const errPath = path.join(LOG_DIR, LOG_TYPE_MAP.err)
+    const [stdout, stderr] = await Promise.all([
+      wantOut ? readTailLines(outPath, lines) : Promise.resolve(null),
+      wantErr ? readTailLines(errPath, lines) : Promise.resolve(null)
+    ])
+
+    res.json({
+      type,
+      lines: Math.max(10, Math.min(400, Number(lines) || 120)),
+      timestamp: Date.now(),
+      sources: {
+        out: stdout,
+        err: stderr
+      }
+    })
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' })
   }

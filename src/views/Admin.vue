@@ -285,6 +285,30 @@
             <span>命中 {{ num(metrics.cache.hits) }} / 未命中 {{ num(metrics.cache.misses) }}</span>
           </div>
         </article>
+
+        <article class="panel-card wide-panel logs-panel">
+          <header class="panel-header">
+            <div>
+              <p class="section-kicker">后端输出</p>
+              <h3>服务器日志</h3>
+            </div>
+            <div class="log-actions">
+              <div class="log-switch">
+                <button type="button" class="log-switch-btn" :class="{ active: logView === 'both' }" @click="logView = 'both'">全部</button>
+                <button type="button" class="log-switch-btn" :class="{ active: logView === 'out' }" @click="logView = 'out'">stdout</button>
+                <button type="button" class="log-switch-btn" :class="{ active: logView === 'err' }" @click="logView = 'err'">stderr</button>
+              </div>
+              <button class="ghost-button" :disabled="logsLoading" @click="refreshServerLogs">
+                {{ logsLoading ? "刷新中..." : "刷新日志" }}
+              </button>
+            </div>
+          </header>
+          <p class="log-meta">最近 {{ num(serverLogs.lines) }} 行 · 更新时间 {{ logUpdatedAt }}</p>
+          <div class="log-shell" v-if="renderedLogText">
+            <pre class="log-content">{{ renderedLogText }}</pre>
+          </div>
+          <p v-else class="empty-state">暂无日志输出，或日志文件还未生成。</p>
+        </article>
       </section>
     </template>
 
@@ -359,7 +383,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useAuthStore } from "../stores/auth";
 import apiService from "../api";
 
@@ -370,6 +394,19 @@ const selectedPresetId = ref("");
 const stagedPresetId = ref("");
 const savingConfig = ref(false);
 const simulatorActionLoading = ref("");
+const logView = ref("both");
+const logsLoading = ref(false);
+const LOG_LINE_COUNT = 120;
+
+const serverLogs = ref({
+  type: "both",
+  lines: LOG_LINE_COUNT,
+  timestamp: 0,
+  sources: {
+    out: { lines: [], size: 0, mtimeMs: 0, exists: false },
+    err: { lines: [], size: 0, mtimeMs: 0, exists: false }
+  }
+});
 
 const metrics = ref({
   cpu: { usage: 0, cores: 0, model: "", history: [] },
@@ -512,6 +549,53 @@ const audienceMix = computed(() => {
 });
 
 const recentSessions = computed(() => (activity.value.recentSessions || []).slice().reverse().slice(0, 12));
+const renderedLogText = computed(() => {
+  const outLines = serverLogs.value.sources?.out?.lines || [];
+  const errLines = serverLogs.value.sources?.err?.lines || [];
+
+  if (logView.value === "out") return outLines.join("\n");
+  if (logView.value === "err") return errLines.join("\n");
+
+  const chunks = [];
+  if (outLines.length) {
+    chunks.push("[stdout]", ...outLines);
+  }
+  if (errLines.length) {
+    if (chunks.length) chunks.push("");
+    chunks.push("[stderr]", ...errLines);
+  }
+
+  return chunks.join("\n");
+});
+
+const logUpdatedAt = computed(() => {
+  const timestamp = Number(serverLogs.value.timestamp || 0);
+  if (!timestamp) return "未更新";
+  return new Date(timestamp).toLocaleString("zh-CN", { hour12: false });
+});
+
+async function fetchServerLogs({ silent = true } = {}) {
+  if (!silent) logsLoading.value = true;
+
+  try {
+    const query = new URLSearchParams({
+      type: logView.value,
+      lines: String(LOG_LINE_COUNT)
+    }).toString();
+    const data = await apiService.request(`/admin/logs?${query}`);
+    if (data?.sources) {
+      serverLogs.value = data;
+    }
+  } catch (err) {
+    console.error("fetch logs failed", err);
+  } finally {
+    if (!silent) logsLoading.value = false;
+  }
+}
+
+function refreshServerLogs() {
+  return fetchServerLogs({ silent: false });
+}
 
 async function fetchLoadConfig() {
   try {
@@ -536,16 +620,29 @@ async function fetchLoadConfig() {
 function startPolling() {
   async function fetchData() {
     try {
-      const [mRes, aRes] = await Promise.all([
+      const logQuery = new URLSearchParams({
+        type: logView.value,
+        lines: String(LOG_LINE_COUNT)
+      }).toString();
+      const [mRes, aRes, lRes] = await Promise.allSettled([
         apiService.request("/admin/metrics"),
-        apiService.request("/admin/activity")
+        apiService.request("/admin/activity"),
+        apiService.request(`/admin/logs?${logQuery}`)
       ]);
-      if (mRes) {
-        metrics.value = mRes;
+
+      if (mRes.status === "fulfilled" && mRes.value) {
+        metrics.value = mRes.value;
         selectedPresetId.value = metrics.value.simulator?.presetId || selectedPresetId.value;
         syncStagedPreset();
       }
-      if (aRes) activity.value = aRes;
+
+      if (aRes.status === "fulfilled" && aRes.value) {
+        activity.value = aRes.value;
+      }
+
+      if (lRes.status === "fulfilled" && lRes.value?.sources) {
+        serverLogs.value = lRes.value;
+      }
     } catch (err) {
       console.error("admin poll failed", err);
     }
@@ -657,6 +754,10 @@ onUnmounted(() => {
   if (intervalId) clearInterval(intervalId);
 });
 
+watch(logView, () => {
+  fetchServerLogs({ silent: false });
+});
+
 onMounted(async () => {
   if (!authStore.isLoggedIn && authStore.token) {
     await authStore.fetchUser();
@@ -668,6 +769,7 @@ onMounted(async () => {
 
   startPolling();
   fetchLoadConfig();
+  fetchServerLogs({ silent: false });
 });
 </script>
 
@@ -1363,6 +1465,63 @@ onMounted(async () => {
   gap: 10px 16px;
 }
 
+.logs-panel {
+  gap: 14px;
+}
+
+.log-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.log-switch {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface-elevated);
+}
+
+.log-switch-btn {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.log-switch-btn.active {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.log-meta {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.log-shell {
+  max-height: 340px;
+  overflow: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid #23344a;
+  background: #0f172a;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+}
+
+.log-content {
+  margin: 0;
+  padding: 14px 16px;
+  font-family: Consolas, "Courier New", Menlo, Monaco, monospace;
+  font-size: 12px;
+  line-height: 1.56;
+  color: #dbe7ff;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .sessions-grid {
   grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
 }
@@ -1446,6 +1605,21 @@ onMounted(async () => {
   .tab-bar {
     display: flex;
     width: 100%;
+  }
+
+  .log-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .log-switch {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .log-switch-btn {
+    flex: 1;
   }
 
   .tab-button {
