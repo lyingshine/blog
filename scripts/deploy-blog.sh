@@ -14,6 +14,9 @@ echo "[deploy] start $(date '+%F %T')"
 
 mkdir -p "$APP_DIR"
 
+# Allow git operations when repository owner differs from current runner user.
+git config --global --add safe.directory "$APP_DIR" || true
+
 # Backup .env to avoid overwrite by reset.
 if [ -f "$ENV_FILE" ]; then
   cp "$ENV_FILE" "$ENV_BAK"
