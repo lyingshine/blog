@@ -9,7 +9,7 @@
             <path d="M2 12l10 5 10-5"/>
           </svg>
         </span>
-        <span class="logo-text">Blog</span>
+        <span class="logo-text">MySelf</span>
       </router-link>
 
       <div class="nav-right">

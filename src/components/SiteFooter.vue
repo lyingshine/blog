@@ -11,7 +11,7 @@
                 <path d="M2 12l10 5 10-5"/>
               </svg>
             </span>
-            <span>Blog</span>
+            <span>MySelf</span>
           </router-link>
           <p class="footer-tagline">记录想法、生活片段与长期项目，让表达被长期看见。</p>
         </div>
@@ -36,7 +36,7 @@
       </div>
 
       <div class="footer-bottom">
-        <p class="copyright">© {{ currentYear }} Blog. 持续记录，持续生长</p>
+        <p class="copyright">© {{ currentYear }} MySelf. 持续记录，持续生长</p>
         <p class="tech-stack">Designed for everyday sharing</p>
       </div>
     </div>

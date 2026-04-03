@@ -1,7 +1,7 @@
 {
-  "name": "Blog",
-  "short_name": "Blog",
-  "description": "A personal blog built with Vue and Vite.",
+  "name": "MySelf",
+  "short_name": "MySelf",
+  "description": "A personal site for thoughts, updates, and long-term projects.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

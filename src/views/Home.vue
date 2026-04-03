@@ -163,7 +163,7 @@ const heroTitle = computed(() => {
   if (authStore.isLoggedIn) {
     return ''
   }
-  return '欢迎来到 Blog'
+  return '欢迎来到 MySelf'
 })
 
 const heroHeadline = computed(() => {
