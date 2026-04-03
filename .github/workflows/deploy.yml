@@ -1,0 +1,102 @@
+name: Deploy To Server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      APP_DIR: /opt/blog
+      APP_NAME: blog-api
+      APP_PORT: "3000"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      - name: Install frontend deps
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install backend deps
+        run: npm --prefix server ci --omit=dev
+
+      - name: Create release archive
+        run: |
+          tar -czf blog-release.tar.gz dist server
+
+      - name: Upload release to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          passphrase: ${{ secrets.SERVER_SSH_PASSPHRASE }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          source: blog-release.tar.gz
+          target: /tmp
+
+      - name: Deploy and restart service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          passphrase: ${{ secrets.SERVER_SSH_PASSPHRASE }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            APP_DIR="${{ env.APP_DIR }}"
+            APP_NAME="${{ env.APP_NAME }}"
+            APP_PORT="${{ env.APP_PORT }}"
+            RELEASE="/tmp/blog-release.tar.gz"
+            TMP_DIR="/tmp/blog-release"
+
+            mkdir -p "$APP_DIR"
+            rm -rf "$TMP_DIR"
+            mkdir -p "$TMP_DIR"
+            tar -xzf "$RELEASE" -C "$TMP_DIR"
+
+            # Preserve server .env while hard-overwriting code.
+            if [ -f "$APP_DIR/server/.env" ]; then
+              cp "$APP_DIR/server/.env" /tmp/blog-server.env
+            fi
+
+            rm -rf "$APP_DIR/dist" "$APP_DIR/server"
+            mv "$TMP_DIR/dist" "$APP_DIR/dist"
+            mv "$TMP_DIR/server" "$APP_DIR/server"
+
+            if [ -f /tmp/blog-server.env ]; then
+              mv /tmp/blog-server.env "$APP_DIR/server/.env"
+            fi
+
+            cd "$APP_DIR/server"
+            npm ci --omit=dev
+
+            if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
+              pm2 restart "$APP_NAME" --update-env
+            else
+              NODE_ENV=production PORT="$APP_PORT" pm2 start index.js --name "$APP_NAME" --time
+            fi
+
+            pm2 save
+
+            rm -rf "$TMP_DIR" "$RELEASE"

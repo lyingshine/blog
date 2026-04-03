@@ -1,14 +1,20 @@
-﻿const mysql = require('mysql2/promise')
+const mysql = require('mysql2/promise')
 
 const READ_POOL_LIMIT = Math.max(2, Number(process.env.DB_READ_POOL_LIMIT || 20))
 const WRITE_POOL_LIMIT = Math.max(1, Number(process.env.DB_WRITE_POOL_LIMIT || 10))
 
+const DB_HOST = process.env.DB_HOST || '127.0.0.1'
+const DB_PORT = Number(process.env.DB_PORT || 3306)
+const DB_USER = process.env.DB_USER || 'root'
+const DB_PASSWORD = process.env.DB_PASSWORD || ''
+const DB_NAME = process.env.DB_NAME || 'blog_db'
+
 const writePool = mysql.createPool({
-  host: 'localhost',
-  port: 3306,
-  user: 'root',
-  password: '132014',
-  database: 'blog_db',
+  host: DB_HOST,
+  port: DB_PORT,
+  user: DB_USER,
+  password: DB_PASSWORD,
+  database: DB_NAME,
   waitForConnections: true,
   connectionLimit: WRITE_POOL_LIMIT,
   queueLimit: 0,
@@ -20,11 +26,11 @@ const writePool = mysql.createPool({
 })
 
 const readPool = mysql.createPool({
-  host: 'localhost',
-  port: 3306,
-  user: 'root',
-  password: '132014',
-  database: 'blog_db',
+  host: DB_HOST,
+  port: DB_PORT,
+  user: DB_USER,
+  password: DB_PASSWORD,
+  database: DB_NAME,
   waitForConnections: true,
   connectionLimit: READ_POOL_LIMIT,
   queueLimit: 0,
