@@ -149,6 +149,21 @@ const updateUserProfile = async (id, payload = {}) => {
   return findById(id)
 }
 
+const updateUserAvatar = async (id, avatar) => {
+  await ensureUserSchema()
+  const normalizedAvatar = trimField(avatar, 300)
+
+  await pool.write('UPDATE users SET avatar = ? WHERE id = ?', [normalizedAvatar, id])
+
+  const cached = newUsers.find((user) => user.id === id)
+  if (cached) {
+    cached.avatar = normalizedAvatar
+    persistNewUsers()
+  }
+
+  return findById(id)
+}
+
 module.exports = {
   findByUsername,
   findByEmail,
@@ -157,5 +172,6 @@ module.exports = {
   verifyPassword,
   sanitizeUser,
   getUsers,
-  updateUserProfile
+  updateUserProfile,
+  updateUserAvatar
 }

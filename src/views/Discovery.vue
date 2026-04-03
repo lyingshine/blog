@@ -77,7 +77,15 @@
       <div class="statuses-list">
         <div v-for="status in paginatedStatuses" :key="status.id" class="status-card">
             <div class="status-header">
-              <div class="status-avatar">{{ status.author_avatar || 'U' }}</div>
+              <div class="status-avatar">
+                <img
+                  v-if="isImageAvatar(status.author_avatar)"
+                  :src="status.author_avatar"
+                  alt="avatar"
+                  class="avatar-image"
+                />
+                <span v-else>{{ getAvatarText(status.author_avatar, status.author_username) }}</span>
+              </div>
               <div class="status-user-info">
                 <span class="status-username">{{ status.author_username || '未知用户' }}</span>
                 <span class="status-date">{{ formatStatusDate(status.created_at || status.date) }}</span>
@@ -125,7 +133,15 @@
 
           <div v-else class="feed-status-card">
             <div class="feed-status-header">
-              <div class="feed-status-avatar">{{ item.author_avatar || 'U' }}</div>
+              <div class="feed-status-avatar">
+                <img
+                  v-if="isImageAvatar(item.author_avatar)"
+                  :src="item.author_avatar"
+                  alt="avatar"
+                  class="avatar-image"
+                />
+                <span v-else>{{ getAvatarText(item.author_avatar, item.author_username) }}</span>
+              </div>
               <div class="feed-status-user-info">
                 <span class="feed-status-username">{{ item.author_username || '未知用户' }}</span>
                 <span class="feed-status-date">{{ formatStatusDate(item.created_at || item.date) }}</span>
@@ -216,6 +232,19 @@ const paginatedFeed = computed(() => {
 })
 
 const totalFeedPages = computed(() => Math.ceil(mixedFeed.value.length / perPage))
+
+const isImageAvatar = (avatar) =>
+  typeof avatar === 'string' &&
+  /^(https?:\/\/|\/uploads\/|data:image\/)/i.test(avatar)
+
+const getAvatarText = (avatar, username) => {
+  if (isImageAvatar(avatar)) {
+    return (username || 'U').charAt(0).toUpperCase()
+  }
+  const trimmed = typeof avatar === 'string' ? avatar.trim() : ''
+  if (trimmed) return trimmed.charAt(0).toUpperCase()
+  return (username || 'U').charAt(0).toUpperCase()
+}
 
 const formatDate = (dateStr) => {
   const date = new Date(dateStr)
@@ -682,6 +711,7 @@ onMounted(async () => {
   font-size: 14px;
   font-weight: 600;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .status-user-info {
@@ -845,6 +875,14 @@ onMounted(async () => {
   font-size: 13px;
   font-weight: 600;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .feed-status-user-info {

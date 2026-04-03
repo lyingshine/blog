@@ -1,10 +1,24 @@
-const express = require('express')
+ï»¿const express = require('express')
+const fs = require('fs')
+const path = require('path')
 const router = express.Router()
-const { getUsers, findById, sanitizeUser, updateUserProfile } = require('../data/users')
+const { getUsers, findById, sanitizeUser, updateUserProfile, updateUserAvatar } = require('../data/users')
 const { getDailyPlanner, saveDailyPlanner } = require('../data/dailyPlanner')
 const { authMiddleware } = require('../middleware/auth')
 
-// GET /api/users - »ñÈ¡ÓÃ»§ÁĞ±í£¨·ÖÒ³£©
+const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024
+const AVATAR_DATA_URL_PATTERN = /^data:image\/(png|jpe?g|webp|gif);base64,/i
+
+function resolveAvatarExt(mimeType = '') {
+  const lowerMime = String(mimeType).toLowerCase()
+  if (lowerMime.includes('png')) return 'png'
+  if (lowerMime.includes('jpeg') || lowerMime.includes('jpg')) return 'jpg'
+  if (lowerMime.includes('webp')) return 'webp'
+  if (lowerMime.includes('gif')) return 'gif'
+  return 'png'
+}
+
+// GET /api/users - è·å–ç”¨æˆ·åˆ—è¡¨ï¼ˆåˆ†é¡µï¼‰
 router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 50 } = req.query
@@ -12,58 +26,109 @@ router.get('/', async (req, res) => {
     res.json({ success: true, data: result })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ success: false, message: '»ñÈ¡ÓÃ»§ÁĞ±íÊ§°Ü' })
+    res.status(500).json({ success: false, message: 'è·å–ç”¨æˆ·åˆ—è¡¨å¤±è´¥' })
   }
 })
 
-// PUT /api/users/me/profile - ¸üĞÂµ±Ç°ÓÃ»§¸öÈË×ÊÁÏ
+// PUT /api/users/me/profile - æ›´æ–°å½“å‰ç”¨æˆ·ä¸ªäººèµ„æ–™
 router.put('/me/profile', authMiddleware, async (req, res) => {
   try {
     const user = await updateUserProfile(req.user.id, req.body || {})
     res.json({
       success: true,
-      message: '¸öÈË×ÊÁÏÒÑ¸üĞÂ',
+      message: 'ä¸ªäººèµ„æ–™å·²æ›´æ–°',
       data: sanitizeUser(user)
     })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ success: false, message: '¸üĞÂ¸öÈË×ÊÁÏÊ§°Ü' })
+    res.status(500).json({ success: false, message: 'æ›´æ–°ä¸ªäººèµ„æ–™å¤±è´¥' })
   }
 })
 
-// GET /api/users/me/planner - »ñÈ¡µ±Ç°ÓÃ»§Ã¿ÈÕ°²ÅÅ
+// PUT /api/users/me/avatar - ä¸Šä¼ å½“å‰ç”¨æˆ·å¤´åƒ
+router.put('/me/avatar', authMiddleware, async (req, res) => {
+  try {
+    const avatarData = typeof req.body?.avatarData === 'string' ? req.body.avatarData.trim() : ''
+    if (!avatarData || !AVATAR_DATA_URL_PATTERN.test(avatarData)) {
+      return res.status(400).json({ success: false, message: 'å¤´åƒæ ¼å¼ä¸æ”¯æŒï¼Œä»…æ”¯æŒ png/jpg/webp/gif' })
+    }
+
+    const [header, base64Data] = avatarData.split(',', 2)
+    if (!base64Data) {
+      return res.status(400).json({ success: false, message: 'å¤´åƒæ•°æ®æ— æ•ˆ' })
+    }
+
+    const fileBuffer = Buffer.from(base64Data, 'base64')
+    if (!fileBuffer.length) {
+      return res.status(400).json({ success: false, message: 'å¤´åƒæ•°æ®ä¸ºç©º' })
+    }
+    if (fileBuffer.length > MAX_AVATAR_SIZE_BYTES) {
+      return res.status(400).json({ success: false, message: 'å¤´åƒæ–‡ä»¶è¿‡å¤§ï¼Œè¯·æ§åˆ¶åœ¨ 2MB å†…' })
+    }
+
+    const mimeType = header.replace(/^data:/i, '').replace(/;base64$/i, '')
+    const ext = resolveAvatarExt(mimeType)
+    const avatarDir = path.join(__dirname, '..', 'uploads', 'avatars')
+    await fs.promises.mkdir(avatarDir, { recursive: true })
+
+    const fileName = `${req.user.id}-${Date.now()}.${ext}`
+    const outputPath = path.join(avatarDir, fileName)
+    await fs.promises.writeFile(outputPath, fileBuffer)
+
+    const previousUser = await findById(req.user.id)
+    const avatarUrl = `/uploads/avatars/${fileName}`
+    const user = await updateUserAvatar(req.user.id, avatarUrl)
+
+    if (previousUser?.avatar && /^\/uploads\/avatars\//.test(previousUser.avatar)) {
+      const relativePath = previousUser.avatar.replace(/^\//, '')
+      const prevFile = path.join(__dirname, '..', relativePath)
+      fs.promises.unlink(prevFile).catch(() => {})
+    }
+
+    res.json({
+      success: true,
+      message: 'å¤´åƒå·²æ›´æ–°',
+      data: sanitizeUser(user)
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ success: false, message: 'ä¸Šä¼ å¤´åƒå¤±è´¥' })
+  }
+})
+
+// GET /api/users/me/planner - è·å–å½“å‰ç”¨æˆ·æ¯æ—¥å®‰æ’
 router.get('/me/planner', authMiddleware, async (req, res) => {
   try {
     const planner = await getDailyPlanner(req.user.id)
     res.json({ success: true, data: planner })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ success: false, message: '»ñÈ¡Ã¿ÈÕ°²ÅÅÊ§°Ü' })
+    res.status(500).json({ success: false, message: 'è·å–æ¯æ—¥å®‰æ’å¤±è´¥' })
   }
 })
 
-// PUT /api/users/me/planner - ±£´æµ±Ç°ÓÃ»§Ã¿ÈÕ°²ÅÅ
+// PUT /api/users/me/planner - ä¿å­˜å½“å‰ç”¨æˆ·æ¯æ—¥å®‰æ’
 router.put('/me/planner', authMiddleware, async (req, res) => {
   try {
     const saved = await saveDailyPlanner(req.user.id, req.body || {})
-    res.json({ success: true, message: 'Ã¿ÈÕ°²ÅÅÒÑ±£´æ', data: saved })
+    res.json({ success: true, message: 'æ¯æ—¥å®‰æ’å·²ä¿å­˜', data: saved })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ success: false, message: '±£´æÃ¿ÈÕ°²ÅÅÊ§°Ü' })
+    res.status(500).json({ success: false, message: 'ä¿å­˜æ¯æ—¥å®‰æ’å¤±è´¥' })
   }
 })
 
-// GET /api/users/:id - »ñÈ¡µ¥¸öÓÃ»§
+// GET /api/users/:id - è·å–å•ä¸ªç”¨æˆ·
 router.get('/:id', async (req, res) => {
   try {
     const user = await findById(parseInt(req.params.id, 10))
     if (!user) {
-      return res.status(404).json({ success: false, message: 'ÓÃ»§Î´ÕÒµ½' })
+      return res.status(404).json({ success: false, message: 'ç”¨æˆ·æœªæ‰¾åˆ°' })
     }
     res.json({ success: true, data: sanitizeUser(user) })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ success: false, message: '»ñÈ¡ÓÃ»§Ê§°Ü' })
+    res.status(500).json({ success: false, message: 'è·å–ç”¨æˆ·å¤±è´¥' })
   }
 })
 

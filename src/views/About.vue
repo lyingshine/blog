@@ -2,7 +2,27 @@
   <div class="about-page">
     <header class="about-header">
       <div class="avatar-wrapper">
-        <div class="avatar">{{ authStore.user?.avatar || 'U' }}</div>
+        <div class="avatar">
+          <img
+            v-if="isImageAvatar(authStore.user?.avatar)"
+            :src="authStore.user?.avatar"
+            alt="avatar"
+            class="avatar-image"
+          />
+          <span v-else>{{ avatarFallback }}</span>
+        </div>
+        <input
+          ref="avatarInputRef"
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          class="avatar-input"
+          @change="handleAvatarSelect"
+        />
+        <button class="avatar-upload-btn" type="button" :disabled="uploadingAvatar" @click="triggerAvatarInput">
+          {{ uploadingAvatar ? '上传中...' : '上传头像' }}
+        </button>
+        <p class="avatar-tip">支持 png/jpg/webp/gif，大小不超过 2MB</p>
+        <p v-if="avatarError" class="avatar-error">{{ avatarError }}</p>
       </div>
       <h1 class="about-title">{{ authStore.user?.username || '个人资料' }}</h1>
       <p class="about-subtitle">让你的主页更像一个真实、完整的你</p>
@@ -89,6 +109,9 @@ const authStore = useAuthStore()
 const saving = ref(false)
 const saveError = ref('')
 const saveSuccess = ref(false)
+const uploadingAvatar = ref(false)
+const avatarError = ref('')
+const avatarInputRef = ref(null)
 
 const form = reactive({
   headline: '',
@@ -105,6 +128,20 @@ const headlineSuggestions = [
   '认真生活，持续表达',
   '写给当下，也写给未来'
 ]
+
+const isImageAvatar = (avatar) =>
+  typeof avatar === 'string' &&
+  /^(https?:\/\/|\/uploads\/|data:image\/)/i.test(avatar)
+
+const avatarFallback = computed(() => {
+  const rawAvatar = authStore.user?.avatar
+  if (isImageAvatar(rawAvatar)) {
+    return (authStore.user?.username || 'U').charAt(0).toUpperCase()
+  }
+  const trimmed = typeof rawAvatar === 'string' ? rawAvatar.trim() : ''
+  if (trimmed) return trimmed.charAt(0).toUpperCase()
+  return (authStore.user?.username || 'U').charAt(0).toUpperCase()
+})
 
 const fillForm = (user = {}) => {
   form.headline = user.headline || ''
@@ -154,6 +191,49 @@ const handleSave = async () => {
 const applyHeadline = (text) => {
   form.headline = text
 }
+
+const triggerAvatarInput = () => {
+  avatarInputRef.value?.click()
+}
+
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(new Error('读取头像文件失败'))
+    reader.readAsDataURL(file)
+  })
+
+const handleAvatarSelect = async (event) => {
+  avatarError.value = ''
+  const file = event?.target?.files?.[0]
+  if (!file) return
+
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif']
+  if (!allowedTypes.includes(file.type)) {
+    avatarError.value = '文件格式不支持，请上传 png/jpg/webp/gif 图片'
+    event.target.value = ''
+    return
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    avatarError.value = '头像文件过大，请控制在 2MB 内'
+    event.target.value = ''
+    return
+  }
+
+  uploadingAvatar.value = true
+  try {
+    const avatarData = await readFileAsDataUrl(file)
+    const response = await apiService.uploadMyAvatar(avatarData)
+    authStore.setUser(response.data)
+  } catch (error) {
+    avatarError.value = error.message || '上传失败，请稍后重试'
+  } finally {
+    uploadingAvatar.value = false
+    event.target.value = ''
+  }
+}
 </script>
 
 <style scoped>
@@ -185,6 +265,45 @@ const applyHeadline = (text) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-input {
+  display: none;
+}
+
+.avatar-upload-btn {
+  margin-top: 10px;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.avatar-upload-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.avatar-tip {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.avatar-error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #d04848;
 }
 
 .about-title {

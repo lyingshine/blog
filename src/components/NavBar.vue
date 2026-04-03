@@ -127,13 +127,25 @@
 
           <div v-if="authStore.isLoggedIn" class="user-menu" @click="toggleUserMenu">
             <div class="user-avatar">
-              {{ authStore.user?.avatar || 'U' }}
+              <img
+                v-if="isImageAvatar(authStore.user?.avatar)"
+                :src="authStore.user?.avatar"
+                alt="avatar"
+                class="avatar-image"
+              />
+              <span v-else>{{ userAvatarText }}</span>
             </div>
             <Transition name="dropdown">
               <div v-if="showUserMenu" class="user-dropdown">
                 <div class="dropdown-header">
                   <div class="dropdown-avatar">
-                    {{ authStore.user?.avatar || 'U' }}
+                    <img
+                      v-if="isImageAvatar(authStore.user?.avatar)"
+                      :src="authStore.user?.avatar"
+                      alt="avatar"
+                      class="avatar-image"
+                    />
+                    <span v-else>{{ userAvatarText }}</span>
                   </div>
                   <div class="dropdown-info">
                     <span class="dropdown-name">{{ authStore.user?.username }}</span>
@@ -179,7 +191,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ThemeSwitcher from './ThemeSwitcher.vue'
 import { useAuthStore } from '../stores/auth'
@@ -204,6 +216,20 @@ const toggleUserMenu = () => {
 const closeUserMenu = () => {
   showUserMenu.value = false
 }
+
+const isImageAvatar = (avatar) =>
+  typeof avatar === 'string' &&
+  /^(https?:\/\/|\/uploads\/|data:image\/)/i.test(avatar)
+
+const userAvatarText = computed(() => {
+  const rawAvatar = authStore.user?.avatar
+  if (isImageAvatar(rawAvatar)) {
+    return (authStore.user?.username || 'U').charAt(0).toUpperCase()
+  }
+  const trimmed = typeof rawAvatar === 'string' ? rawAvatar.trim() : ''
+  if (trimmed) return trimmed.charAt(0).toUpperCase()
+  return (authStore.user?.username || 'U').charAt(0).toUpperCase()
+})
 
 const handleLogout = () => {
   authStore.logout()
@@ -392,6 +418,7 @@ onUnmounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: transform var(--transition-fast);
+  overflow: hidden;
 }
 
 .user-avatar:hover {
@@ -430,6 +457,14 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: 600;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .dropdown-info {

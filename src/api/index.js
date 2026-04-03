@@ -192,6 +192,13 @@ class ApiService {
     })
   }
 
+  async uploadMyAvatar(avatarData) {
+    return this.request('/users/me/avatar', {
+      method: 'PUT',
+      body: JSON.stringify({ avatarData })
+    })
+  }
+
   async getMyDailyPlanner() {
     return this.request('/users/me/planner')
   }
