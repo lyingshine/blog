@@ -47,7 +47,7 @@ cd "$APP_DIR"
 rm -rf node_modules server/node_modules || true
 
 echo "[deploy] install root deps..."
-npm ci
+npm ci --include=dev
 
 echo "[deploy] install server deps..."
 cd "$APP_DIR/server"
