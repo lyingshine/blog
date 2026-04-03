@@ -26,59 +26,73 @@
       </div>
       <h1 class="about-title">{{ authStore.user?.username || '个人资料' }}</h1>
       <p class="about-subtitle">让你的主页更像一个真实、完整的你</p>
+      <div class="profile-badges">
+        <span class="profile-badge">资料完善度 {{ profileCompletion }}%</span>
+        <span class="profile-badge">{{ joinDateLabel }}</span>
+        <span class="profile-badge">{{ authStore.user?.role === 'admin' ? '管理员账号' : '普通账号' }}</span>
+      </div>
+      <div class="profile-progress" aria-label="资料完善度">
+        <span :style="{ width: `${profileCompletion}%` }"></span>
+      </div>
     </header>
 
     <section class="about-card">
       <template v-if="authStore.isLoggedIn">
         <form class="profile-form" @submit.prevent="handleSave">
-          <label class="field">
-            <span class="label">个人标语</span>
-            <input
-              v-model="form.headline"
-              type="text"
-              maxlength="120"
-              placeholder="例如：记录生活，分享思考"
-            />
-            <div class="headline-suggestions">
-              <button
-                v-for="item in headlineSuggestions"
-                :key="item"
-                type="button"
-                class="suggestion-btn"
-                @click="applyHeadline(item)"
-              >
-                {{ item }}
-              </button>
+          <section class="form-section">
+            <h2 class="section-title">公开展示</h2>
+            <label class="field">
+              <span class="label">个人标语</span>
+              <input
+                v-model="form.headline"
+                type="text"
+                maxlength="120"
+                placeholder="例如：记录生活，分享思考"
+              />
+              <div class="headline-suggestions">
+                <button
+                  v-for="item in headlineSuggestions"
+                  :key="item"
+                  type="button"
+                  class="suggestion-btn"
+                  @click="applyHeadline(item)"
+                >
+                  {{ item }}
+                </button>
+              </div>
+              <span class="hint">首页 Hero 会优先展示这句话</span>
+            </label>
+
+            <label class="field">
+              <span class="label">个人简介</span>
+              <textarea
+                v-model="form.bio"
+                maxlength="500"
+                rows="5"
+                placeholder="你关注什么、在做什么、希望在这里记录什么。"
+              ></textarea>
+            </label>
+          </section>
+
+          <section class="form-section">
+            <h2 class="section-title">联系与身份</h2>
+            <div class="grid">
+              <label class="field">
+                <span class="label">所在地</span>
+                <input v-model="form.location" type="text" maxlength="100" placeholder="城市 / 地区" />
+              </label>
+
+              <label class="field">
+                <span class="label">职业或身份</span>
+                <input v-model="form.company" type="text" maxlength="200" placeholder="例如：产品设计 / 独立开发" />
+              </label>
             </div>
-            <span class="hint">首页 Hero 会优先展示这句话</span>
-          </label>
-
-          <label class="field">
-            <span class="label">个人简介</span>
-            <textarea
-              v-model="form.bio"
-              maxlength="500"
-              rows="5"
-              placeholder="你关注什么、在做什么、希望在这里记录什么。"
-            ></textarea>
-          </label>
-
-          <div class="grid">
-            <label class="field">
-              <span class="label">所在地</span>
-              <input v-model="form.location" type="text" maxlength="100" placeholder="城市 / 地区" />
-            </label>
 
             <label class="field">
-              <span class="label">职业或身份</span>
-              <input v-model="form.company" type="text" maxlength="200" placeholder="例如：产品设计 / 独立开发" />
+              <span class="label">个人链接</span>
+              <input v-model="form.website" type="url" maxlength="300" placeholder="https://..." />
             </label>
-          </div>
-
-          <label class="field">
-            <span class="label">个人链接</span>
-            <input v-model="form.website" type="url" maxlength="300" placeholder="https://..." />
-          </label>
+          </section>
 
           <div class="actions">
             <button class="save-btn" type="submit" :disabled="saving">
@@ -141,6 +155,32 @@ const avatarFallback = computed(() => {
   const trimmed = typeof rawAvatar === 'string' ? rawAvatar.trim() : ''
   if (trimmed) return trimmed.charAt(0).toUpperCase()
   return (authStore.user?.username || 'U').charAt(0).toUpperCase()
+})
+
+const joinDateLabel = computed(() => {
+  const rawDate = authStore.user?.created_at
+  if (!rawDate) return '加入时间暂未记录'
+
+  const parsed = new Date(rawDate)
+  if (Number.isNaN(parsed.getTime())) return '加入时间暂未记录'
+
+  const yyyy = parsed.getFullYear()
+  const mm = `${parsed.getMonth() + 1}`.padStart(2, '0')
+  const dd = `${parsed.getDate()}`.padStart(2, '0')
+  return `加入于 ${yyyy}-${mm}-${dd}`
+})
+
+const profileCompletion = computed(() => {
+  const checks = [
+    form.headline,
+    form.bio,
+    form.location,
+    form.company,
+    form.website,
+    authStore.user?.avatar
+  ]
+  const completed = checks.filter((item) => typeof item === 'string' && item.trim()).length
+  return Math.round((completed / checks.length) * 100)
 })
 
 const fillForm = (user = {}) => {
@@ -238,34 +278,47 @@ const handleAvatarSelect = async (event) => {
 
 <style scoped>
 .about-page {
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 0 22px 60px;
+  padding: 22px 22px 64px;
 }
 
 .about-header {
   text-align: center;
-  padding: 34px 0 24px;
+  padding: 42px 28px 58px;
+  border-radius: 24px;
+  border: 1px solid var(--color-border-light);
+  background:
+    radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent 58%),
+    radial-gradient(circle at 85% 18%, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 55%),
+    linear-gradient(145deg, var(--color-surface), var(--color-surface-elevated));
+  box-shadow: 0 16px 32px rgba(12, 18, 31, 0.06);
 }
 
 .avatar-wrapper {
   position: relative;
-  display: inline-block;
-  margin-bottom: 20px;
+  width: fit-content;
+  margin: 0 auto 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .avatar {
-  width: 88px;
-  height: 88px;
+  width: 112px;
+  height: 112px;
   border-radius: 50%;
-  background: var(--color-surface-elevated);
+  border: 3px solid color-mix(in srgb, var(--color-accent) 24%, #fff);
+  background: linear-gradient(145deg, var(--color-surface-elevated), var(--color-surface));
   color: var(--color-text-primary);
-  font-size: 30px;
+  font-size: 38px;
   font-weight: 650;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
 }
 
 .avatar-image {
@@ -279,14 +332,22 @@ const handleAvatarSelect = async (event) => {
 }
 
 .avatar-upload-btn {
-  margin-top: 10px;
-  border: 1px solid var(--color-border-light);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
+  margin-top: 12px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 20%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
+  color: var(--color-text-primary);
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 8px 14px;
   font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.avatar-upload-btn:hover:enabled {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 16%, var(--color-surface));
 }
 
 .avatar-upload-btn:disabled {
@@ -307,29 +368,94 @@ const handleAvatarSelect = async (event) => {
 }
 
 .about-title {
-  font-size: 32px;
+  font-size: 36px;
   line-height: 1.1;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-shadow: 0 3px 12px rgba(15, 23, 42, 0.08);
+}
+
+.about-title + .about-subtitle {
+  margin-top: 10px;
   margin-bottom: 6px;
 }
 
 .about-subtitle {
   color: var(--color-text-secondary);
-  font-size: 14px;
+  font-size: 15px;
+}
+
+.profile-badges {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 20%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.profile-progress {
+  width: min(360px, 82%);
+  height: 8px;
+  margin: 12px auto 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface-elevated));
+  overflow: hidden;
+}
+
+.profile-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 60%, #66b0ff));
+  transition: width var(--transition-fast);
 }
 
 .about-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  box-shadow: none;
-  padding: 20px;
+  border-radius: 20px;
+  box-shadow: 0 10px 26px rgba(9, 16, 33, 0.06);
+  padding: 24px;
+  margin-top: -24px;
+  position: relative;
+  z-index: 1;
 }
 
 .profile-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+}
+
+.form-section {
+  border: 1px solid var(--color-border-light);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-surface) 75%, var(--color-surface-elevated));
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.section-title {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.02em;
+  margin: 0;
 }
 
 .grid {
@@ -354,12 +480,17 @@ input,
 textarea {
   width: 100%;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 12px 14px;
   background: var(--color-surface-elevated);
   color: var(--color-text-primary);
   font-size: 14px;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+input:hover,
+textarea:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
 }
 
 input:focus,
@@ -401,6 +532,7 @@ textarea {
   border-color: var(--color-accent-subtle);
   color: var(--color-accent);
   background: var(--color-accent-subtle);
+  transform: translateY(-1px);
 }
 
 .actions {
@@ -466,23 +598,52 @@ textarea {
 
 @media (max-width: 768px) {
   .about-page {
-    padding: 0 16px 56px;
+    padding: 16px 16px 56px;
   }
 
   .about-header {
-    padding: 56px 0 32px;
+    padding: 34px 16px 50px;
+    border-radius: 18px;
   }
 
-  .about-title {
+  .avatar {
+    width: 98px;
+    height: 98px;
     font-size: 34px;
   }
 
+  .about-title {
+    font-size: 30px;
+  }
+
   .about-subtitle {
-    font-size: 16px;
+    font-size: 14px;
+  }
+
+  .profile-badges {
+    margin-top: 14px;
+    gap: 6px;
+  }
+
+  .profile-badge {
+    font-size: 11px;
+    padding: 0 10px;
+    height: 26px;
+  }
+
+  .profile-progress {
+    width: 88%;
+    margin-top: 10px;
   }
 
   .about-card {
     padding: 20px;
+    margin-top: -18px;
+  }
+
+  .form-section {
+    padding: 14px;
+    border-radius: 14px;
   }
 
   .grid {
