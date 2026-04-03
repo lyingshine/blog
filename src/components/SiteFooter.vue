@@ -37,7 +37,7 @@
 
       <div class="footer-bottom">
         <p class="copyright">© {{ currentYear }} MySelf. 持续记录，持续生长</p>
-        <p class="tech-stack">Designed for everyday sharing</p>
+        <p class="tech-stack">Version {{ appVersion }}</p>
       </div>
     </div>
   </footer>
@@ -47,6 +47,7 @@
 import { computed } from 'vue'
 
 const currentYear = computed(() => new Date().getFullYear())
+const appVersion = __APP_VERSION__
 </script>
 
 <style scoped>
