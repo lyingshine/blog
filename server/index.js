@@ -1,0 +1,151 @@
+const express = require('express')
+const cors = require('cors')
+const rateLimit = require('express-rate-limit')
+const session = require('express-session')
+const path = require('path')
+const http = require('http')
+
+// Routes
+const authRoutes = require('./routes/auth')
+const userRoutes = require('./routes/users')
+const articleRoutes = require('./routes/articles')
+const statusRoutes = require('./routes/statuses')
+const adminRoutes = require('./routes/admin')
+const notificationRoutes = require('./routes/notifications')
+
+// DB
+const pool = require('./db/pool')
+
+// Utils
+const cache = require('./utils/cache')
+const scheduler = require('./utils/scheduler')
+const telemetry = require('./utils/telemetry')
+
+const app = express()
+
+// Middleware
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://yourdomain.com', 'https://www.yourdomain.com']
+    : true,
+  credentials: true
+}))
+
+// Rate limiting for general API
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP',
+  skip: (req, res) => {
+    // Skip rate limiting for admin endpoints since they're protected by basic auth
+    if (req.url.startsWith('/api/admin')) {
+      return true;
+    }
+    
+    // Skip rate limiting for local development and simulator
+    const ip = req.ip || req.connection.remoteAddress || req.socket.remoteAddress ||
+               (req.connection.socket ? req.connection.socket.remoteAddress : null);
+    if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') {
+      return true; // Skip rate limiting for localhost
+    }
+    
+    return false;
+  }
+})
+
+// No separate admin limiter needed since we're skipping admin routes
+
+app.use(generalLimiter)
+
+// Session
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'fallback_secret_for_dev',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}))
+
+// Body parsing
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '10mb' }))
+app.use(telemetry.middleware)
+
+// Cache middleware
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store')
+  next()
+})
+
+// Routes
+app.use('/api/auth', authRoutes)
+app.use('/api/users', userRoutes)
+app.use('/api/articles', articleRoutes)
+app.use('/api/statuses', statusRoutes)
+app.use('/api/admin', adminRoutes)  // Apply without additional rate limiting
+app.use('/api/notifications', notificationRoutes)
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../dist')))
+  app.get('*', (req, res, next) => {
+    // Do not fallback static asset requests to index.html.
+    // If a hashed css/js file is missing, return 404 so the issue is visible.
+    if (path.extname(req.path)) {
+      return res.status(404).end()
+    }
+
+    // API routes should never be handled by SPA fallback.
+    if (req.path.startsWith('/api/')) {
+      return next()
+    }
+
+    res.sendFile(path.join(__dirname, '../dist/index.html'))
+  })
+}
+
+const PORT = process.env.PORT || 3000
+
+// 如果是直接运行此文件，则启动服务器
+if (require.main === module) {
+  const server = app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`)
+    console.log('Simulator is idle by default. Control it from Admin page.')
+  })
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully')
+    server.close(async () => {
+      console.log('Server closed')
+      await pool.end()
+      console.log('Database connections closed')
+      process.exit(0)
+    })
+    
+    // Force close after 10 seconds if needed
+    setTimeout(() => {
+      console.error('Could not close connections in time, forcefully shutting down')
+      process.exit(1)
+    }, 10000)
+  })
+
+  // Error handling
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason)
+    server.close(() => {
+      process.exit(1)
+    })
+  })
+
+  process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err)
+    process.exit(1)
+  })
+}
+
+// 导出app实例，以便在集群模式中使用
+module.exports = app

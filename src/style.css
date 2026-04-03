@@ -1,0 +1,249 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ============================================
+   Theme System - Apple-Inspired Design
+   ============================================ */
+
+:root {
+  /* Common tokens */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  /* Fallback theme tokens (classic) in case data-theme is temporarily missing */
+  --color-bg: #fbfbfd;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #6e6e73;
+  --color-text-tertiary: #86868b;
+  --color-accent: #0071e3;
+  --color-accent-hover: #0077ed;
+  --color-accent-subtle: rgba(0, 113, 227, 0.08);
+  --color-border: #d2d2d7;
+  --color-border-light: #e8e8ed;
+  --color-nav-bg: rgba(251, 251, 253, 0.72);
+  --color-hero-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   Theme: Classic White (经典白)
+   Pure, minimal, professional
+   ============================================ */
+[data-theme="classic"] {
+  --color-bg: #fbfbfd;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #6e6e73;
+  --color-text-tertiary: #86868b;
+  --color-accent: #0071e3;
+  --color-accent-hover: #0077ed;
+  --color-accent-subtle: rgba(0, 113, 227, 0.08);
+  --color-border: #d2d2d7;
+  --color-border-light: #e8e8ed;
+  --color-nav-bg: rgba(251, 251, 253, 0.72);
+  --color-hero-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   Theme: Deep Black (深邃黑)
+   Premium, immersive, eye-friendly
+   ============================================ */
+[data-theme="dark"] {
+  --color-bg: #000000;
+  --color-surface: #1c1c1e;
+  --color-surface-elevated: #2c2c2e;
+  --color-text-primary: #f5f5f7;
+  --color-text-secondary: #a1a1a6;
+  --color-text-tertiary: #6e6e73;
+  --color-accent: #0a84ff;
+  --color-accent-hover: #409cff;
+  --color-accent-subtle: rgba(10, 132, 255, 0.12);
+  --color-border: #38383a;
+  --color-border-light: #2c2c2e;
+  --color-nav-bg: rgba(0, 0, 0, 0.72);
+  --color-hero-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================
+   Theme: Midnight Blue (午夜蓝)
+   Deep, elegant, tech-forward
+   ============================================ */
+[data-theme="midnight"] {
+  --color-bg: #0d1b2a;
+  --color-surface: #1b2838;
+  --color-surface-elevated: #243447;
+  --color-text-primary: #e0e8f0;
+  --color-text-secondary: #8899aa;
+  --color-text-tertiary: #6b7c8d;
+  --color-accent: #4da6ff;
+  --color-accent-hover: #6db3ff;
+  --color-accent-subtle: rgba(77, 166, 255, 0.12);
+  --color-border: #2d3e50;
+  --color-border-light: #1f2d3d;
+  --color-nav-bg: rgba(13, 27, 42, 0.85);
+  --color-hero-gradient: linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+/* ============================================
+   Theme: Warm Sand (暖沙金)
+   Warm, comfortable, natural
+   ============================================ */
+[data-theme="sand"] {
+  --color-bg: #faf8f5;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #fffefb;
+  --color-text-primary: #3d3225;
+  --color-text-secondary: #8c7b6b;
+  --color-text-tertiary: #a89888;
+  --color-accent: #b45309;
+  --color-accent-hover: #c2611a;
+  --color-accent-subtle: rgba(180, 83, 9, 0.08);
+  --color-border: #e5ddd4;
+  --color-border-light: #f0ebe4;
+  --color-nav-bg: rgba(250, 248, 245, 0.85);
+  --color-hero-gradient: linear-gradient(135deg, #d4a574 0%, #b8956e 100%);
+  --shadow-sm: 0 1px 2px rgba(139, 109, 76, 0.06);
+  --shadow-md: 0 4px 12px rgba(139, 109, 76, 0.08);
+  --shadow-lg: 0 12px 40px rgba(139, 109, 76, 0.1);
+  --shadow-xl: 0 24px 60px rgba(139, 109, 76, 0.12);
+}
+
+/* ============================================
+   Theme: Misty Gray (薄雾灰)
+   Neutral, sophisticated, versatile
+   ============================================ */
+[data-theme="mist"] {
+  --color-bg: #f2f2f7;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-text-primary: #1c1c1e;
+  --color-text-secondary: #636366;
+  --color-text-tertiary: #8e8e93;
+  --color-accent: #5856d6;
+  --color-accent-hover: #6e6ce0;
+  --color-accent-subtle: rgba(88, 86, 214, 0.08);
+  --color-border: #c6c6c8;
+  --color-border-light: #e5e5ea;
+  --color-nav-bg: rgba(242, 242, 247, 0.85);
+  --color-hero-gradient: linear-gradient(135deg, #7570b3 0%, #5856d6 100%);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+ul {
+  list-style: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+
+/* Selection */
+::selection {
+  background: var(--color-accent-subtle);
+  color: var(--color-text-primary);
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Theme transition overlay */
+.theme-transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity 0.3s ease;
+}
+
+.theme-transition-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
