@@ -15,7 +15,7 @@ async function ensureTables(conn) {
       username VARCHAR(100) NOT NULL UNIQUE,
       email VARCHAR(200) NOT NULL UNIQUE,
       password VARCHAR(255) NOT NULL,
-      avatar VARCHAR(10) DEFAULT 'U',
+      avatar VARCHAR(300) DEFAULT 'U',
       headline VARCHAR(120) DEFAULT '',
       role VARCHAR(20) DEFAULT 'user',
       bio VARCHAR(500) DEFAULT '',
@@ -39,7 +39,7 @@ async function ensureTables(conn) {
       gradient VARCHAR(200),
       author_id INT NOT NULL,
       author_username VARCHAR(100) DEFAULT '',
-      author_avatar VARCHAR(10) DEFAULT '',
+      author_avatar VARCHAR(300) DEFAULT '',
       content LONGTEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_author (author_id),
@@ -55,7 +55,7 @@ async function ensureTables(conn) {
       content TEXT NOT NULL,
       author_id INT NOT NULL,
       author_username VARCHAR(100) DEFAULT '',
-      author_avatar VARCHAR(10) DEFAULT '',
+      author_avatar VARCHAR(300) DEFAULT '',
       likes INT DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_author (author_id),
@@ -120,4 +120,3 @@ main().catch((err) => {
   console.error('[db] reset failed:', err)
   process.exit(1)
 })
-

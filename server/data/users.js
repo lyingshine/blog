@@ -28,6 +28,8 @@ async function ensureUserSchema() {
         throw error
       }
     }
+
+    await pool.write("ALTER TABLE users MODIFY COLUMN avatar VARCHAR(300) DEFAULT 'U'")
   })()
 
   return userSchemaReadyPromise

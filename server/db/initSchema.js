@@ -12,6 +12,16 @@ async function tryAddColumn(tableName, columnSql) {
   }
 }
 
+async function tryModifyColumn(tableName, columnSql) {
+  try {
+    await pool.write(`ALTER TABLE ${tableName} MODIFY COLUMN ${columnSql}`)
+  } catch (error) {
+    if (error?.code !== 'ER_BAD_FIELD_ERROR') {
+      throw error
+    }
+  }
+}
+
 async function ensureSchema() {
   if (initPromise) return initPromise
 
@@ -22,7 +32,7 @@ async function ensureSchema() {
         username VARCHAR(100) NOT NULL UNIQUE,
         email VARCHAR(200) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        avatar VARCHAR(10) DEFAULT 'U',
+        avatar VARCHAR(300) DEFAULT 'U',
         role VARCHAR(20) DEFAULT 'user',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_username (username),
@@ -35,6 +45,7 @@ async function ensureSchema() {
     await tryAddColumn('users', "location VARCHAR(100) DEFAULT ''")
     await tryAddColumn('users', "company VARCHAR(200) DEFAULT ''")
     await tryAddColumn('users', "website VARCHAR(300) DEFAULT ''")
+    await tryModifyColumn('users', "avatar VARCHAR(300) DEFAULT 'U'")
 
     await pool.write(`
       CREATE TABLE IF NOT EXISTS articles (
@@ -47,7 +58,7 @@ async function ensureSchema() {
         gradient VARCHAR(200),
         author_id INT NOT NULL,
         author_username VARCHAR(100) DEFAULT '',
-        author_avatar VARCHAR(10) DEFAULT '',
+        author_avatar VARCHAR(300) DEFAULT '',
         content LONGTEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_author (author_id),
@@ -58,7 +69,8 @@ async function ensureSchema() {
     `)
 
     await tryAddColumn('articles', "author_username VARCHAR(100) DEFAULT ''")
-    await tryAddColumn('articles', "author_avatar VARCHAR(10) DEFAULT ''")
+    await tryAddColumn('articles', "author_avatar VARCHAR(300) DEFAULT ''")
+    await tryModifyColumn('articles', "author_avatar VARCHAR(300) DEFAULT ''")
 
     await pool.write(`
       CREATE TABLE IF NOT EXISTS statuses (
@@ -66,7 +78,7 @@ async function ensureSchema() {
         content TEXT NOT NULL,
         author_id INT NOT NULL,
         author_username VARCHAR(100) DEFAULT '',
-        author_avatar VARCHAR(10) DEFAULT '',
+        author_avatar VARCHAR(300) DEFAULT '',
         likes INT DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_author (author_id),
@@ -76,7 +88,8 @@ async function ensureSchema() {
     `)
 
     await tryAddColumn('statuses', "author_username VARCHAR(100) DEFAULT ''")
-    await tryAddColumn('statuses', "author_avatar VARCHAR(10) DEFAULT ''")
+    await tryAddColumn('statuses', "author_avatar VARCHAR(300) DEFAULT ''")
+    await tryModifyColumn('statuses', "author_avatar VARCHAR(300) DEFAULT ''")
 
     await pool.write(`
       CREATE TABLE IF NOT EXISTS daily_plans (
@@ -95,4 +108,3 @@ async function ensureSchema() {
 }
 
 module.exports = ensureSchema
-

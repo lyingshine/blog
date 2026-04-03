@@ -22,7 +22,7 @@ async function initDatabase() {
       username VARCHAR(100) NOT NULL UNIQUE,
       email VARCHAR(200) NOT NULL UNIQUE,
       password VARCHAR(255) NOT NULL,
-      avatar VARCHAR(10) DEFAULT 'U',
+      avatar VARCHAR(300) DEFAULT 'U',
       headline VARCHAR(120) DEFAULT '',
       role VARCHAR(20) DEFAULT 'user',
       bio VARCHAR(500) DEFAULT '',
