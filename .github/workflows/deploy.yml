@@ -13,9 +13,6 @@ jobs:
   deploy:
     runs-on: [self-hosted, Linux, X64]
     steps:
-      - name: Deploy
-        run: |
-          export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
-          git config --global --add safe.directory /opt/blog || true
-          /opt/deploy-blog.sh
+      - uses: actions/checkout@v4
+      - run: /opt/deploy-blog.sh
 
