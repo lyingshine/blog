@@ -3,9 +3,14 @@ const Redis = require('ioredis')
 let redis = null
 
 try {
+  const redisPassword = process.env.REDIS_PASSWORD || process.env.REDIS_PASS || undefined
+  const redisUsername = process.env.REDIS_USERNAME || undefined
+
   redis = new Redis({
     host: process.env.REDIS_HOST || 'localhost',
     port: process.env.REDIS_PORT || 6379,
+    username: redisUsername,
+    password: redisPassword,
     retryStrategy: (times) => {
       if (times > 3) return null
       return Math.min(times * 200, 2000)
