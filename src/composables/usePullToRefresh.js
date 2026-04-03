@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const getScrollTop = () => window.scrollY || document.documentElement.scrollTop || 0
 
 export function usePullToRefresh(onRefresh, options = {}) {
   const threshold = options.threshold ?? 72
@@ -34,6 +35,10 @@ export function usePullToRefresh(onRefresh, options = {}) {
 
   const onTouchStart = (event) => {
     if (!event.touches || event.touches.length !== 1) return
+    if (getScrollTop() > 2) {
+      resetPull()
+      return
+    }
     const target = event.target
     if (
       target instanceof Element &&
@@ -57,6 +62,10 @@ export function usePullToRefresh(onRefresh, options = {}) {
 
   const onTouchMove = (event) => {
     if (!event.touches || event.touches.length !== 1) return
+    if (getScrollTop() > 2) {
+      resetPull()
+      return
+    }
     const delta = event.touches[0].clientY - startY
 
     if (blocking.value) {

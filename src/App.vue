@@ -62,10 +62,12 @@ watch(
   background: var(--color-bg);
   display: flex;
   flex-direction: column;
+  --nav-height: 48px;
 }
 
 main {
   flex: 1;
+  padding-top: var(--nav-height);
 }
 
 .route-fade-enter-active,

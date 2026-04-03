@@ -295,14 +295,17 @@ watch(
 
 <style scoped>
 .navbar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
   background: var(--color-nav-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--color-border-light);
   transition: background-color var(--transition-normal);
+  transform: translateZ(0);
 }
 
 .navbar-container {

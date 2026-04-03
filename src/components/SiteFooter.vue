@@ -60,70 +60,72 @@ const appVersion = __APP_VERSION__
 .footer-container {
   max-width: 980px;
   margin: 0 auto;
-  padding: 32px 22px calc(24px + var(--safe-bottom));
+  padding: 18px 22px calc(14px + var(--safe-bottom));
 }
 
 .footer-top {
   display: flex;
   justify-content: space-between;
-  gap: 48px;
-  margin-bottom: 24px;
+  align-items: flex-start;
+  gap: 26px;
+  margin-bottom: 12px;
 }
 
 .footer-brand {
-  max-width: 280px;
+  max-width: 360px;
 }
 
 .footer-logo {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--color-text-primary);
   text-decoration: none;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .logo-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   background: var(--color-surface-elevated);
-  border-radius: 7px;
+  border-radius: 6px;
   color: var(--color-text-primary);
 }
 
 .footer-tagline {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-tertiary);
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .footer-links {
   display: flex;
-  gap: 64px;
+  gap: 30px;
 }
 
 .footer-section h4 {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--color-text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 16px;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
 }
 
 .footer-section ul {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
 .footer-section a {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text-secondary);
   text-decoration: none;
   transition: color var(--transition-fast);
@@ -137,34 +139,37 @@ const appVersion = __APP_VERSION__
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 24px;
+  padding-top: 10px;
   border-top: 1px solid var(--color-border-light);
 }
 
 .copyright,
 .tech-stack {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-tertiary);
 }
 
 @media (max-width: 768px) {
   .footer-container {
-    padding: 28px 16px calc(18px + var(--safe-bottom));
+    padding: 14px 16px calc(10px + var(--safe-bottom));
   }
 
   .footer-top {
     flex-direction: column;
-    gap: 32px;
+    gap: 14px;
   }
 
   .footer-links {
-    gap: 24px;
-    justify-content: space-between;
+    width: 100%;
+    gap: 16px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .footer-bottom {
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    padding-top: 8px;
     text-align: center;
   }
 }
