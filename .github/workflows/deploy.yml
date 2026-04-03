@@ -13,4 +13,12 @@ jobs:
   deploy:
     runs-on: [self-hosted, Linux, X64]
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Show commit
+        run: echo "Deploying commit $GITHUB_SHA"
+
       - run: /opt/deploy-blog.sh
