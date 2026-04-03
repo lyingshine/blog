@@ -15,5 +15,7 @@ jobs:
     steps:
       - name: Deploy
         run: |
+          export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
           git config --global --add safe.directory /opt/blog || true
-          /opt/blog/deploy.sh
+          /opt/deploy-blog.sh
+
