@@ -13,6 +13,4 @@ jobs:
   deploy:
     runs-on: [self-hosted, Linux, X64]
     steps:
-      - uses: actions/checkout@v4
       - run: /opt/deploy-blog.sh
-
