@@ -3,31 +3,18 @@
     <section class="planner-header">
       <p class="planner-kicker">工具</p>
       <h1 class="planner-title">每日安排</h1>
-      <p class="planner-subtitle">围绕“我接下来要完成什么”来规划任务，先做最关键的一件事。</p>
+      <p class="planner-subtitle">只保留一件事：明确下一步并执行。</p>
       <p class="planner-date">{{ nowLabel }}</p>
 
-      <div class="header-actions">
-        <button class="mode-btn" type="button" @click="toggleEditMode">
-          {{ isEditMode ? '完成编辑' : '进入编辑' }}
+      <div class="planner-utility" aria-label="提醒工具">
+        <button class="utility-btn utility-btn-combined" type="button" @click="showReminderSettings = true" title="提醒与飞书设置">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span>提醒设置</span>
+          <span v-if="notificationEnabled" class="notify-dot" aria-hidden="true"></span>
         </button>
-        <button class="notify-btn" type="button" @click="enableBrowserNotification" :disabled="notificationEnabled">
-          {{ notificationEnabled ? '系统提醒已开启' : '开启系统提醒' }}
-        </button>
-      </div>
-    </section>
-
-    <section class="planner-summary" v-if="tasks.length > 0">
-      <div class="summary-card">
-        <p class="summary-label">手动完成</p>
-        <p class="summary-value">{{ completedCount }}/{{ tasks.length }}</p>
-      </div>
-      <div class="summary-card" :class="{ warn: overdueCount > 0 }">
-        <p class="summary-label">已过截止</p>
-        <p class="summary-value">{{ overdueCount }}</p>
-      </div>
-      <div class="summary-card" :class="{ warn: upcomingReminderCount > 0 }">
-        <p class="summary-label">下一次提醒</p>
-        <p class="summary-value small">{{ nextReminderText }}</p>
       </div>
     </section>
 
@@ -38,70 +25,13 @@
         <p class="job-meta">截止 {{ taskDeadlineText(nextActionTask) }} · 建议开始 {{ recommendedStartText(nextActionTask) }}</p>
         <p class="job-reason">{{ nextActionReason }}</p>
       </div>
-      <button class="job-btn" type="button" @click="focusTask(nextActionTask.id)">定位这件事</button>
-    </section>
-
-    <section class="planner-settings">
-      <header class="settings-header compact">
-        <div>
-          <h3>提醒设置</h3>
-          <span>默认已保存，仅在需要时调整</span>
-        </div>
-        <button class="ghost-btn" type="button" @click="showReminderSettings = !showReminderSettings">
-          {{ showReminderSettings ? '收起设置' : '展开设置' }}
-        </button>
-      </header>
-      <div v-if="showReminderSettings" class="webhook-row">
-        <label for="feishu-webhook">飞书 Webhook</label>
-        <input
-          id="feishu-webhook"
-          v-model.trim="feishuWebhook"
-          type="text"
-          class="webhook-input"
-          placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..."
-        />
-        <button class="ghost-btn" type="button" @click="feishuWebhook = ''">清空</button>
-      </div>
-    </section>
-
-    <section v-if="isEditMode" class="planner-compose">
-      <div class="compose-row">
-        <div class="compose-main">
-          <input
-            v-model="draftTask"
-            type="text"
-            class="task-input"
-            maxlength="120"
-            placeholder="新增事项，例如：完成文章初稿"
-            @keydown.enter.prevent="addTask"
-          />
-          <button class="add-btn" type="button" @click="addTask">添加</button>
-        </div>
-        <div class="compose-meta">
-          <label class="inline-field">
-            <span>截止日期</span>
-            <input id="draft-deadline-date" v-model="draftDeadlineDate" type="date" class="date-input" />
-          </label>
-          <label class="inline-field">
-            <span>截止时间</span>
-            <input id="draft-deadline-time" v-model="draftDeadlineTime" type="time" class="time-input" />
-          </label>
-          <label class="inline-field">
-            <span>预计时长</span>
-            <div class="minute-wrap">
-              <input id="draft-estimate" v-model.number="draftEstimateMinutes" type="number" min="1" max="720" class="minute-input" />
-              <small>分钟</small>
-            </div>
-          </label>
-          <div class="quick-date-actions">
-            <button type="button" class="quick-btn" @click="setDraftDateOffset(0)">今天</button>
-            <button type="button" class="quick-btn" @click="setDraftDateOffset(1)">明天</button>
-            <button type="button" class="quick-btn" @click="setDraftDateOffset(7)">+7天</button>
-          </div>
-        </div>
-      </div>
-
-      <p class="compose-hint">每项都建议填写截止日期和时间。提醒时刻 = 截止时刻 - 全部未完成事项预计总时长。</p>
+      <button class="job-btn" type="button" @click="focusTask(nextActionTask.id)" title="定位这件事" aria-label="定位这件事">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+          <circle cx="12" cy="12" r="8" />
+        </svg>
+      </button>
     </section>
 
     <section v-if="alertMessage" class="reminder-banner">
@@ -112,7 +42,12 @@
       <header class="board-header">
         <div class="board-header-top">
           <h2>事项清单</h2>
-          <span class="board-meta">显示 {{ displayTasks.length }} / {{ tasks.length }} 项 · 已完成 {{ completedCount }}/{{ tasks.length }}</span>
+          <div class="board-main-actions">
+            <button class="ghost-btn compact" type="button" @click="togglePlannerEdit('', 'add')">
+              {{ isEditingAny ? '完成编辑' : '添加事项' }}
+            </button>
+            <span class="board-meta">显示 {{ displayTasks.length }} / {{ tasks.length }} 项 · 已完成 {{ completedCount }}/{{ tasks.length }}</span>
+          </div>
         </div>
         <div class="board-tools">
           <div class="filter-group">
@@ -134,11 +69,44 @@
         </div>
       </header>
 
-      <div v-if="displayTasks.length === 0" class="empty-state">
-        <p>{{ tasks.length === 0 ? (isEditMode ? '还没有事项，先添加一件最重要的事。' : '暂无事项，进入编辑模式开始规划。') : '当前筛选条件下暂无事项。' }}</p>
+      <div v-if="displayTasks.length === 0 && !addingDraft" class="empty-state">
+        <p>{{ tasks.length === 0 ? '还没有事项，点击“添加事项”开始规划。' : '当前筛选条件下暂无事项。' }}</p>
       </div>
 
       <div v-else class="task-list">
+        <article v-if="addingDraft" class="task-card task-card-draft">
+          <div class="task-top">
+            <span class="task-index">新建</span>
+            <input
+              v-model="newTaskDraft.title"
+              type="text"
+              class="task-title-input"
+              maxlength="120"
+              placeholder="事项内容"
+            />
+            <div class="task-top-actions">
+              <button class="ghost-btn compact" type="button" @click="confirmAddDraft">确认添加</button>
+              <button class="remove-btn" type="button" @click="cancelAddDraft">取消</button>
+            </div>
+          </div>
+
+          <div class="task-meta-row">
+            <label class="date-time-field">
+              <span>截止日期</span>
+              <input v-model="newTaskDraft.deadlineDate" type="date" class="date-input" />
+            </label>
+            <label class="date-time-field">
+              <span>截止时间</span>
+              <input v-model="newTaskDraft.deadlineTime" type="time" class="time-input" />
+            </label>
+            <label class="time-field">
+              <span>预计时长</span>
+              <input v-model.number="newTaskDraft.estimateMinutes" type="number" min="1" max="720" class="minute-input" />
+              <small>分钟</small>
+            </label>
+          </div>
+        </article>
+
         <article
           v-for="(task, index) in displayTasks"
           :key="task.id"
@@ -146,7 +114,7 @@
           :class="{ focus: focusedTaskId === task.id }"
           :id="`task-${task.id}`"
         >
-          <template v-if="isEditMode">
+          <template v-if="isEditingTask(task.id)">
             <div class="task-top">
               <span class="task-index">{{ String(index + 1).padStart(2, '0') }}</span>
               <input
@@ -156,7 +124,10 @@
                 maxlength="120"
                 placeholder="事项内容"
               />
-              <button class="remove-btn" type="button" @click="removeTask(task.id)">删除</button>
+              <div class="task-top-actions">
+                <button class="ghost-btn compact" type="button" @click="finishTaskEdit(task.id)">完成编辑</button>
+                <button class="remove-btn" type="button" @click="removeTask(task.id)">删除</button>
+              </div>
             </div>
 
             <div class="task-meta-row">
@@ -206,6 +177,10 @@
               </div>
               <span class="task-state" :class="taskStateClass(task)">{{ taskStateText(task) }}</span>
             </div>
+            <div class="display-actions">
+              <button class="ghost-btn" type="button" @click="startTaskEdit(task.id)">编辑</button>
+              <button class="ghost-btn" type="button" @click="postponeTask(task, 1)">顺延 1 天</button>
+            </div>
             <div class="display-result">
               <p class="display-label">结果反馈</p>
               <p class="display-content">{{ task.result || '尚未填写' }}</p>
@@ -215,15 +190,49 @@
       </div>
     </section>
 
-    <section class="planner-footer">
-      <div class="review-status" :class="{ warn: missingFieldsCount > 0 }">
-        {{ reviewStatusText }}
-      </div>
-      <button class="save-btn" type="button" :disabled="tasks.length === 0" @click="saveDayPlan">
-        保存安排
-      </button>
-      <p v-if="message" class="save-message">{{ message }}</p>
-    </section>
+    <p v-if="message" class="save-message inline-message">{{ message }}</p>
+
+    <Transition name="sheet-fade">
+      <div v-if="showReminderSettings" class="settings-backdrop" @click="showReminderSettings = false"></div>
+    </Transition>
+    <Transition name="sheet-up">
+      <section v-if="showReminderSettings" class="settings-sheet" aria-label="提醒设置面板">
+        <header class="settings-header">
+          <div>
+            <h3>提醒设置</h3>
+            <span>辅助功能，不占主内容区域</span>
+          </div>
+          <button class="sheet-close-btn" type="button" aria-label="关闭提醒设置" @click="showReminderSettings = false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </header>
+        <p class="settings-note">关闭面板不会关闭提醒；提醒状态以系统权限和当前开关为准。</p>
+        <div class="settings-actions">
+          <button class="notify-btn" type="button" @click="enableBrowserNotification" :disabled="notificationEnabled">
+            {{ notificationEnabled ? '系统提醒已开启' : '开启系统提醒' }}
+          </button>
+        </div>
+        <div class="webhook-row">
+          <label for="feishu-webhook">飞书 Webhook</label>
+          <input
+            id="feishu-webhook"
+            v-model.trim="feishuWebhook"
+            type="text"
+            class="webhook-input"
+            placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..."
+          />
+          <div class="webhook-actions">
+            <button class="ghost-btn" type="button" :disabled="feishuTesting" @click="testFeishuWebhook">
+              {{ feishuTesting ? '测试中...' : '测试' }}
+            </button>
+            <button class="ghost-btn" type="button" @click="saveWebhook">保存</button>
+          </div>
+        </div>
+        <p v-if="settingsFeedback" class="settings-feedback">{{ settingsFeedback }}</p>
+      </section>
+    </Transition>
   </div>
 </template>
 
@@ -236,10 +245,6 @@ const STORAGE_KEY = 'daily-planner-current-v4'
 const WEBHOOK_KEY = 'daily-planner-feishu-webhook-v1'
 const authStore = useAuthStore()
 
-const draftTask = ref('')
-const draftDeadlineDate = ref('')
-const draftDeadlineTime = ref('')
-const draftEstimateMinutes = ref(60)
 const feishuWebhook = ref('')
 const showReminderSettings = ref(false)
 const tasks = ref([])
@@ -251,6 +256,16 @@ const isEditMode = ref(false)
 const filterMode = ref('today')
 const hideCompleted = ref(false)
 const focusedTaskId = ref('')
+const editingTaskId = ref('')
+const addingDraft = ref(false)
+const feishuTesting = ref(false)
+const settingsFeedback = ref('')
+const newTaskDraft = ref({
+  title: '',
+  deadlineDate: '',
+  deadlineTime: '',
+  estimateMinutes: 60
+})
 const notificationEnabled = ref(false)
 const batchReminderMarkSent = ref('')
 const hasHydrated = ref(false)
@@ -269,6 +284,14 @@ const toYmd = (date) => {
 const getToday = () => {
   const now = new Date()
   return toYmd(now)
+}
+
+const getDefaultDeadlineTime = () => {
+  const now = new Date()
+  const rounded = new Date(now)
+  rounded.setMinutes(Math.ceil(now.getMinutes() / 30) * 30, 0, 0)
+  rounded.setHours(rounded.getHours() + 2)
+  return `${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes()).padStart(2, '0')}`
 }
 
 const nowLabel = computed(() => {
@@ -298,6 +321,7 @@ const missingEstimateCount = computed(() => tasks.value.filter((item) => !item.c
 const missingResultCount = computed(() => tasks.value.filter((item) => item.completed && !item.result.trim()).length)
 const missingFieldsCount = computed(() => missingDeadlineCount.value + missingEstimateCount.value + missingResultCount.value)
 const pendingTasks = computed(() => tasks.value.filter((item) => !item.completed))
+const pendingTodayTasks = computed(() => pendingTasks.value.filter((item) => isTaskToday(item)))
 const totalPendingEstimateMinutes = computed(() => {
   return pendingTasks.value
     .reduce((sum, item) => {
@@ -382,9 +406,20 @@ const displayTasks = computed(() => {
   return sortTasks(items)
 })
 
+const isEditingAny = computed(() => addingDraft.value || !!editingTaskId.value)
+
 const composeDeadlineDateTime = (date, time) => {
   if (!date || !time) return ''
   return `${date}T${time}`
+}
+
+const resetNewTaskDraft = () => {
+  newTaskDraft.value = {
+    title: '',
+    deadlineDate: getToday(),
+    deadlineTime: getDefaultDeadlineTime(),
+    estimateMinutes: 60
+  }
 }
 
 const splitDeadlineDateTime = (dateTime) => {
@@ -505,22 +540,61 @@ const taskDeadlineText = (task) => {
   })
 }
 
-const addTask = () => {
-  const title = draftTask.value.trim()
-  if (!title) return
-  const deadlineDateTime = composeDeadlineDateTime(draftDeadlineDate.value, draftDeadlineTime.value)
-  tasks.value.push(createTask(title, deadlineDateTime, Number(draftEstimateMinutes.value) || 60))
-  draftTask.value = ''
-  draftDeadlineDate.value = getToday()
-  draftDeadlineTime.value = ''
-  draftEstimateMinutes.value = 60
+const isEditingTask = (taskId) => editingTaskId.value === taskId
+
+const startTaskEdit = (taskId) => {
+  if (!taskId) return
+  isEditMode.value = true
+  addingDraft.value = false
+  editingTaskId.value = taskId
+  focusTask(taskId)
+  setTimeout(() => {
+    document.querySelector(`#task-${taskId} .task-title-input`)?.focus()
+  }, 0)
 }
 
-const setDraftDateOffset = (offsetDays) => {
-  const base = new Date()
-  base.setHours(0, 0, 0, 0)
-  base.setDate(base.getDate() + offsetDays)
-  draftDeadlineDate.value = toYmd(base)
+const finishTaskEdit = (taskId) => {
+  if (taskId && editingTaskId.value !== taskId) return
+  editingTaskId.value = ''
+  if (!addingDraft.value) {
+    isEditMode.value = false
+  }
+}
+
+const startAddDraft = () => {
+  isEditMode.value = true
+  editingTaskId.value = ''
+  addingDraft.value = true
+  resetNewTaskDraft()
+  setTimeout(() => {
+    document.querySelector('.task-card-draft .task-title-input')?.focus()
+  }, 0)
+}
+
+const cancelAddDraft = () => {
+  addingDraft.value = false
+  if (!editingTaskId.value) isEditMode.value = false
+}
+
+const confirmAddDraft = () => {
+  const title = (newTaskDraft.value.title || '').trim()
+  if (!title) {
+    message.value = '先输入事项标题再确认添加。'
+    return
+  }
+  const deadlineDate = newTaskDraft.value.deadlineDate || getToday()
+  const deadlineTime = newTaskDraft.value.deadlineTime || getDefaultDeadlineTime()
+  const deadlineDateTime = composeDeadlineDateTime(deadlineDate, deadlineTime)
+  const estimate = Number(newTaskDraft.value.estimateMinutes) || 60
+  const task = createTask(title, deadlineDateTime, estimate)
+  tasks.value = [task, ...tasks.value]
+  addingDraft.value = false
+  editingTaskId.value = task.id
+  focusTask(task.id)
+  setTimeout(() => {
+    document.querySelector(`#task-${task.id} .task-title-input`)?.focus()
+  }, 0)
+  message.value = '事项已添加。'
 }
 
 const focusTask = (id) => {
@@ -538,6 +612,16 @@ const focusTask = (id) => {
 
 const removeTask = (id) => {
   tasks.value = tasks.value.filter((item) => item.id !== id)
+}
+
+const postponeTask = (task, days = 1) => {
+  const dueMs = getDueTimeMs(task)
+  const base = dueMs === null ? new Date() : new Date(dueMs)
+  base.setDate(base.getDate() + days)
+  task.deadlineDate = toYmd(base)
+  task.deadlineTime = `${String(base.getHours()).padStart(2, '0')}:${String(base.getMinutes()).padStart(2, '0')}`
+  task.deadlineDateTime = composeDeadlineDateTime(task.deadlineDate, task.deadlineTime)
+  message.value = `已顺延 ${days} 天：${task.title || '未命名事项'}`
 }
 
 const toggleTaskCompleted = (task, checked) => {
@@ -593,34 +677,38 @@ const taskStateClass = (task) => {
 }
 
 const formatPendingTasksForMessage = () => {
-  if (pendingTasks.value.length === 0) return '暂无待办事项'
-  return pendingTasks.value
+  if (pendingTodayTasks.value.length === 0) return '今日暂无待办事项'
+  return pendingTodayTasks.value
     .map((task, index) => `${index + 1}. ${task.title || '未命名事项'}（截止 ${taskDeadlineText(task)}，预计 ${task.estimateMinutes || 0} 分钟）`)
     .join('\n')
 }
 
-const getBatchReminderMs = () => {
-  const points = pendingTasks.value
-    .map((task) => getReminderTimeMs(task))
-    .filter((value) => value !== null)
+const getTodayReminderCandidates = () => {
+  return pendingTodayTasks.value
+    .map((task) => ({ task, reminderMs: getReminderTimeMs(task) }))
+    .filter((x) => x.reminderMs !== null)
+    .sort((a, b) => a.reminderMs - b.reminderMs)
+}
 
-  if (points.length === 0) return null
-  return Math.min(...points)
+const getBatchReminderMs = () => {
+  const candidates = getTodayReminderCandidates()
+  if (candidates.length === 0) return null
+  return candidates[0].reminderMs
 }
 
 const getBatchReminderMark = () => {
   const reminderMs = getBatchReminderMs()
   if (reminderMs === null) return ''
-  const fingerprint = pendingTasks.value
+  const fingerprint = pendingTodayTasks.value
     .map((task) => `${task.id}:${getTaskDeadlineDateTime(task)}:${task.estimateMinutes || 0}`)
     .join('|')
   return `${reminderMs}|${fingerprint}`
 }
 
 const sendTaskReminder = () => {
-  const reminderTask = nextReminderTask.value?.task || null
+  const reminderTask = getTodayReminderCandidates()[0]?.task || null
   const dayLoad = reminderTask ? getPendingEstimateMinutesForTaskDay(reminderTask) : 0
-  const text = `提醒：现在应开始处理当前待办（共 ${pendingTasks.value.length} 项，目标日期工时 ${dayLoad} 分钟）。\n${formatPendingTasksForMessage()}`
+  const text = `提醒：现在应开始处理今日待办（共 ${pendingTodayTasks.value.length} 项，今日工时 ${dayLoad} 分钟）。\n${formatPendingTasksForMessage()}`
   alertMessage.value = text
   message.value = text
 
@@ -642,12 +730,13 @@ const sendFeishuReminder = async (mark) => {
   if (!authStore.isLoggedIn) return
   if (!mark) return
 
+  const reminderTask = getTodayReminderCandidates()[0]?.task || null
   try {
     await apiService.sendFeishuPlannerReminder({
       title: '每日安排提醒',
       content: formatPendingTasksForMessage(),
-      deadline: nextReminderTask.value?.task ? taskDeadlineText(nextReminderTask.value.task) : '',
-      estimateMinutes: nextReminderTask.value?.task ? getPendingEstimateMinutesForTaskDay(nextReminderTask.value.task) : 0,
+      deadline: reminderTask ? taskDeadlineText(reminderTask) : '',
+      estimateMinutes: reminderTask ? getPendingEstimateMinutesForTaskDay(reminderTask) : 0,
       webhook: feishuWebhook.value || undefined
     })
   } catch (error) {
@@ -702,7 +791,9 @@ const applyPlannerPayload = (payload = {}) => {
   if (Array.isArray(payload.tasks)) {
     tasks.value = payload.tasks.map((item) => normalizeRestoredTask(item))
   }
-  isEditMode.value = Boolean(payload.isEditMode)
+  isEditMode.value = false
+  editingTaskId.value = ''
+  addingDraft.value = false
   filterMode.value = ['today', 'future', 'overdue', 'all'].includes(payload.filterMode) ? payload.filterMode : 'today'
   hideCompleted.value = Boolean(payload.hideCompleted)
   batchReminderMarkSent.value = payload.batchReminderMarkSent || ''
@@ -784,8 +875,18 @@ const saveDayPlan = async () => {
   }
 }
 
-const toggleEditMode = () => {
-  isEditMode.value = !isEditMode.value
+const togglePlannerEdit = (taskId = '', kind = 'add') => {
+  if (kind === 'add') {
+    if (isEditingAny.value) {
+      isEditMode.value = false
+      editingTaskId.value = ''
+      addingDraft.value = false
+      return
+    }
+    startAddDraft()
+    return
+  }
+  startTaskEdit(taskId)
 }
 
 const enableBrowserNotification = async () => {
@@ -799,8 +900,46 @@ const enableBrowserNotification = async () => {
   message.value = notificationEnabled.value ? '系统提醒已开启。' : '未获得系统提醒权限。'
 }
 
+const saveWebhook = () => {
+  feishuWebhook.value = (feishuWebhook.value || '').trim()
+  saveDraft()
+  const text = feishuWebhook.value ? '飞书 Webhook 已保存。' : 'Webhook 为空，已保存。'
+  message.value = text
+  settingsFeedback.value = text
+  setTimeout(() => {
+    settingsFeedback.value = ''
+  }, 2200)
+}
+
+const testFeishuWebhook = async () => {
+  const current = (feishuWebhook.value || '').trim()
+  const saved = (localStorage.getItem(WEBHOOK_KEY) || '').trim()
+  const webhook = current || saved
+  if (!webhook) {
+    message.value = '尚未配置飞书 Webhook，请先填写后测试。'
+    return
+  }
+
+  feishuTesting.value = true
+  try {
+    await apiService.sendFeishuPlannerReminder({
+      title: '飞书 Webhook 测试',
+      content: '这是一条测试消息，用于验证当前 Webhook 可用。',
+      deadline: new Date().toLocaleString('zh-CN', { hour12: false }),
+      estimateMinutes: 0,
+      webhook
+    })
+    message.value = '测试消息已发送，请到飞书群查看。'
+  } catch (error) {
+    console.error('feishu webhook test failed:', error)
+    message.value = error.message || '测试发送失败，请检查 Webhook 是否正确。'
+  } finally {
+    feishuTesting.value = false
+  }
+}
+
 onMounted(async () => {
-  draftDeadlineDate.value = getToday()
+  resetNewTaskDraft()
   let hasLocalPlanner = false
 
   const raw = localStorage.getItem(STORAGE_KEY)
@@ -882,8 +1021,10 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
 }
 
 .planner-header {
+  position: relative;
   text-align: center;
   margin-bottom: 18px;
+  padding-right: 0;
 }
 
 .planner-kicker {
@@ -912,17 +1053,52 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
   font-size: 13px;
 }
 
-.header-actions {
-  margin-top: 12px;
-  display: flex;
+.planner-utility {
+  position: fixed;
+  top: calc(56px + var(--safe-top));
+  right: max(10px, var(--safe-right));
+  z-index: 1185;
+  display: inline-flex;
+}
+
+.utility-btn {
+  min-height: 34px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 10px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-tertiary);
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.utility-btn-combined {
+  min-height: 36px;
+  border-color: color-mix(in srgb, var(--color-border) 78%, var(--color-border-light));
+  color: var(--color-text-secondary);
+}
+
+.utility-btn-combined span {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.notify-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #22c55e;
+}
+
+.utility-btn:disabled {
+  opacity: 0.55;
 }
 
 .mode-btn,
 .notify-btn,
 .add-btn,
-.save-btn,
 .ghost-btn {
   border: 1px solid var(--color-border);
   border-radius: 10px;
@@ -933,6 +1109,11 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
   font-size: 13px;
   font-weight: 600;
   transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.mode-btn.primary {
+  border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
+  color: var(--color-accent);
 }
 
 .ghost-btn {
@@ -947,21 +1128,14 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
 .mode-btn:hover,
 .notify-btn:hover:not(:disabled),
 .add-btn:hover,
-.save-btn:hover:not(:disabled),
 .ghost-btn:hover {
   border-color: var(--color-text-tertiary);
-}
-
-.save-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .planner-compose,
 .planner-settings,
 .planner-board,
 .planner-footer,
-.planner-summary,
 .planner-job,
 .reminder-banner {
   background: var(--color-surface);
@@ -972,52 +1146,63 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
 
 .planner-compose,
 .planner-settings,
-.planner-summary,
 .planner-job,
 .reminder-banner {
   margin-bottom: 14px;
 }
 
 .planner-job {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  border-color: #b8cdfc;
-  background: #f5f8ff;
+  position: relative;
+  border-color: var(--color-border-light);
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-surface-elevated));
+}
+
+.job-main {
+  padding-right: 34px;
 }
 
 .job-label {
   font-size: 12px;
-  color: #2958b8;
+  color: var(--color-text-tertiary);
 }
 
 .job-title {
   margin-top: 6px;
-  font-size: 20px;
-  color: #183b84;
+  font-size: 17px;
+  color: var(--color-text-primary);
+  font-weight: 600;
 }
 
 .job-meta {
   margin-top: 6px;
-  color: #36508b;
-  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
 }
 
 .job-reason {
   margin-top: 6px;
-  color: #274269;
-  font-size: 13px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
 }
 
 .job-btn {
-  border: 1px solid #87a8f7;
-  background: white;
-  color: #21437f;
-  border-radius: 10px;
-  padding: 9px 12px;
-  font-size: 13px;
-  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-radius: 999px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.job-btn:hover {
+  color: var(--color-text-primary);
 }
 
 .settings-header {
@@ -1072,6 +1257,11 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
 .webhook-row label {
   font-size: 12px;
   color: var(--color-text-secondary);
+}
+
+.webhook-actions {
+  display: inline-flex;
+  gap: 8px;
 }
 
 .task-input,
@@ -1155,39 +1345,6 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
   color: var(--color-text-tertiary);
 }
 
-.planner-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.summary-card {
-  border: 1px solid var(--color-border-light);
-  border-radius: 12px;
-  padding: 10px;
-}
-
-.summary-card.warn {
-  border-color: #efc78f;
-}
-
-.summary-label {
-  color: var(--color-text-tertiary);
-  font-size: 12px;
-}
-
-.summary-value {
-  margin-top: 4px;
-  color: var(--color-text-primary);
-  font-size: 20px;
-  font-weight: 650;
-}
-
-.summary-value.small {
-  font-size: 13px;
-  font-weight: 600;
-}
-
 .reminder-banner {
   border-color: #9ad7bf;
   background: #f3fbf7;
@@ -1210,6 +1367,20 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.board-main-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.ghost-btn.compact {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
 .board-header h2 {
@@ -1290,11 +1461,23 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
   box-shadow: 0 0 0 3px rgba(135, 168, 247, 0.2);
 }
 
+.task-card-draft {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-accent-subtle) 36%, var(--color-surface));
+}
+
 .task-top {
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 10px;
   align-items: center;
+}
+
+.task-top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .task-index {
@@ -1418,6 +1601,18 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
   color: var(--color-text-tertiary);
 }
 
+.display-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.display-actions .ghost-btn {
+  min-height: 34px;
+  padding: 6px 10px;
+}
+
 .display-content {
   color: var(--color-text-primary);
   font-size: 14px;
@@ -1431,18 +1626,87 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
   gap: 10px;
 }
 
-.review-status {
-  color: #0f8a63;
-  font-size: 13px;
-}
-
-.review-status.warn {
-  color: #b76a10;
-}
-
 .save-message {
   font-size: 13px;
   color: var(--color-text-secondary);
+}
+
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.24);
+  z-index: 1190;
+}
+
+.settings-sheet {
+  position: fixed;
+  top: calc(54px + var(--safe-top));
+  right: max(10px, var(--safe-right));
+  bottom: calc(10px + var(--safe-bottom));
+  width: min(380px, calc(100vw - max(20px, var(--safe-left) + var(--safe-right) + 20px)));
+  z-index: 1191;
+  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  border: 1px solid var(--color-border-light);
+  border-radius: 16px;
+  box-shadow: 0 14px 34px rgba(12, 18, 35, 0.24);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  overflow: auto;
+  position: fixed;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.settings-note {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.sheet-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.sheet-close-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.settings-feedback {
+  font-size: 12px;
+  color: #0f8a63;
+}
+
+.sheet-fade-enter-active,
+.sheet-fade-leave-active,
+.sheet-up-enter-active,
+.sheet-up-leave-active {
+  transition: all var(--motion-base) var(--motion-spring);
+}
+
+.sheet-fade-enter-from,
+.sheet-fade-leave-to {
+  opacity: 0;
+}
+
+.sheet-up-enter-from,
+.sheet-up-leave-to {
+  opacity: 0;
+  transform: translateX(16px);
 }
 
 @media (max-width: 768px) {
@@ -1454,14 +1718,41 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
     font-size: 30px;
   }
 
-  .header-actions {
-    flex-direction: column;
-    align-items: stretch;
+  .utility-btn-combined span {
+    font-size: 11px;
+  }
+
+  .planner-header {
+    padding-right: 0;
   }
 
   .planner-job {
-    flex-direction: column;
-    align-items: flex-start;
+    padding-right: 14px;
+  }
+
+  .settings-backdrop {
+    background: rgba(0, 0, 0, 0.32);
+  }
+
+  .settings-sheet {
+    left: max(10px, var(--safe-left));
+    right: max(10px, var(--safe-right));
+    top: calc(52px + var(--safe-top));
+    bottom: auto;
+    width: auto;
+    max-height: min(58vh, 420px);
+    overflow-y: auto;
+    border-radius: 14px;
+    padding: 12px;
+  }
+
+  .settings-sheet .settings-header {
+    margin-bottom: 6px;
+  }
+
+  .settings-sheet .notify-btn,
+  .settings-sheet .ghost-btn {
+    width: 100%;
   }
 
   .compose-main,
@@ -1475,10 +1766,6 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
 
   .quick-date-actions {
     justify-content: flex-start;
-  }
-
-  .planner-summary {
-    grid-template-columns: 1fr;
   }
 
   .settings-header {
@@ -1509,8 +1796,5 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
     -webkit-backdrop-filter: blur(8px);
   }
 
-  .save-btn {
-    width: 100%;
-  }
 }
 </style>

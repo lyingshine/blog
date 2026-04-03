@@ -180,6 +180,7 @@ html {
   font-size: 16px;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  height: 100%;
 }
 
 body {
@@ -192,8 +193,15 @@ body {
   text-rendering: optimizeLegibility;
   transition: background-color var(--transition-normal), color var(--transition-normal);
   min-height: 100dvh;
+  min-height: -webkit-fill-available;
   overflow-x: hidden;
   overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+#app {
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
 }
 
 a {
@@ -225,6 +233,15 @@ button {
     color var(--motion-base) var(--motion-smooth),
     background-color var(--motion-base) var(--motion-smooth),
     opacity var(--motion-base) var(--motion-smooth);
+}
+
+a,
+button {
+  touch-action: manipulation;
+}
+
+html.is-standalone body {
+  overscroll-behavior-y: none;
 }
 
 button:active {
@@ -356,6 +373,38 @@ button {
 
 .motion-fade-up {
   animation: fade-up-in var(--motion-base) var(--motion-spring) both;
+}
+
+.skeleton-block,
+.skeleton-line {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-surface-elevated) 82%, var(--color-border-light));
+}
+
+.skeleton-block::after,
+.skeleton-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.5) 48%, transparent 100%);
+  animation: skeleton-shimmer 1.1s linear infinite;
+}
+
+.skeleton-block {
+  border-radius: 12px;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .motion-soft-pop {

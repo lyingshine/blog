@@ -1,5 +1,22 @@
 ﻿<template>
-  <div class="home" ref="homeRef">
+  <div
+    class="home"
+    ref="homeRef"
+    @touchstart="onPullTouchStart"
+    @touchmove="onPullTouchMove"
+    @touchend="onPullTouchEnd"
+    @touchcancel="onPullTouchCancel"
+  >
+    <div
+      class="pull-refresh-indicator"
+      :class="{ visible: pullVisible, ready: pullReady, refreshing: pullRefreshing }"
+      :style="{ '--pull-offset': `${pullOffset}px` }"
+      aria-hidden="true"
+    >
+      <div class="pull-refresh-pill">
+        {{ pullRefreshing ? '刷新中...' : pullReady ? '松开刷新' : '下拉刷新' }}
+      </div>
+    </div>
     <!-- Hero Section -->
     <header class="hero">
       <div class="hero-content">
@@ -32,8 +49,14 @@
 
       <!-- Loading State -->
       <div v-if="loading" class="loading-state">
-        <div class="loading-spinner"></div>
-        <p>加载中...</p>
+        <div class="home-skeleton-list" aria-hidden="true">
+          <div v-for="n in 3" :key="`home-skeleton-${n}`" class="home-skeleton-card">
+            <div class="skeleton-block home-skeleton-cover"></div>
+            <div class="skeleton-line home-skeleton-title"></div>
+            <div class="skeleton-line home-skeleton-line"></div>
+            <div class="skeleton-line home-skeleton-line short"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Error State -->
@@ -147,6 +170,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import apiService from '../api'
 import { useAuthStore } from '../stores/auth'
+import { usePullToRefresh } from '../composables/usePullToRefresh'
 
 const authStore = useAuthStore()
 
@@ -184,9 +208,12 @@ const totalReadTime = computed(() => {
   return articles.value.reduce((sum, article) => sum + (article.readTime || 0), 0)
 })
 
-const fetchData = async () => {
-  loading.value = true
-  error.value = null
+const fetchData = async (options = {}) => {
+  const { silent = false } = options
+  if (!silent) {
+    loading.value = true
+    error.value = null
+  }
 
   try {
     if (authStore.isLoggedIn) {
@@ -216,12 +243,23 @@ const fetchData = async () => {
       statuses.value = []
     }
   } catch (err) {
-    error.value = '获取数据失败'
+    if (!silent) error.value = '获取数据失败'
     console.error(err)
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
   }
 }
+
+const {
+  offset: pullOffset,
+  visible: pullVisible,
+  ready: pullReady,
+  refreshing: pullRefreshing,
+  onTouchStart: onPullTouchStart,
+  onTouchMove: onPullTouchMove,
+  onTouchEnd: onPullTouchEnd,
+  onTouchCancel: onPullTouchCancel
+} = usePullToRefresh(() => fetchData({ silent: true }))
 
 const formatDate = (dateStr) => {
   const date = new Date(dateStr)
@@ -265,6 +303,62 @@ onUnmounted(() => {
 .home {
   min-height: 100vh;
   position: relative;
+}
+
+.pull-refresh-indicator {
+  position: fixed;
+  left: 50%;
+  top: calc(50px + var(--safe-top));
+  z-index: 1200;
+  transform: translate(-50%, calc(-56px + var(--pull-offset, 0px)));
+  opacity: 0;
+  transition:
+    transform var(--motion-base) var(--motion-smooth),
+    opacity var(--motion-fast) var(--motion-smooth);
+  pointer-events: none;
+}
+
+.pull-refresh-pill {
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pull-refresh-indicator.visible {
+  opacity: 1;
+}
+
+.pull-refresh-indicator.ready .pull-refresh-pill {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border-light));
+}
+
+.pull-refresh-indicator.refreshing .pull-refresh-pill {
+  color: var(--color-text-secondary);
+}
+
+.pull-refresh-indicator.refreshing .pull-refresh-pill::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  border-top-color: var(--color-accent);
+  animation: pull-spin 0.8s linear infinite;
+}
+
+@keyframes pull-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Hero Section */
@@ -635,12 +729,7 @@ onUnmounted(() => {
 
 /* Loading State */
 .loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   padding: 60px 0;
-  color: var(--color-text-secondary);
 }
 
 .loading-spinner {
@@ -657,6 +746,39 @@ onUnmounted(() => {
   to {
     transform: rotate(360deg);
   }
+}
+
+.home-skeleton-list {
+  display: grid;
+  gap: 12px;
+}
+
+.home-skeleton-card {
+  border: 1px solid var(--color-border-light);
+  border-radius: 16px;
+  background: var(--color-surface);
+  padding: 12px;
+  box-shadow: var(--ux-shadow-soft);
+}
+
+.home-skeleton-cover {
+  height: 86px;
+  border-radius: 12px;
+}
+
+.home-skeleton-title {
+  margin-top: 10px;
+  width: 70%;
+  height: 14px;
+}
+
+.home-skeleton-line {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.home-skeleton-line.short {
+  width: 56%;
 }
 
 /* Error State */

@@ -1,10 +1,13 @@
 {
+  "id": "/",
   "name": "MySelf",
   "short_name": "MySelf",
   "description": "A personal site for thoughts, updates, and long-term projects.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
   "background_color": "#fbfbfd",
   "theme_color": "#0071e3",
   "icons": [

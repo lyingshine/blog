@@ -131,7 +131,8 @@ watch(isComposeOpen, (open) => {
 @media (max-width: 768px) {
   .mobile-tabbar-wrap {
     display: block;
-    --tabbar-core-height: 10dvh;
+    --tabbar-core-height: clamp(60px, 7.6dvh, 70px);
+    --tabbar-safe-bottom: max(8px, calc(var(--safe-bottom) * 0.45));
   }
 
   .mobile-tabbar {
@@ -139,12 +140,12 @@ watch(isComposeOpen, (open) => {
     left: 0;
     right: 0;
     bottom: 0;
-    height: calc(var(--tabbar-core-height) + var(--safe-bottom));
-    padding: 7px max(8px, var(--safe-right)) calc(7px + var(--safe-bottom)) max(8px, var(--safe-left));
+    height: calc(var(--tabbar-core-height) + var(--tabbar-safe-bottom));
+    padding: 1px max(8px, var(--safe-right)) calc(1px + var(--tabbar-safe-bottom)) max(8px, var(--safe-left));
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: center;
-    gap: clamp(2px, 1.2vw, 6px);
+    gap: clamp(0px, 0.7vw, 2px);
     border-top: 0.25px solid color-mix(in srgb, var(--color-border) 32%, var(--color-border-light));
     background: color-mix(in srgb, var(--color-surface) 96%, transparent);
     backdrop-filter: blur(10px) saturate(140%);
@@ -154,7 +155,7 @@ watch(isComposeOpen, (open) => {
   }
 
   .tab-item {
-    height: calc(var(--tabbar-core-height) - 18px);
+    height: calc(var(--tabbar-core-height) - 8px);
     border: none;
     border-radius: clamp(10px, 3vw, 14px);
     background: transparent;
@@ -163,7 +164,7 @@ watch(isComposeOpen, (open) => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1px;
+    gap: 0;
     font-size: 11px;
     font-weight: 600;
     position: relative;
@@ -210,8 +211,8 @@ watch(isComposeOpen, (open) => {
     color: var(--color-accent);
     transform: none;
     border-radius: 12px;
-    height: calc(var(--tabbar-core-height) - 28px);
-    width: calc(var(--tabbar-core-height) - 28px);
+    height: calc(var(--tabbar-core-height) - 18px);
+    width: calc(var(--tabbar-core-height) - 18px);
     margin: 0 auto;
     align-self: center;
     border: none;
@@ -265,7 +266,7 @@ watch(isComposeOpen, (open) => {
     position: fixed;
     left: max(12px, var(--safe-left));
     right: max(12px, var(--safe-right));
-    bottom: calc(var(--tabbar-core-height) + 14px + var(--safe-bottom));
+    bottom: calc(var(--tabbar-core-height) + 14px + var(--tabbar-safe-bottom));
     display: grid;
     gap: 10px;
     padding: 12px;

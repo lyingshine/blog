@@ -1,5 +1,21 @@
 ﻿<template>
-  <div class="discovery-page">
+  <div
+    class="discovery-page"
+    @touchstart="onPullTouchStart"
+    @touchmove="onPullTouchMove"
+    @touchend="onPullTouchEnd"
+    @touchcancel="onPullTouchCancel"
+  >
+    <div
+      class="pull-refresh-indicator"
+      :class="{ visible: pullVisible, ready: pullReady, refreshing: pullRefreshing }"
+      :style="{ '--pull-offset': `${pullOffset}px` }"
+      aria-hidden="true"
+    >
+      <div class="pull-refresh-pill">
+        {{ pullRefreshing ? '刷新中...' : pullReady ? '松开刷新' : '下拉刷新' }}
+      </div>
+    </div>
     <header class="discovery-header">
       <h1 class="discovery-title">发现</h1>
       <p class="discovery-subtitle">发现新内容，也可以直接完成互动。</p>
@@ -18,8 +34,22 @@
     </header>
 
     <section v-if="loading" class="loading-state">
-      <div class="loading-spinner"></div>
-      <p>加载中...</p>
+      <div class="discovery-skeleton-list" aria-hidden="true">
+        <article v-for="n in 4" :key="`discovery-skeleton-${n}`" class="item-card discovery-skeleton-card">
+          <div class="item-head">
+            <div class="skeleton-line discovery-skeleton-badge"></div>
+            <div class="skeleton-line discovery-skeleton-time"></div>
+          </div>
+          <div class="skeleton-line discovery-skeleton-title"></div>
+          <div class="skeleton-line discovery-skeleton-text"></div>
+          <div class="skeleton-line discovery-skeleton-text short"></div>
+          <div class="item-actions">
+            <div class="skeleton-line discovery-skeleton-action"></div>
+            <div class="skeleton-line discovery-skeleton-action"></div>
+            <div class="skeleton-line discovery-skeleton-action"></div>
+          </div>
+        </article>
+      </div>
     </section>
 
     <section v-else-if="activeTab === 'articles'" class="feed-list">
@@ -247,6 +277,7 @@
 import { computed, ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import apiService, { resolveAssetUrl } from '../api'
+import { usePullToRefresh } from '../composables/usePullToRefresh'
 
 const authStore = useAuthStore()
 
@@ -379,8 +410,9 @@ const setActionMessage = (type, id, message) => {
   }, 2200)
 }
 
-const fetchData = async () => {
-  loading.value = true
+const fetchData = async (options = {}) => {
+  const { silent = false } = options
+  if (!silent) loading.value = true
   try {
     const [articlesRes, statusesRes] = await Promise.all([
       apiService.getArticles({ limit: 100 }),
@@ -392,9 +424,20 @@ const fetchData = async () => {
   } catch (error) {
     console.error('获取发现内容失败:', error)
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
   }
 }
+
+const {
+  offset: pullOffset,
+  visible: pullVisible,
+  ready: pullReady,
+  refreshing: pullRefreshing,
+  onTouchStart: onPullTouchStart,
+  onTouchMove: onPullTouchMove,
+  onTouchEnd: onPullTouchEnd,
+  onTouchCancel: onPullTouchCancel
+} = usePullToRefresh(() => fetchData({ silent: true }))
 
 const loadEngagementBatch = async () => {
   try {
@@ -565,6 +608,58 @@ onMounted(async () => {
   padding: 0 22px calc(80px + var(--safe-bottom));
 }
 
+.pull-refresh-indicator {
+  position: fixed;
+  left: 50%;
+  top: calc(50px + var(--safe-top));
+  z-index: 1200;
+  transform: translate(-50%, calc(-56px + var(--pull-offset, 0px)));
+  opacity: 0;
+  transition:
+    transform var(--motion-base) var(--motion-smooth),
+    opacity var(--motion-fast) var(--motion-smooth);
+  pointer-events: none;
+}
+
+.pull-refresh-pill {
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pull-refresh-indicator.visible {
+  opacity: 1;
+}
+
+.pull-refresh-indicator.ready .pull-refresh-pill {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border-light));
+}
+
+.pull-refresh-indicator.refreshing .pull-refresh-pill::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  border-top-color: var(--color-accent);
+  animation: pull-spin 0.8s linear infinite;
+}
+
+@keyframes pull-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .discovery-header {
   padding: 24px 0 16px;
   text-align: center;
@@ -622,9 +717,7 @@ onMounted(async () => {
 }
 
 .loading-state {
-  padding: 72px 0;
-  text-align: center;
-  color: var(--color-text-secondary);
+  padding: 20px 0 10px;
 }
 
 .loading-spinner {
@@ -635,6 +728,46 @@ onMounted(async () => {
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 12px;
+}
+
+.discovery-skeleton-list {
+  display: grid;
+  gap: 12px;
+}
+
+.discovery-skeleton-card {
+  animation: none;
+}
+
+.discovery-skeleton-badge {
+  width: 64px;
+  height: 20px;
+  border-radius: 999px;
+}
+
+.discovery-skeleton-time {
+  width: 96px;
+}
+
+.discovery-skeleton-title {
+  margin-top: 10px;
+  width: 72%;
+  height: 14px;
+}
+
+.discovery-skeleton-text {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.discovery-skeleton-text.short {
+  width: 58%;
+}
+
+.discovery-skeleton-action {
+  width: 62px;
+  height: 28px;
+  border-radius: 999px;
 }
 
 @keyframes spin {
