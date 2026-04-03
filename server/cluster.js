@@ -29,15 +29,22 @@ if (cluster.isPrimary) {
   })
 } else {
   const app = require('./index')
-  const server = app.listen(PORT, () => {
-    console.log(`[Cluster] Worker ${process.pid} listening on ${PORT}`)
-    if (process.env.SIMULATOR_LEADER === '1') {
-      sim.startSimulator()
-      console.log(`[Cluster] Worker ${process.pid} is simulator leader`)
-    }
-  })
 
-  process.on('SIGTERM', () => {
-    server.close(() => process.exit(0))
+  app.startServer({
+    port: PORT,
+    onStarted: () => {
+      console.log(`[Cluster] Worker ${process.pid} listening on ${PORT}`)
+      if (process.env.SIMULATOR_LEADER === '1') {
+        sim.startSimulator()
+        console.log(`[Cluster] Worker ${process.pid} is simulator leader`)
+      }
+    }
+  }).then((server) => {
+    process.on('SIGTERM', () => {
+      server.close(() => process.exit(0))
+    })
+  }).catch((error) => {
+    console.error(`[Cluster] Worker ${process.pid} failed to start:`, error)
+    process.exit(1)
   })
 }
