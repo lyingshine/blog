@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit')
 const session = require('express-session')
 const path = require('path')
 const http = require('http')
+require('dotenv').config({ path: path.resolve(__dirname, '.env') })
 
 // Routes
 const authRoutes = require('./routes/auth')
@@ -23,11 +24,30 @@ const telemetry = require('./utils/telemetry')
 
 const app = express()
 
+const corsOriginsFromEnv = String(process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((item) => item.trim())
+  .filter(Boolean)
+
+const allowAllOriginsInProd = String(process.env.CORS_ALLOW_ALL || '').toLowerCase() === 'true'
+
 // Middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://yourdomain.com', 'https://www.yourdomain.com']
-    : true,
+  origin(origin, callback) {
+    // Requests like curl/Postman may have no Origin header.
+    if (!origin) return callback(null, true)
+
+    // Development defaults to allow all for easier local/mobile testing.
+    if (process.env.NODE_ENV !== 'production') return callback(null, true)
+
+    // Explicit opt-in to allow all origins in production.
+    if (allowAllOriginsInProd) return callback(null, true)
+
+    // Production allow-list from env.
+    if (corsOriginsFromEnv.includes(origin)) return callback(null, true)
+
+    return callback(null, false)
+  },
   credentials: true
 }))
 
