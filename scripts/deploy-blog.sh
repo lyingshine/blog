@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_DIR="/home/ubuntu/myself"
 BRANCH="main"
-GITEE_REPO="https://gitee.com/lyingshineii/myself.git"
+GIT_REPO="https://github.com/lyingshine/myself.git"
 WEB_ROOT="/opt/1panel/www/sites/myself/index"
 PM2_NAME="myself"
 
@@ -20,13 +20,13 @@ if [ -f "$ENV_FILE" ]; then
 fi
 
 if [ ! -d "$APP_DIR/.git" ]; then
-  echo "[deploy] first clone from gitee..."
+  echo "[deploy] first clone from github..."
   rm -rf "$APP_DIR"
-  git clone --depth=1 -b "$BRANCH" "$GITEE_REPO" "$APP_DIR"
+  git clone --depth=1 -b "$BRANCH" "$GIT_REPO" "$APP_DIR"
 else
-  echo "[deploy] update from gitee..."
+  echo "[deploy] update from github..."
   cd "$APP_DIR"
-  git remote set-url origin "$GITEE_REPO"
+  git remote set-url origin "$GIT_REPO"
   git fetch --depth=1 origin "$BRANCH"
   git reset --hard "origin/$BRANCH"
 fi
