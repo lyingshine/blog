@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  `${window.location.protocol}//${window.location.hostname}:3000/api`
+  '/api'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))

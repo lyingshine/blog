@@ -31,6 +31,20 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08);
   --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.1);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --touch-target-min: 44px;
+  --ux-ring: 0 0 0 3px color-mix(in srgb, var(--color-accent) 24%, transparent);
+  --ux-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ux-shadow-soft: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --ux-shadow-card: 0 16px 34px rgba(15, 23, 42, 0.1);
+  --motion-fast: 160ms;
+  --motion-base: 260ms;
+  --motion-slow: 420ms;
+  --motion-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-smooth: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* ============================================
@@ -165,6 +179,7 @@
 html {
   font-size: 16px;
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -176,6 +191,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   transition: background-color var(--transition-normal), color var(--transition-normal);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
 }
 
 a {
@@ -199,6 +217,41 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--motion-fast) var(--motion-spring),
+    box-shadow var(--motion-base) var(--motion-spring),
+    border-color var(--motion-base) var(--motion-smooth),
+    color var(--motion-base) var(--motion-smooth),
+    background-color var(--motion-base) var(--motion-smooth),
+    opacity var(--motion-base) var(--motion-smooth);
+}
+
+button:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  button,
+  [role='button'],
+  a.nav-item,
+  a.login-btn,
+  a.mobile-login,
+  button.mobile-logout {
+    min-height: var(--touch-target-min);
+  }
 }
 
 /* Custom scrollbar */
@@ -246,4 +299,65 @@ button {
 .theme-transition-overlay.active {
   opacity: 1;
   pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .motion-fade-up,
+  .motion-soft-pop,
+  .article-card,
+  .status-card,
+  .item-card,
+  .timeline-item,
+  .message-card,
+  .conversation-item,
+  .dm-message,
+  .comment-item {
+    animation: none !important;
+  }
+}
+@keyframes fade-up-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes soft-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.motion-fade-up {
+  animation: fade-up-in var(--motion-base) var(--motion-spring) both;
+}
+
+.motion-soft-pop {
+  animation: soft-pop-in var(--motion-base) var(--motion-spring) both;
 }

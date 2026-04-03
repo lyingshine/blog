@@ -60,7 +60,7 @@ const appVersion = __APP_VERSION__
 .footer-container {
   max-width: 980px;
   margin: 0 auto;
-  padding: 32px 22px 24px;
+  padding: 32px 22px calc(24px + var(--safe-bottom));
 }
 
 .footer-top {
@@ -149,7 +149,7 @@ const appVersion = __APP_VERSION__
 
 @media (max-width: 768px) {
   .footer-container {
-    padding: 32px 16px 24px;
+    padding: 28px 16px calc(18px + var(--safe-bottom));
   }
 
   .footer-top {
@@ -158,7 +158,8 @@ const appVersion = __APP_VERSION__
   }
 
   .footer-links {
-    gap: 48px;
+    gap: 24px;
+    justify-content: space-between;
   }
 
   .footer-bottom {

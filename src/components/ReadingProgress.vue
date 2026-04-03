@@ -56,7 +56,7 @@ onUnmounted(() => {
 <style scoped>
 .reading-progress {
   position: fixed;
-  top: 0;
+  top: var(--safe-top);
   left: 0;
   right: 0;
   height: 3px;
@@ -66,7 +66,11 @@ onUnmounted(() => {
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-accent) 0%, #a855f7 100%);
+  background: linear-gradient(
+    90deg,
+    var(--color-accent) 0%,
+    color-mix(in srgb, var(--color-accent) 62%, #66b0ff) 100%
+  );
   transition: width 0.1s ease-out;
   border-radius: 0 2px 2px 0;
 }

@@ -8,6 +8,8 @@ import Moments from '../views/Moments.vue'
 import Discovery from '../views/Discovery.vue'
 import Admin from '../views/Admin.vue'
 import DailyPlanner from '../views/DailyPlanner.vue'
+import Messages from '../views/Messages.vue'
+import AdminReports from '../views/AdminReports.vue'
 
 const routes = [
   {
@@ -48,9 +50,20 @@ const routes = [
     component: Discovery
   },
   {
+    path: '/messages',
+    name: 'Messages',
+    component: Messages
+  },
+  {
     path: '/admin',
     name: 'Admin',
     component: Admin,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/reports',
+    name: 'AdminReports',
+    component: AdminReports,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
@@ -62,7 +75,13 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    }
+    return { top: 0, left: 0 }
+  }
 })
 
 router.beforeEach((to, from, next) => {

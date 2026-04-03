@@ -105,6 +105,130 @@ async function ensureSchema() {
         CONSTRAINT fk_daily_plans_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `)
+
+    await pool.write(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        actor_id INT NULL,
+        type VARCHAR(40) DEFAULT 'system',
+        title VARCHAR(120) DEFAULT '',
+        content VARCHAR(500) DEFAULT '',
+        link VARCHAR(300) DEFAULT '',
+        is_read TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_notifications_user_created (user_id, created_at),
+        INDEX idx_notifications_user_read (user_id, is_read),
+        CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_notifications_actor FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `)
+
+    await pool.write(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        endpoint VARCHAR(700) NOT NULL,
+        p256dh VARCHAR(255) NOT NULL,
+        auth VARCHAR(255) NOT NULL,
+        user_agent VARCHAR(300) DEFAULT '',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_push_endpoint (endpoint),
+        INDEX idx_push_user (user_id),
+        CONSTRAINT fk_push_subscriptions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `)
+
+    await pool.write(`
+      CREATE TABLE IF NOT EXISTS content_reactions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        target_type VARCHAR(20) NOT NULL,
+        target_id INT NOT NULL,
+        reaction TINYINT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_reaction_user_target (user_id, target_type, target_id),
+        INDEX idx_reaction_target (target_type, target_id, reaction),
+        CONSTRAINT fk_content_reactions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `)
+
+    await pool.write(`
+      CREATE TABLE IF NOT EXISTS content_comments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        target_type VARCHAR(20) NOT NULL,
+        target_id INT NOT NULL,
+        content TEXT NOT NULL,
+        parent_id INT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_comment_target (target_type, target_id, created_at),
+        INDEX idx_comment_user (user_id),
+        CONSTRAINT fk_content_comments_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `)
+
+    await pool.write(`
+      CREATE TABLE IF NOT EXISTS content_shares (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        target_type VARCHAR(20) NOT NULL,
+        target_id INT NOT NULL,
+        comment VARCHAR(500) DEFAULT '',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_share_target (target_type, target_id, created_at),
+        INDEX idx_share_user (user_id),
+        CONSTRAINT fk_content_shares_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `)
+
+    await pool.write(`
+      CREATE TABLE IF NOT EXISTS content_reports (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        target_type VARCHAR(20) NOT NULL,
+        target_id INT NOT NULL,
+        reason VARCHAR(120) NOT NULL,
+        details VARCHAR(600) DEFAULT '',
+        status VARCHAR(20) DEFAULT 'pending',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_report_user_target (user_id, target_type, target_id),
+        INDEX idx_report_status (status, created_at),
+        CONSTRAINT fk_content_reports_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `)
+
+    await pool.write(`
+      CREATE TABLE IF NOT EXISTS user_follows (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        follower_id INT NOT NULL,
+        followee_id INT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_follow_relation (follower_id, followee_id),
+        INDEX idx_follow_follower (follower_id, created_at),
+        INDEX idx_follow_followee (followee_id, created_at),
+        CONSTRAINT fk_user_follows_follower FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_user_follows_followee FOREIGN KEY (followee_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `)
+
+    await pool.write(`
+      CREATE TABLE IF NOT EXISTS private_messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sender_id INT NOT NULL,
+        receiver_id INT NOT NULL,
+        content VARCHAR(1000) NOT NULL,
+        is_read TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_pm_sender_receiver (sender_id, receiver_id, created_at),
+        INDEX idx_pm_receiver_sender (receiver_id, sender_id, created_at),
+        INDEX idx_pm_receiver_read (receiver_id, is_read, created_at),
+        CONSTRAINT fk_private_messages_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_private_messages_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `)
   })()
 
   return initPromise

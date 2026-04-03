@@ -62,7 +62,7 @@ const deleteStatus = async (id, authorId) => {
 
 const likeStatus = async (id) => {
   await pool.write('UPDATE statuses SET likes = likes + 1 WHERE id = ?', [id])
-  const [rows] = await pool.read('SELECT id, likes FROM statuses WHERE id = ? LIMIT 1', [id])
+  const [rows] = await pool.read('SELECT id, likes, author_id FROM statuses WHERE id = ? LIMIT 1', [id])
   bumpStatusListVersion()
   return rows[0]
 }

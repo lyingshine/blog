@@ -1,11 +1,11 @@
-﻿<template>
+<template>
   <div class="about-page">
     <header class="about-header">
       <div class="avatar-wrapper">
         <div class="avatar">
           <img
             v-if="isImageAvatar(authStore.user?.avatar)"
-            :src="authStore.user?.avatar"
+            :src="resolveAssetUrl(authStore.user?.avatar)"
             alt="avatar"
             class="avatar-image"
           />
@@ -116,7 +116,7 @@
 
 <script setup>
 import { reactive, computed, watch, ref } from 'vue'
-import apiService from '../api'
+import apiService, { resolveAssetUrl } from '../api'
 import { useAuthStore } from '../stores/auth'
 
 const authStore = useAuthStore()
@@ -280,7 +280,7 @@ const handleAvatarSelect = async (event) => {
 .about-page {
   max-width: 960px;
   margin: 0 auto;
-  padding: 22px 22px 64px;
+  padding: 22px 22px calc(76px + var(--safe-bottom));
 }
 
 .about-header {
@@ -337,6 +337,7 @@ const handleAvatarSelect = async (event) => {
   background: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
   color: var(--color-text-primary);
   border-radius: 999px;
+  min-height: 40px;
   padding: 8px 14px;
   font-size: 12px;
   font-weight: 600;
@@ -545,6 +546,7 @@ textarea {
 .save-btn {
   border: none;
   border-radius: 999px;
+  min-height: 42px;
   padding: 10px 20px;
   background: var(--color-accent);
   color: #fff;
@@ -598,7 +600,7 @@ textarea {
 
 @media (max-width: 768px) {
   .about-page {
-    padding: 16px 16px 56px;
+    padding: 16px 16px calc(64px + var(--safe-bottom));
   }
 
   .about-header {
@@ -654,6 +656,10 @@ textarea {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .save-btn {
+    width: 100%;
   }
 }
 </style>

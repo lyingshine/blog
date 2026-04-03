@@ -1,30 +1,15 @@
 ﻿<template>
-  <div class="discovery-page"
-    @touchstart="onTouchStart"
-    @touchmove="onTouchMove"
-    @touchend="onTouchEnd"
-    @mousedown="onMouseDown"
-  >
-    <div class="pull-refresh-container" :style="pullStyle">
-      <div class="pull-indicator" v-show="pullDistance > 0">
-        <svg class="pull-icon" :class="{ spinning: refreshing, rotating: !refreshing && pullDistance >= pullThreshold }" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"/>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-        </svg>
-        <span class="pull-text">{{ pullText }}</span>
-      </div>
-    </div>
-
+  <div class="discovery-page">
     <header class="discovery-header">
       <h1 class="discovery-title">发现</h1>
-      <p class="discovery-subtitle">聚焦内容本身，快速找到你要读的东西。</p>
-
-      <div class="tab-bar">
+      <p class="discovery-subtitle">发现新内容，也可以直接完成互动。</p>
+      <div class="tab-bar" role="tablist" aria-label="发现分类">
         <button
           v-for="tab in tabs"
           :key="tab.key"
           class="tab-btn"
           :class="{ active: activeTab === tab.key }"
+          type="button"
           @click="switchTab(tab.key)"
         >
           {{ tab.label }}
@@ -32,149 +17,241 @@
       </div>
     </header>
 
-    <div v-if="loading" class="loading-state">
+    <section v-if="loading" class="loading-state">
       <div class="loading-spinner"></div>
       <p>加载中...</p>
-    </div>
+    </section>
 
-    <div v-else-if="activeTab === 'articles'" class="articles-feed">
-      <div class="articles-grid">
-        <article v-for="article in paginatedArticles" :key="article.id" class="article-card">
-          <router-link :to="`/article/${article.id}`" class="article-link">
-
-            <div class="article-body">
-              <div class="article-meta-top">
-                <span class="article-category">{{ article.category }}</span>
-                <span class="article-read-time">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12 6 12 12 16 14"/>
-                  </svg>
-                  {{ article.readTime }} 分钟
-                </span>
-              </div>
-              <h2 class="article-title">{{ article.title }}</h2>
-              <p class="article-excerpt">{{ article.excerpt }}</p>
-              <div class="article-footer">
-                <span class="article-date">{{ formatDate(article.date) }}</span>
-                <span class="article-author" v-if="article.author_username">
-                  {{ article.author_username }}
-                </span>
-              </div>
-            </div>
-          </router-link>
-        </article>
-      </div>
-
-      <div v-if="articlesPage < totalPages" class="load-more">
-        <button class="load-more-btn" @click="loadMoreArticles" :disabled="loadingMore">
-          {{ loadingMore ? '加载中...' : '加载更多' }}
-        </button>
-      </div>
-    </div>
-
-    <div v-else-if="activeTab === 'statuses'" class="statuses-feed">
-      <div class="statuses-list">
-        <div v-for="status in paginatedStatuses" :key="status.id" class="status-card">
-            <div class="status-header">
-              <div class="status-avatar">
-                <img
-                  v-if="isImageAvatar(status.author_avatar)"
-                  :src="status.author_avatar"
-                  alt="avatar"
-                  class="avatar-image"
-                />
-                <span v-else>{{ getAvatarText(status.author_avatar, status.author_username) }}</span>
-              </div>
-              <div class="status-user-info">
-                <span class="status-username">{{ status.author_username || '未知用户' }}</span>
-                <span class="status-date">{{ formatStatusDate(status.created_at || status.date) }}</span>
-              </div>
-            </div>
-          <div class="status-content">
-            <p>{{ status.content }}</p>
+    <section v-else-if="activeTab === 'articles'" class="feed-list">
+      <article v-for="article in paginatedArticles" :key="`article-${article.id}`" class="item-card article-card">
+        <div class="item-head">
+          <span class="type-badge article">文章</span>
+          <span class="item-time">{{ formatDate(article.date) }}</span>
+        </div>
+        <router-link :to="`/article/${article.id}`" class="item-title-link">
+          <h2 class="item-title">{{ article.title }}</h2>
+        </router-link>
+        <p class="item-excerpt">{{ article.excerpt }}</p>
+        <div class="item-meta">
+          <span>{{ article.author_username || `用户${article.authorId}` }}</span>
+          <span>{{ article.category }}</span>
+          <span>{{ article.readTime }} 分钟阅读</span>
+        </div>
+        <div class="item-actions">
+          <button class="action-btn" :class="{ active: getStats('article', article.id).myReaction === 1 }" type="button" @click="handleReaction('article', article.id, 'like')">赞 {{ getStats('article', article.id).likes }}</button>
+          <button class="action-btn" :class="{ active: getStats('article', article.id).myReaction === -1 }" type="button" @click="handleReaction('article', article.id, 'dislike')">踩 {{ getStats('article', article.id).dislikes }}</button>
+          <button class="action-btn" type="button" @click="toggleComments('article', article.id)">评论 {{ getStats('article', article.id).comments }}</button>
+          <button class="action-btn" type="button" @click="toggleActionPanel('article', article.id, 'share')">转发 {{ getStats('article', article.id).shares }}</button>
+          <button class="action-btn danger" type="button" @click="toggleActionPanel('article', article.id, 'report')">举报</button>
+        </div>
+        <div v-if="isCommentOpen('article', article.id)" class="panel-block">
+          <div v-if="commentLoadingMap[keyOf('article', article.id)]" class="panel-empty">评论加载中...</div>
+          <div v-else class="comment-list">
+            <div v-if="!(commentMap[keyOf('article', article.id)] || []).length" class="panel-empty">还没有评论</div>
+            <article v-for="comment in (commentMap[keyOf('article', article.id)] || [])" :key="comment.id" class="comment-item">
+              <header>
+                <strong>{{ comment.author_username || '用户' }}</strong>
+                <span>{{ formatDate(comment.created_at) }}</span>
+              </header>
+              <p>{{ comment.content }}</p>
+            </article>
           </div>
-          <div class="status-footer">
-            <button class="like-btn" :class="{ liked: status.liked }" @click="handleLike(status.id)">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-              <span>{{ status.likes }}</span>
-            </button>
+          <div v-if="authStore.isLoggedIn" class="panel-editor">
+            <textarea v-model="commentDrafts[keyOf('article', article.id)]" rows="2" maxlength="1000" placeholder="写下你的评论..."></textarea>
+            <button class="action-btn primary" type="button" @click="submitComment('article', article.id)">发送</button>
           </div>
         </div>
-      </div>
-
-      <div v-if="statusesPage < totalStatusPages" class="load-more">
-        <button class="load-more-btn" @click="loadMoreStatuses" :disabled="loadingMore">
-          {{ loadingMore ? '加载中...' : '加载更多' }}
-        </button>
-      </div>
-    </div>
-
-    <div v-else class="mixed-feed">
-      <div class="feed-list">
-        <template v-for="item in paginatedFeed" :key="`${item.type}-${item.id}`">
-          <div v-if="item.type === 'article'" class="feed-article-card">
-            <router-link :to="`/article/${item.id}`" class="feed-article-link">
-              <div class="feed-article-info">
-                <span class="feed-article-category">{{ item.category }}</span>
-                <h3 class="feed-article-title">{{ item.title }}</h3>
-                <p class="feed-article-excerpt">{{ item.excerpt }}</p>
-                <div class="feed-article-meta">
-                  <span class="feed-article-date">{{ formatDate(item.created_at || item.date) }}</span>
-                  <span class="feed-article-author" v-if="item.author_username">
-                    {{ item.author_username }}
-                  </span>
-                </div>
-              </div>
-            </router-link>
+        <div v-if="actionPanelMap[keyOf('article', article.id)]" class="panel-block">
+          <div v-if="actionPanelMap[keyOf('article', article.id)] === 'share'" class="panel-editor">
+            <textarea v-model="shareDrafts[keyOf('article', article.id)]" rows="2" maxlength="500" placeholder="可选：补充一句转发语..."></textarea>
+            <div class="panel-buttons">
+              <button class="action-btn" type="button" @click="closeActionPanel('article', article.id)">取消</button>
+              <button class="action-btn primary" type="button" @click="submitShare('article', article.id)">确认转发</button>
+            </div>
           </div>
+          <div v-else class="panel-editor">
+            <select v-model="reportReasonMap[keyOf('article', article.id)]">
+              <option value="垃圾内容">垃圾内容</option>
+              <option value="骚扰辱骂">骚扰辱骂</option>
+              <option value="违法违规">违法违规</option>
+              <option value="侵权抄袭">侵权抄袭</option>
+            </select>
+            <textarea v-model="reportDetailMap[keyOf('article', article.id)]" rows="2" maxlength="600" placeholder="可选：补充说明..."></textarea>
+            <div class="panel-buttons">
+              <button class="action-btn" type="button" @click="closeActionPanel('article', article.id)">取消</button>
+              <button class="action-btn primary" type="button" @click="submitReport('article', article.id)">提交举报</button>
+            </div>
+          </div>
+        </div>
+        <p v-if="actionMessageMap[keyOf('article', article.id)]" class="action-message">{{ actionMessageMap[keyOf('article', article.id)] }}</p>
+      </article>
+      <div v-if="articlesPage < totalArticlePages" class="load-more-wrap">
+        <button class="load-more-btn" type="button" :disabled="loadingMore" @click="loadMore('article')">{{ loadingMore ? '加载中...' : '加载更多' }}</button>
+      </div>
+    </section>
 
-          <div v-else class="feed-status-card">
-            <div class="feed-status-header">
-              <div class="feed-status-avatar">
-                <img
-                  v-if="isImageAvatar(item.author_avatar)"
-                  :src="item.author_avatar"
-                  alt="avatar"
-                  class="avatar-image"
-                />
-                <span v-else>{{ getAvatarText(item.author_avatar, item.author_username) }}</span>
-              </div>
-              <div class="feed-status-user-info">
-                <span class="feed-status-username">{{ item.author_username || '未知用户' }}</span>
-                <span class="feed-status-date">{{ formatStatusDate(item.created_at || item.date) }}</span>
-              </div>
+    <section v-else-if="activeTab === 'statuses'" class="feed-list">
+      <article v-for="status in paginatedStatuses" :key="`status-${status.id}`" class="item-card status-card">
+        <div class="item-head">
+          <span class="type-badge status">动态</span>
+          <span class="item-time">{{ formatRelative(status.date) }}</span>
+        </div>
+        <div class="author-line">
+          <div class="author-avatar">
+            <img v-if="isImageAvatar(status.author_avatar)" :src="resolveAssetUrl(status.author_avatar)" alt="avatar" class="avatar-image" />
+            <span v-else>{{ getAvatarText(status.author_avatar, status.author_username) }}</span>
+          </div>
+          <strong>{{ status.author_username || `用户${status.authorId}` }}</strong>
+        </div>
+        <p class="status-content">{{ status.content }}</p>
+        <div class="item-actions">
+          <button class="action-btn" :class="{ active: getStats('status', status.id).myReaction === 1 }" type="button" @click="handleReaction('status', status.id, 'like')">赞 {{ getStats('status', status.id).likes }}</button>
+          <button class="action-btn" :class="{ active: getStats('status', status.id).myReaction === -1 }" type="button" @click="handleReaction('status', status.id, 'dislike')">踩 {{ getStats('status', status.id).dislikes }}</button>
+          <button class="action-btn" type="button" @click="toggleComments('status', status.id)">评论 {{ getStats('status', status.id).comments }}</button>
+          <button class="action-btn" type="button" @click="toggleActionPanel('status', status.id, 'share')">转发 {{ getStats('status', status.id).shares }}</button>
+          <button class="action-btn danger" type="button" @click="toggleActionPanel('status', status.id, 'report')">举报</button>
+        </div>
+        <div v-if="isCommentOpen('status', status.id)" class="panel-block">
+          <div v-if="commentLoadingMap[keyOf('status', status.id)]" class="panel-empty">评论加载中...</div>
+          <div v-else class="comment-list">
+            <div v-if="!(commentMap[keyOf('status', status.id)] || []).length" class="panel-empty">还没有评论</div>
+            <article v-for="comment in (commentMap[keyOf('status', status.id)] || [])" :key="comment.id" class="comment-item">
+              <header>
+                <strong>{{ comment.author_username || '用户' }}</strong>
+                <span>{{ formatDate(comment.created_at) }}</span>
+              </header>
+              <p>{{ comment.content }}</p>
+            </article>
+          </div>
+          <div v-if="authStore.isLoggedIn" class="panel-editor">
+            <textarea v-model="commentDrafts[keyOf('status', status.id)]" rows="2" maxlength="1000" placeholder="写下你的评论..."></textarea>
+            <button class="action-btn primary" type="button" @click="submitComment('status', status.id)">发送</button>
+          </div>
+        </div>
+        <div v-if="actionPanelMap[keyOf('status', status.id)]" class="panel-block">
+          <div v-if="actionPanelMap[keyOf('status', status.id)] === 'share'" class="panel-editor">
+            <textarea v-model="shareDrafts[keyOf('status', status.id)]" rows="2" maxlength="500" placeholder="可选：补充一句转发语..."></textarea>
+            <div class="panel-buttons">
+              <button class="action-btn" type="button" @click="closeActionPanel('status', status.id)">取消</button>
+              <button class="action-btn primary" type="button" @click="submitShare('status', status.id)">确认转发</button>
             </div>
-            <p class="feed-status-content">{{ item.content }}</p>
-            <div class="feed-status-footer">
-              <button class="like-btn" :class="{ liked: item.liked }" @click="handleLike(item.id)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-                <span>{{ item.likes }}</span>
-              </button>
+          </div>
+          <div v-else class="panel-editor">
+            <select v-model="reportReasonMap[keyOf('status', status.id)]">
+              <option value="垃圾内容">垃圾内容</option>
+              <option value="骚扰辱骂">骚扰辱骂</option>
+              <option value="违法违规">违法违规</option>
+              <option value="侵权抄袭">侵权抄袭</option>
+            </select>
+            <textarea v-model="reportDetailMap[keyOf('status', status.id)]" rows="2" maxlength="600" placeholder="可选：补充说明..."></textarea>
+            <div class="panel-buttons">
+              <button class="action-btn" type="button" @click="closeActionPanel('status', status.id)">取消</button>
+              <button class="action-btn primary" type="button" @click="submitReport('status', status.id)">提交举报</button>
             </div>
+          </div>
+        </div>
+        <p v-if="actionMessageMap[keyOf('status', status.id)]" class="action-message">{{ actionMessageMap[keyOf('status', status.id)] }}</p>
+      </article>
+      <div v-if="statusesPage < totalStatusPages" class="load-more-wrap">
+        <button class="load-more-btn" type="button" :disabled="loadingMore" @click="loadMore('status')">{{ loadingMore ? '加载中...' : '加载更多' }}</button>
+      </div>
+    </section>
+
+    <section v-else class="feed-list mixed-list">
+      <article
+        v-for="item in paginatedMixed"
+        :key="`${item.type}-${item.id}`"
+        class="item-card"
+        :class="item.type === 'article' ? 'article-card mixed-article' : 'status-card mixed-status'"
+      >
+        <div class="item-head">
+          <span class="type-badge" :class="item.type === 'article' ? 'article' : 'status'">{{ item.type === 'article' ? '文章' : '动态' }}</span>
+          <span class="item-time">{{ item.type === 'article' ? formatDate(item.date) : formatRelative(item.date) }}</span>
+        </div>
+        <template v-if="item.type === 'article'">
+          <router-link :to="`/article/${item.id}`" class="item-title-link">
+            <h2 class="item-title">{{ item.title }}</h2>
+          </router-link>
+          <p class="item-excerpt">{{ item.excerpt }}</p>
+          <div class="item-meta">
+            <span>{{ item.author_username || `用户${item.authorId}` }}</span>
+            <span>{{ item.category }}</span>
           </div>
         </template>
+        <template v-else>
+          <div class="author-line">
+            <div class="author-avatar">
+              <img v-if="isImageAvatar(item.author_avatar)" :src="resolveAssetUrl(item.author_avatar)" alt="avatar" class="avatar-image" />
+              <span v-else>{{ getAvatarText(item.author_avatar, item.author_username) }}</span>
+            </div>
+            <strong>{{ item.author_username || `用户${item.authorId}` }}</strong>
+          </div>
+          <p class="status-content">{{ item.content }}</p>
+        </template>
+        <div class="item-actions">
+          <button class="action-btn" :class="{ active: getStats(item.type, item.id).myReaction === 1 }" type="button" @click="handleReaction(item.type, item.id, 'like')">赞 {{ getStats(item.type, item.id).likes }}</button>
+          <button class="action-btn" :class="{ active: getStats(item.type, item.id).myReaction === -1 }" type="button" @click="handleReaction(item.type, item.id, 'dislike')">踩 {{ getStats(item.type, item.id).dislikes }}</button>
+          <button class="action-btn" type="button" @click="toggleComments(item.type, item.id)">评论 {{ getStats(item.type, item.id).comments }}</button>
+          <button class="action-btn" type="button" @click="toggleActionPanel(item.type, item.id, 'share')">转发 {{ getStats(item.type, item.id).shares }}</button>
+          <button class="action-btn danger" type="button" @click="toggleActionPanel(item.type, item.id, 'report')">举报</button>
+        </div>
+        <div v-if="isCommentOpen(item.type, item.id)" class="panel-block">
+          <div v-if="commentLoadingMap[keyOf(item.type, item.id)]" class="panel-empty">评论加载中...</div>
+          <div v-else class="comment-list">
+            <div v-if="!(commentMap[keyOf(item.type, item.id)] || []).length" class="panel-empty">还没有评论</div>
+            <article v-for="comment in (commentMap[keyOf(item.type, item.id)] || [])" :key="comment.id" class="comment-item">
+              <header>
+                <strong>{{ comment.author_username || '用户' }}</strong>
+                <span>{{ formatDate(comment.created_at) }}</span>
+              </header>
+              <p>{{ comment.content }}</p>
+            </article>
+          </div>
+          <div v-if="authStore.isLoggedIn" class="panel-editor">
+            <textarea v-model="commentDrafts[keyOf(item.type, item.id)]" rows="2" maxlength="1000" placeholder="写下你的评论..."></textarea>
+            <button class="action-btn primary" type="button" @click="submitComment(item.type, item.id)">发送</button>
+          </div>
+        </div>
+        <div v-if="actionPanelMap[keyOf(item.type, item.id)]" class="panel-block">
+          <div v-if="actionPanelMap[keyOf(item.type, item.id)] === 'share'" class="panel-editor">
+            <textarea v-model="shareDrafts[keyOf(item.type, item.id)]" rows="2" maxlength="500" placeholder="可选：补充一句转发语..."></textarea>
+            <div class="panel-buttons">
+              <button class="action-btn" type="button" @click="closeActionPanel(item.type, item.id)">取消</button>
+              <button class="action-btn primary" type="button" @click="submitShare(item.type, item.id)">确认转发</button>
+            </div>
+          </div>
+          <div v-else class="panel-editor">
+            <select v-model="reportReasonMap[keyOf(item.type, item.id)]">
+              <option value="垃圾内容">垃圾内容</option>
+              <option value="骚扰辱骂">骚扰辱骂</option>
+              <option value="违法违规">违法违规</option>
+              <option value="侵权抄袭">侵权抄袭</option>
+            </select>
+            <textarea v-model="reportDetailMap[keyOf(item.type, item.id)]" rows="2" maxlength="600" placeholder="可选：补充说明..."></textarea>
+            <div class="panel-buttons">
+              <button class="action-btn" type="button" @click="closeActionPanel(item.type, item.id)">取消</button>
+              <button class="action-btn primary" type="button" @click="submitReport(item.type, item.id)">提交举报</button>
+            </div>
+          </div>
+        </div>
+        <p v-if="actionMessageMap[keyOf(item.type, item.id)]" class="action-message">{{ actionMessageMap[keyOf(item.type, item.id)] }}</p>
+      </article>
+      <div v-if="mixedPage < totalMixedPages" class="load-more-wrap">
+        <button class="load-more-btn" type="button" :disabled="loadingMore" @click="loadMore('mixed')">{{ loadingMore ? '加载中...' : '加载更多' }}</button>
       </div>
-
-      <div v-if="feedPage < totalFeedPages" class="load-more">
-        <button class="load-more-btn" @click="loadMoreFeed" :disabled="loadingMore">
-          {{ loadingMore ? '加载中...' : '加载更多' }}
-        </button>
-      </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import apiService from '../api'
+import { computed, ref, onMounted } from 'vue'
+import { useAuthStore } from '../stores/auth'
+import apiService, { resolveAssetUrl } from '../api'
+
+const authStore = useAuthStore()
 
 const tabs = [
-  { key: 'mixed', label: '推荐' },
+  { key: 'mixed', label: '综合' },
   { key: 'articles', label: '文章' },
   { key: 'statuses', label: '动态' }
 ]
@@ -182,784 +259,688 @@ const tabs = [
 const activeTab = ref('mixed')
 const loading = ref(true)
 const loadingMore = ref(false)
-const refreshing = ref(false)
 
 const articles = ref([])
 const statuses = ref([])
 
 const articlesPage = ref(1)
 const statusesPage = ref(1)
-const feedPage = ref(1)
+const mixedPage = ref(1)
 const perPage = 20
 
-const pullDistance = ref(0)
-const pullThreshold = 80
-const maxPullDistance = 150
+const engagementMap = ref({ article: {}, status: {} })
+const commentOpenMap = ref({})
+const commentMap = ref({})
+const commentDrafts = ref({})
+const commentLoadingMap = ref({})
 
-const pullStyle = computed(() => ({
-  height: `${pullDistance.value}px`
-}))
+const actionPanelMap = ref({})
+const shareDrafts = ref({})
+const reportReasonMap = ref({})
+const reportDetailMap = ref({})
+const actionMessageMap = ref({})
+const actionMessageTimerMap = {}
 
-const pullText = computed(() => {
-  if (refreshing.value) return '刷新中...'
-  if (pullDistance.value >= pullThreshold) return '松开刷新'
-  return '下拉刷新'
+const keyOf = (type, id) => `${type}-${id}`
+
+const normalizeArticle = (a = {}) => ({
+  ...a,
+  type: 'article',
+  authorId: a.authorId ?? a.author_id,
+  readTime: a.readTime ?? a.read_time ?? 0,
+  date: a.date ?? a.created_at
 })
 
-const totalPages = computed(() => Math.ceil(articles.value.length / perPage))
-const totalStatusPages = computed(() => Math.ceil(statuses.value.length / perPage))
-
-const paginatedArticles = computed(() => {
-  return articles.value.slice(0, articlesPage.value * perPage)
+const normalizeStatus = (s = {}) => ({
+  ...s,
+  type: 'status',
+  authorId: s.authorId ?? s.author_id,
+  date: s.date ?? s.created_at
 })
 
-const paginatedStatuses = computed(() => {
-  return statuses.value.slice(0, statusesPage.value * perPage)
-})
+const paginatedArticles = computed(() => articles.value.slice(0, articlesPage.value * perPage))
+const paginatedStatuses = computed(() => statuses.value.slice(0, statusesPage.value * perPage))
 
 const mixedFeed = computed(() => {
-  const allItems = [
-    ...articles.value.map(a => ({ ...a, type: 'article' })),
-    ...statuses.value.map(s => ({ ...s, type: 'status' }))
-  ]
-
-  allItems.sort((a, b) => new Date(b.date) - new Date(a.date))
-  return allItems
+  const all = [...articles.value, ...statuses.value]
+  all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  return all
 })
 
-const paginatedFeed = computed(() => {
-  return mixedFeed.value.slice(0, feedPage.value * perPage)
-})
+const paginatedMixed = computed(() => mixedFeed.value.slice(0, mixedPage.value * perPage))
 
-const totalFeedPages = computed(() => Math.ceil(mixedFeed.value.length / perPage))
+const totalArticlePages = computed(() => Math.ceil(articles.value.length / perPage))
+const totalStatusPages = computed(() => Math.ceil(statuses.value.length / perPage))
+const totalMixedPages = computed(() => Math.ceil(mixedFeed.value.length / perPage))
 
 const isImageAvatar = (avatar) =>
-  typeof avatar === 'string' &&
-  /^(https?:\/\/|\/uploads\/|data:image\/)/i.test(avatar)
+  typeof avatar === 'string' && /^(https?:\/\/|\/uploads\/|data:image\/)/i.test(avatar)
 
 const getAvatarText = (avatar, username) => {
-  if (isImageAvatar(avatar)) {
-    return (username || 'U').charAt(0).toUpperCase()
-  }
+  if (isImageAvatar(avatar)) return (username || 'U').charAt(0).toUpperCase()
   const trimmed = typeof avatar === 'string' ? avatar.trim() : ''
   if (trimmed) return trimmed.charAt(0).toUpperCase()
   return (username || 'U').charAt(0).toUpperCase()
 }
 
 const formatDate = (dateStr) => {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+  const d = new Date(dateStr)
+  if (Number.isNaN(d.getTime())) return '--'
+  return d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-const formatStatusDate = (dateStr) => {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now - date
-
-  const minute = 60 * 1000
-  const hour = 60 * minute
-  const day = 24 * hour
-
-  if (diff < minute) return '刚刚'
-  if (diff < hour) return `${Math.floor(diff / minute)} 分钟前`
-  if (diff < day) return `${Math.floor(diff / hour)} 小时前`
+const formatRelative = (dateStr) => {
+  const d = new Date(dateStr)
+  if (Number.isNaN(d.getTime())) return '--'
+  const now = Date.now()
+  const diff = now - d.getTime()
+  const m = 60 * 1000
+  const h = 60 * m
+  const day = 24 * h
+  if (diff < m) return '刚刚'
+  if (diff < h) return `${Math.floor(diff / m)} 分钟前`
+  if (diff < day) return `${Math.floor(diff / h)} 小时前`
   if (diff < 7 * day) return `${Math.floor(diff / day)} 天前`
-
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+  return formatDate(dateStr)
 }
 
-const loadMoreArticles = async () => {
-  loadingMore.value = true
-  setTimeout(() => {
-    articlesPage.value++
-    loadingMore.value = false
-  }, 300)
-}
-
-const loadMoreStatuses = async () => {
-  loadingMore.value = true
-  setTimeout(() => {
-    statusesPage.value++
-    loadingMore.value = false
-  }, 300)
-}
-
-const loadMoreFeed = async () => {
-  loadingMore.value = true
-  setTimeout(() => {
-    feedPage.value++
-    loadingMore.value = false
-  }, 300)
-}
-
-const handleLike = async (id) => {
-  const status = statuses.value.find(s => s.id === id)
-  if (!status) return
-
-  try {
-    const response = await apiService.likeStatus(id)
-    status.likes = response.data.likes
-    status.liked = true
-  } catch (error) {
-    console.error('点赞失败:', error)
+const getStats = (type, id) => {
+  const row = engagementMap.value[type]?.[id] || {}
+  return {
+    likes: Number(row.likes || 0),
+    dislikes: Number(row.dislikes || 0),
+    comments: Number(row.comments || 0),
+    shares: Number(row.shares || 0),
+    myReaction: Number(row.myReaction || 0)
   }
 }
 
-async function fetchData() {
-  const [articlesRes, statusesRes] = await Promise.all([
-    apiService.getArticles({ limit: 50 }),
-    apiService.getStatuses()
-  ])
-  articles.value = articlesRes.data.articles.map(a => ({
-    ...a,
-    date: a.created_at || a.date,
-    authorId: a.author_id || a.authorId
-  }))
-  statuses.value = statusesRes.data.map(s => ({
-    ...s,
-    date: s.created_at || s.date,
-    authorId: s.author_id || s.authorId,
-    liked: false
-  }))
+const setStats = (type, id, data = {}) => {
+  engagementMap.value = {
+    ...engagementMap.value,
+    [type]: {
+      ...(engagementMap.value[type] || {}),
+      [id]: {
+        ...getStats(type, id),
+        ...data
+      }
+    }
+  }
 }
 
-async function switchTab(key) {
-  activeTab.value = key
-  articlesPage.value = 1
-  statusesPage.value = 1
-  feedPage.value = 1
+const setActionMessage = (type, id, message) => {
+  const k = keyOf(type, id)
+  actionMessageMap.value = { ...actionMessageMap.value, [k]: message }
+  if (actionMessageTimerMap[k]) clearTimeout(actionMessageTimerMap[k])
+  actionMessageTimerMap[k] = setTimeout(() => {
+    const next = { ...actionMessageMap.value }
+    delete next[k]
+    actionMessageMap.value = next
+  }, 2200)
+}
+
+const fetchData = async () => {
   loading.value = true
   try {
-    await fetchData()
+    const [articlesRes, statusesRes] = await Promise.all([
+      apiService.getArticles({ limit: 100 }),
+      apiService.getStatuses()
+    ])
+    articles.value = (articlesRes.data?.articles || []).map(normalizeArticle)
+    statuses.value = (statusesRes.data || []).map(normalizeStatus)
+    await loadEngagementBatch()
   } catch (error) {
-    console.error('获取数据失败:', error)
+    console.error('获取发现内容失败:', error)
   } finally {
     loading.value = false
   }
 }
 
-async function refreshData() {
-  refreshing.value = true
-  pullDistance.value = 60
+const loadEngagementBatch = async () => {
   try {
-    await fetchData()
-    articlesPage.value = 1
-    statusesPage.value = 1
-    feedPage.value = 1
+    const articleIds = articles.value.map((x) => x.id)
+    const statusIds = statuses.value.map((x) => x.id)
+    const tasks = []
+    if (articleIds.length) tasks.push(apiService.getEngagement('article', articleIds))
+    if (statusIds.length) tasks.push(apiService.getEngagement('status', statusIds))
+
+    const results = await Promise.all(tasks)
+    for (const item of results) {
+      const map = item.data || {}
+      const sample = Object.values(map)[0]
+      const type = sample?.targetType
+      if (!type) continue
+      engagementMap.value = {
+        ...engagementMap.value,
+        [type]: map
+      }
+    }
   } catch (error) {
-    console.error('刷新失败:', error)
+    console.error('获取互动数据失败:', error)
+  }
+}
+
+const handleReaction = async (type, id, reaction) => {
+  if (!authStore.isLoggedIn) {
+    setActionMessage(type, id, '请先登录后再互动')
+    return
+  }
+  try {
+    const response = await apiService.reactToContent(type, id, reaction)
+    const data = response.data || {}
+    setStats(type, id, {
+      likes: Number(data.likes || 0),
+      dislikes: Number(data.dislikes || 0),
+      comments: Number(data.comments || 0),
+      shares: Number(data.shares || 0),
+      myReaction: Number(data.myReaction || 0)
+    })
+  } catch (error) {
+    console.error('互动失败:', error)
+    setActionMessage(type, id, error.message || '互动失败')
+  }
+}
+
+const isCommentOpen = (type, id) => !!commentOpenMap.value[keyOf(type, id)]
+
+const toggleComments = async (type, id) => {
+  const k = keyOf(type, id)
+  const nextOpen = !commentOpenMap.value[k]
+  commentOpenMap.value = { ...commentOpenMap.value, [k]: nextOpen }
+  if (nextOpen) {
+    await loadComments(type, id)
+  }
+}
+
+const loadComments = async (type, id) => {
+  const k = keyOf(type, id)
+  commentLoadingMap.value = { ...commentLoadingMap.value, [k]: true }
+  try {
+    const res = await apiService.getComments(type, id, 50)
+    commentMap.value = { ...commentMap.value, [k]: res.data || [] }
+  } catch (error) {
+    console.error('获取评论失败:', error)
   } finally {
-    setTimeout(() => {
-      refreshing.value = false
-      pullDistance.value = 0
-    }, 400)
+    commentLoadingMap.value = { ...commentLoadingMap.value, [k]: false }
   }
 }
 
-let startY = 0
-let isDragging = false
+const submitComment = async (type, id) => {
+  if (!authStore.isLoggedIn) {
+    setActionMessage(type, id, '请先登录后再评论')
+    return
+  }
+  const k = keyOf(type, id)
+  const content = (commentDrafts.value[k] || '').trim()
+  if (!content) return
 
-function onDragStart(clientY, clientX) {
-  if (window.scrollY === 0 && !refreshing.value) {
-    startY = clientY
-    isDragging = true
+  try {
+    const res = await apiService.createComment({ targetType: type, targetId: id, content })
+    const list = commentMap.value[k] || []
+    commentMap.value = { ...commentMap.value, [k]: [res.data, ...list] }
+    commentDrafts.value = { ...commentDrafts.value, [k]: '' }
+    setStats(type, id, { comments: getStats(type, id).comments + 1 })
+  } catch (error) {
+    console.error('评论失败:', error)
+    setActionMessage(type, id, error.message || '评论失败')
   }
 }
 
-function onDragMove(clientY, clientX) {
-  if (!isDragging || refreshing.value) return
-  const deltaY = clientY - startY
-  const deltaX = Math.abs(clientX - (startX || clientX))
-  if (deltaY > 0 && deltaY > deltaX) {
-    pullDistance.value = Math.min(deltaY * 0.5, maxPullDistance)
+const toggleActionPanel = (type, id, mode) => {
+  const k = keyOf(type, id)
+  const current = actionPanelMap.value[k]
+  actionPanelMap.value = { ...actionPanelMap.value, [k]: current === mode ? '' : mode }
+}
+
+const closeActionPanel = (type, id) => {
+  const k = keyOf(type, id)
+  actionPanelMap.value = { ...actionPanelMap.value, [k]: '' }
+}
+
+const submitShare = async (type, id) => {
+  if (!authStore.isLoggedIn) {
+    setActionMessage(type, id, '请先登录后再转发')
+    return
+  }
+  const k = keyOf(type, id)
+  const comment = (shareDrafts.value[k] || '').trim()
+  try {
+    const res = await apiService.shareContent({ targetType: type, targetId: id, comment })
+    const shares = Number(res.data?.engagement?.shares || getStats(type, id).shares)
+    setStats(type, id, { shares })
+    shareDrafts.value = { ...shareDrafts.value, [k]: '' }
+    closeActionPanel(type, id)
+    setActionMessage(type, id, '已转发')
+  } catch (error) {
+    console.error('转发失败:', error)
+    setActionMessage(type, id, error.message || '转发失败')
   }
 }
 
-function onDragEnd(clientY, clientX) {
-  if (!isDragging) return
-  isDragging = false
-
-  if (pullDistance.value >= pullThreshold) {
-    refreshData()
-  } else {
-    pullDistance.value = 0
+const submitReport = async (type, id) => {
+  if (!authStore.isLoggedIn) {
+    setActionMessage(type, id, '请先登录后再举报')
+    return
+  }
+  const k = keyOf(type, id)
+  const reason = (reportReasonMap.value[k] || '垃圾内容').trim()
+  const details = (reportDetailMap.value[k] || '').trim()
+  try {
+    await apiService.reportContent({ targetType: type, targetId: id, reason, details })
+    reportDetailMap.value = { ...reportDetailMap.value, [k]: '' }
+    closeActionPanel(type, id)
+    setActionMessage(type, id, '举报已提交')
+  } catch (error) {
+    console.error('举报失败:', error)
+    setActionMessage(type, id, error.message || '举报失败')
   }
 }
 
-let startX = 0
-
-function onTouchStart(e) {
-  startY = e.touches[0].clientY
-  startX = e.touches[0].clientX
-  isDragging = window.scrollY === 0 && !refreshing.value
+const switchTab = (tab) => {
+  activeTab.value = tab
+  articlesPage.value = 1
+  statusesPage.value = 1
+  mixedPage.value = 1
 }
 
-function onTouchMove(e) {
-  if (!isDragging || refreshing.value) return
-  const deltaY = e.touches[0].clientY - startY
-  const deltaX = Math.abs(e.touches[0].clientX - startX)
-  if (deltaY > 0 && deltaY > deltaX) {
-    e.preventDefault()
-    pullDistance.value = Math.min(deltaY * 0.5, maxPullDistance)
-  }
-}
-
-function onTouchEnd(e) {
-  if (!isDragging) return
-  isDragging = false
-
-  if (pullDistance.value >= pullThreshold) {
-    refreshData()
-  } else {
-    pullDistance.value = 0
-  }
-}
-
-function onMouseDown(e) {
-  if (window.scrollY === 0 && e.button === 0 && !refreshing.value) {
-    startY = e.clientY
-    startX = e.clientX
-    isDragging = true
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onMouseUp)
-  }
-}
-
-function onMouseMove(e) {
-  if (!isDragging || refreshing.value) return
-  const deltaY = e.clientY - startY
-  const deltaX = Math.abs(e.clientX - startX)
-  if (deltaY > 0 && deltaY > deltaX) {
-    pullDistance.value = Math.min(deltaY * 0.5, maxPullDistance)
-  }
-}
-
-function onMouseUp(e) {
-  if (!isDragging) return
-  isDragging = false
-  document.removeEventListener('mousemove', onMouseMove)
-  document.removeEventListener('mouseup', onMouseUp)
-
-  if (pullDistance.value >= pullThreshold) {
-    refreshData()
-  } else {
-    pullDistance.value = 0
-  }
+const loadMore = async (type) => {
+  loadingMore.value = true
+  setTimeout(() => {
+    if (type === 'article') articlesPage.value += 1
+    if (type === 'status') statusesPage.value += 1
+    if (type === 'mixed') mixedPage.value += 1
+    loadingMore.value = false
+  }, 260)
 }
 
 onMounted(async () => {
-  loading.value = true
-  try {
-    await fetchData()
-  } catch (error) {
-    console.error('获取数据失败:', error)
-  } finally {
-    loading.value = false
-  }
+  await fetchData()
 })
 </script>
 
 <style scoped>
-.pull-refresh-container {
-  overflow: hidden;
-  transition: none;
-}
-
-.pull-indicator {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 60px;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.pull-icon {
-  transition: transform 0.3s ease;
-}
-
-.pull-icon.rotating {
-  transform: rotate(180deg);
-}
-
-.pull-icon.spinning {
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 .discovery-page {
   max-width: 980px;
   margin: 0 auto;
-  padding: 0 22px 60px;
-  touch-action: pan-y;
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-}
-
-.discovery-page * {
-  -webkit-user-drag: none;
-  -khtml-user-drag: none;
-  -moz-user-drag: none;
-  -o-user-drag: none;
-  user-drag: none;
+  padding: 0 22px calc(80px + var(--safe-bottom));
 }
 
 .discovery-header {
-  padding: 24px 0 18px;
+  padding: 24px 0 16px;
   text-align: center;
 }
 
 .discovery-title {
   font-size: 30px;
   font-weight: 650;
+  letter-spacing: -0.02em;
   color: var(--color-text-primary);
-  margin: 0 0 6px;
+  margin: 0;
 }
 
 .discovery-subtitle {
+  margin-top: 8px;
   font-size: 14px;
   color: var(--color-text-secondary);
-  margin: 0 0 14px;
 }
 
 .tab-bar {
+  margin-top: 14px;
   display: inline-flex;
-  gap: 4px;
-  background: var(--color-surface);
-  padding: 4px;
-  border-radius: var(--radius-md);
+  gap: 6px;
+  padding: 5px;
   border: 1px solid var(--color-border-light);
+  border-radius: 14px;
+  background: var(--color-surface);
+  box-shadow: var(--ux-shadow-soft);
 }
 
 .tab-btn {
-  padding: 8px 20px;
-  background: transparent;
+  min-height: 38px;
+  min-width: 86px;
+  border-radius: 10px;
   border: none;
-  border-radius: var(--radius-md);
+  background: transparent;
   color: var(--color-text-secondary);
   font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.tab-btn:hover {
-  color: var(--color-text-primary);
+  font-weight: 600;
 }
 
 .tab-btn.active {
+  color: var(--color-accent);
   background: var(--color-accent-subtle);
-  color: var(--color-text-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 24%, var(--color-border-light));
+}
+
+.tab-btn:focus-visible,
+.action-btn:focus-visible,
+.load-more-btn:focus-visible,
+.panel-editor textarea:focus-visible,
+.panel-editor select:focus-visible {
+  outline: none;
+  box-shadow: var(--ux-ring);
 }
 
 .loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 0;
+  padding: 72px 0;
+  text-align: center;
   color: var(--color-text-secondary);
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border: 3px solid var(--color-border-light);
   border-top-color: var(--color-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 16px;
+  margin: 0 auto 12px;
 }
 
-.articles-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
-}
-
-.article-card {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: none;
-  border: 1px solid var(--color-border-light);
-  transition: border-color var(--transition-fast), background-color var(--transition-fast);
-}
-
-.article-card:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: var(--color-border);
-}
-
-.article-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-
-.article-body {
-  padding: 14px;
-}
-
-.article-meta-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.article-category {
-  background: var(--color-accent-subtle);
-  color: var(--color-accent);
-  padding: 3px 10px;
-  border-radius: 980px;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.article-read-time {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-}
-
-.article-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  line-height: 1.4;
-  margin: 0 0 10px;
-}
-
-.article-excerpt {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-  margin: 0 0 14px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.article-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border-light);
-}
-
-.article-date {
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-}
-
-.article-author {
-  font-size: 12px;
-  color: var(--color-accent);
-  font-weight: 500;
-}
-
-.statuses-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.status-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  border-radius: 12px;
-  padding: 14px;
-}
-
-.status-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.status-avatar {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
-  border-radius: 50%;
-  font-size: 14px;
-  font-weight: 600;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-
-.status-user-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.status-username {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.status-date {
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-}
-
-.status-content p {
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--color-text-primary);
-  white-space: pre-wrap;
-  word-break: break-word;
-  margin: 0;
-}
-
-.status-footer {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border-light);
-}
-
-.like-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  background: transparent;
-  border: none;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  border-radius: var(--radius-md);
-}
-
-.like-btn:hover {
-  color: #ef4444;
-  background: #fef2f2;
-}
-
-.like-btn.liked {
-  color: #ef4444;
-}
-
-.like-btn.liked svg {
-  fill: #ef4444;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .feed-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.feed-article-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  border-radius: 12px;
-  overflow: hidden;
-  transition: border-color var(--transition-fast);
-}
-
-.feed-article-card:hover {
-  border-color: var(--color-border);
-  box-shadow: none;
-}
-
-.feed-article-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-
-.feed-article-info {
-  padding: 14px;
-  flex: 1;
-  min-width: 0;
-}
-
-.feed-article-category {
-  font-size: 11px;
-  color: var(--color-accent);
-  font-weight: 500;
-  background: var(--color-accent-subtle);
-  padding: 3px 10px;
-  border-radius: 980px;
-  display: inline-block;
-  margin-bottom: 8px;
-}
-
-.feed-article-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  line-height: 1.4;
-  margin: 0 0 8px;
-}
-
-.feed-article-excerpt {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-  margin: 0 0 12px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.feed-article-meta {
-  display: flex;
-  align-items: center;
+  display: grid;
   gap: 12px;
 }
 
-.feed-article-date {
+.mixed-list .mixed-article {
+  border-left: 4px solid color-mix(in srgb, var(--color-accent) 52%, var(--color-border-light));
+}
+
+.mixed-list .mixed-status {
+  border-left: 4px solid color-mix(in srgb, #16a34a 52%, var(--color-border-light));
+}
+
+.item-card {
+  border: 1px solid var(--color-border-light);
+  border-radius: 14px;
+  background: var(--color-surface);
+  padding: 12px;
+  box-shadow: var(--ux-shadow-soft);
+  animation: fade-up-in var(--motion-base) var(--motion-spring) both;
+}
+
+.feed-list .item-card:nth-child(1) { animation-delay: 20ms; }
+.feed-list .item-card:nth-child(2) { animation-delay: 45ms; }
+.feed-list .item-card:nth-child(3) { animation-delay: 70ms; }
+.feed-list .item-card:nth-child(4) { animation-delay: 95ms; }
+.feed-list .item-card:nth-child(5) { animation-delay: 120ms; }
+
+.item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.type-badge {
+  min-height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-light);
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.type-badge.article {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border-light));
+}
+
+.type-badge.status {
+  color: #15803d;
+  background: color-mix(in srgb, #16a34a 12%, var(--color-surface));
+  border-color: color-mix(in srgb, #16a34a 28%, var(--color-border-light));
+}
+
+.item-time {
   font-size: 12px;
   color: var(--color-text-tertiary);
 }
 
-.feed-article-author {
-  font-size: 12px;
-  color: var(--color-accent);
-  font-weight: 500;
+.item-title-link {
+  display: inline-block;
+  margin-top: 8px;
 }
 
-.feed-status-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  border-radius: 12px;
-  padding: 14px;
+.item-title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 19px;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
 }
 
-.feed-status-header {
+.item-excerpt {
+  margin-top: 8px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.item-meta {
+  margin-top: 10px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
 }
 
-.feed-status-avatar {
-  width: 32px;
-  height: 32px;
+.author-line {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.author-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface-elevated);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
-  border-radius: 50%;
-  font-size: 13px;
-  font-weight: 600;
-  flex-shrink: 0;
   overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .avatar-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
 }
 
-.feed-status-user-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.feed-status-username {
-  font-size: 13px;
-  font-weight: 600;
+.status-content {
+  margin-top: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.68;
   color: var(--color-text-primary);
 }
 
-.feed-status-date {
-  font-size: 11px;
+.item-actions {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.action-btn {
+  min-height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-surface-elevated) 92%, transparent);
+  color: var(--color-text-secondary);
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    transform var(--motion-fast) var(--motion-spring),
+    border-color var(--motion-base) var(--motion-smooth),
+    color var(--motion-base) var(--motion-smooth),
+    background-color var(--motion-base) var(--motion-smooth);
+}
+
+.action-btn.active {
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-border-light));
+  background: var(--color-accent-subtle);
+}
+
+.action-btn.primary {
+  color: #fff;
+  border-color: transparent;
+  background: var(--color-accent);
+}
+
+.action-btn.danger {
+  color: #c03f3f;
+}
+
+.panel-block {
+  margin-top: 10px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 10px;
+  padding: 10px;
+  background: color-mix(in srgb, var(--color-surface-elevated) 88%, transparent);
+}
+
+.panel-empty {
+  font-size: 13px;
   color: var(--color-text-tertiary);
 }
 
-.feed-status-content {
+.comment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.comment-item {
+  border: 1px solid var(--color-border-light);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--color-surface);
+}
+
+.comment-item header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.comment-item p {
+  margin-top: 6px;
   font-size: 14px;
-  line-height: 1.6;
   color: var(--color-text-primary);
   white-space: pre-wrap;
   word-break: break-word;
-  margin: 0 0 12px;
 }
 
-.feed-status-footer {
-  padding-top: 10px;
-  border-top: 1px solid var(--color-border-light);
+.panel-editor {
+  display: grid;
+  gap: 8px;
 }
 
-.load-more {
+.panel-editor textarea,
+.panel-editor select {
+  width: 100%;
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: inherit;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.panel-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.action-message {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.load-more-wrap {
   display: flex;
   justify-content: center;
-  padding: 32px 0;
+  padding: 10px 0 24px;
 }
 
 .load-more-btn {
-  padding: 10px 32px;
-  background: var(--color-surface);
+  min-height: 40px;
   border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-md);
+  border-radius: 10px;
+  background: var(--color-surface);
   color: var(--color-text-secondary);
-  font-size: 14px;
-  cursor: pointer;
-  transition: all var(--transition-fast);
+  font-weight: 700;
+  padding: 0 16px;
+  transition:
+    transform var(--motion-fast) var(--motion-spring),
+    border-color var(--motion-base) var(--motion-smooth),
+    color var(--motion-base) var(--motion-smooth),
+    background-color var(--motion-base) var(--motion-smooth);
 }
 
 .load-more-btn:hover:not(:disabled) {
-  background: var(--color-accent-subtle);
-  color: var(--color-accent);
-  border-color: var(--color-accent-subtle);
-}
-
-.load-more-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-accent) 26%, var(--color-border-light));
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-accent-subtle) 50%, var(--color-surface));
 }
 
 @media (max-width: 768px) {
   .discovery-page {
-    padding: 0 16px 60px;
+    padding: 0 16px calc(76px + var(--safe-bottom));
   }
 
-  .discovery-title {
-    font-size: 28px;
+  .discovery-header {
+    position: sticky;
+    top: calc(44px + var(--safe-top));
+    z-index: 11;
+    background: color-mix(in srgb, var(--color-bg) 94%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 
-  .articles-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+  .tab-bar {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .feed-article-link {
-    flex-direction: initial;
+  .tab-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .item-title {
+    font-size: 18px;
   }
 }
 </style>
-

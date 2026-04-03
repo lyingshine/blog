@@ -2,6 +2,9 @@ const express = require('express')
 const router = express.Router()
 const { getStatuses, createStatus, deleteStatus, likeStatus } = require('../data/statuses')
 const { authMiddleware } = require('../middleware/auth')
+const { createNotification, getUnreadCountByUserId } = require('../data/notifications')
+const notificationHub = require('../utils/notificationHub')
+const pushService = require('../utils/pushService')
 
 // GET /api/statuses - 获取动态列表
 router.get('/', async (req, res) => {
@@ -53,6 +56,27 @@ router.post('/:id/like', authMiddleware, async (req, res) => {
     if (!updated) {
       return res.status(404).json({ success: false, message: '动态未找到' })
     }
+
+    if (updated.author_id && Number(updated.author_id) !== Number(req.user.id)) {
+      const notification = await createNotification({
+        userId: updated.author_id,
+        actorId: req.user.id,
+        type: 'status_like',
+        title: '收到新的点赞',
+        content: `${req.user.username || '有用户'} 点赞了你的动态`,
+        link: '/moments'
+      })
+      const unreadCount = await getUnreadCountByUserId(updated.author_id)
+      notificationHub.publish(updated.author_id, notification)
+      notificationHub.publishCount(updated.author_id, unreadCount)
+      await pushService.sendPushToUser(updated.author_id, {
+        id: notification.id,
+        title: notification.title || '新消息',
+        content: notification.content || '',
+        link: notification.link || '/messages'
+      })
+    }
+
     res.json({ success: true, data: updated })
   } catch (err) {
     console.error(err)

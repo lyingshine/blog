@@ -777,7 +777,7 @@ onMounted(async () => {
 .admin-page {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 40px 22px 96px;
+  padding: 40px 22px calc(108px + var(--safe-bottom));
 }
 
 .admin-hero {
@@ -937,6 +937,7 @@ onMounted(async () => {
 }
 
 .tab-button {
+  min-height: 42px;
   padding: 10px 18px;
   border-radius: 999px;
   background: transparent;
@@ -1109,6 +1110,7 @@ onMounted(async () => {
 
 .ghost-button,
 .apply-button {
+  min-height: 40px;
   padding: 10px 14px;
   border-radius: 999px;
   font-size: 13px;
@@ -1484,6 +1486,7 @@ onMounted(async () => {
 }
 
 .log-switch-btn {
+  min-height: 34px;
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 12px;
@@ -1533,7 +1536,7 @@ onMounted(async () => {
 
 @media (max-width: 900px) {
   .admin-page {
-    padding: 24px 16px 72px;
+    padding: 24px 16px calc(84px + var(--safe-bottom));
   }
 
   .profile-grid {
@@ -1605,6 +1608,12 @@ onMounted(async () => {
   .tab-bar {
     display: flex;
     width: 100%;
+    position: sticky;
+    top: calc(46px + var(--safe-top));
+    z-index: 12;
+    background: color-mix(in srgb, var(--color-bg) 94%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   .log-actions {

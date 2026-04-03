@@ -346,5 +346,76 @@ router.delete('/cache', authMiddleware, async (req, res) => {
   }
 })
 
+router.get('/reports', authMiddleware, async (req, res) => {
+  try {
+    const status = String(req.query?.status || 'all').toLowerCase()
+    const limit = Math.max(1, Math.min(200, Number(req.query?.limit || 100)))
+    const params = []
+    let whereSql = ''
+
+    if (['pending', 'resolved', 'rejected'].includes(status)) {
+      whereSql = 'WHERE r.status = ?'
+      params.push(status)
+    }
+
+    params.push(limit)
+    const [rows] = await pool.read(
+      `SELECT
+        r.id,
+        r.user_id,
+        r.target_type,
+        r.target_id,
+        r.reason,
+        r.details,
+        r.status,
+        r.created_at,
+        u.username AS reporter_username,
+        u.avatar AS reporter_avatar
+      FROM content_reports r
+      JOIN users u ON u.id = r.user_id
+      ${whereSql}
+      ORDER BY r.id DESC
+      LIMIT ?`,
+      params
+    )
+
+    res.json({ success: true, data: rows })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+router.put('/reports/:id', authMiddleware, async (req, res) => {
+  try {
+    const reportId = Number.parseInt(req.params.id, 10)
+    const status = String(req.body?.status || '').toLowerCase()
+    if (!Number.isFinite(reportId) || reportId <= 0) {
+      return res.status(400).json({ success: false, message: '举报 ID 无效' })
+    }
+    if (!['pending', 'resolved', 'rejected'].includes(status)) {
+      return res.status(400).json({ success: false, message: '状态无效' })
+    }
+
+    const [result] = await pool.write('UPDATE content_reports SET status = ? WHERE id = ?', [status, reportId])
+    if (!result?.affectedRows) {
+      return res.status(404).json({ success: false, message: '举报不存在' })
+    }
+
+    const [rows] = await pool.read(
+      `SELECT id, user_id, target_type, target_id, reason, details, status, created_at
+       FROM content_reports
+       WHERE id = ?
+       LIMIT 1`,
+      [reportId]
+    )
+
+    res.json({ success: true, data: rows[0] || null })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
 module.exports = router
 

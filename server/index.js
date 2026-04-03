@@ -13,6 +13,7 @@ const articleRoutes = require('./routes/articles')
 const statusRoutes = require('./routes/statuses')
 const adminRoutes = require('./routes/admin')
 const notificationRoutes = require('./routes/notifications')
+const socialRoutes = require('./routes/social')
 
 // DB
 const pool = require('./db/pool')
@@ -110,6 +111,7 @@ app.use('/api/articles', articleRoutes)
 app.use('/api/statuses', statusRoutes)
 app.use('/api/admin', adminRoutes) // Apply without additional rate limiting
 app.use('/api/notifications', notificationRoutes)
+app.use('/api/social', socialRoutes)
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

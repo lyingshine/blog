@@ -103,8 +103,8 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-.auth-page { min-height: calc(100vh - 48px); display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
-.auth-container { width: 100%; max-width: 400px; background: var(--color-surface); border-radius: var(--radius-xl); padding: 40px; box-shadow: var(--shadow-lg); border: 1px solid var(--color-border-light); }
+.auth-page { min-height: calc(100dvh - 48px - var(--safe-top)); display: flex; align-items: center; justify-content: center; padding: 32px 20px calc(40px + var(--safe-bottom)); }
+.auth-container { width: 100%; max-width: 400px; background: var(--color-surface); border-radius: var(--radius-xl); padding: 36px; box-shadow: var(--shadow-lg); border: 1px solid var(--color-border-light); }
 .auth-header { text-align: center; margin-bottom: 32px; }
 .auth-logo { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: var(--color-accent); border-radius: 14px; color: white; margin-bottom: 20px; }
 .auth-title { font-size: 24px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 8px; }
@@ -125,4 +125,17 @@ const handleSubmit = async () => {
 .demo-hint { text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--color-border-light); }
 .demo-hint p { font-size: 13px; color: var(--color-text-tertiary); }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+  .auth-page { align-items: flex-start; padding: 20px 16px calc(28px + var(--safe-bottom)); }
+  .auth-container { max-width: 100%; border-radius: 18px; padding: 24px 18px; box-shadow: var(--shadow-md); }
+  .auth-header { margin-bottom: 24px; }
+  .auth-logo { width: 48px; height: 48px; margin-bottom: 14px; }
+  .auth-title { font-size: 22px; }
+  .auth-subtitle { font-size: 14px; }
+  .auth-form { gap: 14px; }
+  .form-input { height: 46px; }
+  .submit-btn { min-height: 46px; }
+  .password-toggle { min-height: 32px; padding: 0 4px; }
+}
 </style>

@@ -105,22 +105,22 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-.write-article { min-height: 100vh; padding: 24px 22px; }
+.write-article { min-height: calc(100dvh - var(--safe-top)); padding: 24px 22px calc(32px + var(--safe-bottom)); }
 .write-container { max-width: 800px; margin: 0 auto; }
-.write-header { display: flex; align-items: center; gap: 20px; margin-bottom: 8px; }
+.write-header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
 .write-subtitle { color: var(--color-text-secondary); margin-bottom: 18px; font-size: 14px; }
-.back-btn { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--color-surface); border: 1px solid var(--color-border-light); border-radius: var(--radius-md); color: var(--color-text-secondary); font-size: 14px; cursor: pointer; transition: border-color var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast); }
+.back-btn { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 14px; background: var(--color-surface); border: 1px solid var(--color-border-light); border-radius: var(--radius-md); color: var(--color-text-secondary); font-size: 14px; cursor: pointer; transition: border-color var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast); }
 .back-btn:hover { background: var(--color-accent-subtle); color: var(--color-accent); }
 .write-title { font-size: 24px; font-weight: 650; color: var(--color-text-primary); }
 .write-form { display: flex; flex-direction: column; gap: 18px; }
 .form-group { display: flex; flex-direction: column; gap: 8px; }
 .form-label { font-size: 14px; font-weight: 500; color: var(--color-text-secondary); }
-.form-input, .form-select, .form-textarea { padding: 12px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-primary); font-size: 15px; transition: border-color var(--transition-fast); }
+.form-input, .form-select, .form-textarea { min-height: 44px; padding: 12px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-primary); font-size: 15px; transition: border-color var(--transition-fast); }
 .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--color-accent); }
 .form-textarea { resize: vertical; font-family: inherit; line-height: 1.6; }
 .form-textarea-sm { min-height: 60px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 12px; padding-top: 2px; }
-.btn { padding: 10px 24px; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all var(--transition-fast); border: none; }
+.btn { min-height: 44px; padding: 10px 24px; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all var(--transition-fast); border: none; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn-primary { background: var(--color-accent); color: white; }
 .btn-primary:hover:not(:disabled) { background: var(--color-accent); }
@@ -129,5 +129,14 @@ const handleSubmit = async () => {
 .message { margin-top: 16px; padding: 12px 16px; border-radius: var(--radius-md); font-size: 14px; }
 .message.success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
 .message.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-@media (max-width: 768px) { .write-article { padding: 24px 16px; } .write-title { font-size: 22px; } .form-actions { flex-direction: column-reverse; } .btn { width: 100%; } }
+@media (max-width: 768px) {
+  .write-article { padding: 18px 16px calc(20px + var(--safe-bottom)); }
+  .write-header { flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+  .write-title { font-size: 22px; }
+  .write-subtitle { margin-bottom: 14px; font-size: 13px; }
+  .write-form { gap: 14px; }
+  .form-actions { flex-direction: column-reverse; }
+  .btn { width: 100%; }
+  .back-btn { width: 100%; justify-content: center; }
+}
 </style>

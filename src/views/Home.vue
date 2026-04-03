@@ -26,7 +26,7 @@
     <!-- Articles Section -->
     <section class="articles-section">
       <div class="section-header">
-        <h2 class="section-title">我的动态</h2>
+        <h2 class="section-title">我的文章</h2>
         <div class="section-line"></div>
       </div>
 
@@ -51,7 +51,7 @@
           <line x1="16" y1="17" x2="8" y2="17"/>
         </svg>
         <h3 class="empty-title">还没有文章</h3>
-        <p class="empty-text">去发布一条动态吧</p>
+        <p class="empty-text">从第一篇文章开始沉淀你的思考。</p>
         <router-link v-if="!authStore.isLoggedIn" to="/login" class="empty-btn">去登录</router-link>
         <router-link v-else to="/write" class="empty-btn">写文章</router-link>
       </div>
@@ -66,7 +66,7 @@
           @mouseleave="handleCardLeave"
         >
           <router-link :to="`/article/${article.id}`" class="article-link">
-            <div class="article-image" :style="{ background: article.gradient }">
+            <div class="article-image">
               <div class="image-overlay"></div>
               <span class="article-number">{{ String(index + 1).padStart(2, '0') }}</span>
             </div>
@@ -106,7 +106,7 @@
     <!-- Statuses Section -->
     <section class="statuses-section" v-if="authStore.isLoggedIn">
       <div class="section-header">
-        <h2 class="section-title">我的文章</h2>
+        <h2 class="section-title">我的动态</h2>
         <div class="section-line"></div>
       </div>
 
@@ -115,7 +115,7 @@
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
         <h3 class="empty-title">还没有动态</h3>
-        <p class="empty-text">开始写第一篇文章吧</p>
+        <p class="empty-text">开始发布第一条动态吧。</p>
         <router-link to="/moments" class="empty-btn">发动态</router-link>
       </div>
 
@@ -312,6 +312,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 12px;
   font-size: 14px;
   color: var(--color-text-tertiary);
@@ -399,7 +400,16 @@ onUnmounted(() => {
   transition: border-color var(--transition-fast), background-color var(--transition-fast);
   animation: none;
   opacity: 1;
+  box-shadow: var(--ux-shadow-soft);
+  animation: fade-up-in var(--motion-base) var(--motion-spring) both;
 }
+
+.articles-grid .article-card:nth-child(1) { animation-delay: 30ms; }
+.articles-grid .article-card:nth-child(2) { animation-delay: 60ms; }
+.articles-grid .article-card:nth-child(3) { animation-delay: 90ms; }
+.articles-grid .article-card:nth-child(4) { animation-delay: 120ms; }
+.articles-grid .article-card:nth-child(5) { animation-delay: 150ms; }
+.articles-grid .article-card:nth-child(6) { animation-delay: 180ms; }
 
 @keyframes fadeInUp {
   from {
@@ -413,27 +423,35 @@ onUnmounted(() => {
 }
 
 .article-card:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: var(--color-border);
+  transform: translateY(-1px);
+  box-shadow: var(--ux-shadow-card);
+  border-color: color-mix(in srgb, var(--color-accent) 22%, var(--color-border));
 }
 
 .article-link {
   display: block;
   text-decoration: none;
   color: inherit;
+  min-height: 100%;
 }
 
 .article-image {
-  height: 120px;
+  height: 62px;
   position: relative;
   overflow: hidden;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-elevated) 96%, transparent),
+      color-mix(in srgb, var(--color-surface) 96%, transparent)
+    );
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .image-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.04);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 7%, transparent), transparent);
   transition: none;
 }
 
@@ -442,7 +460,14 @@ onUnmounted(() => {
 }
 
 .article-number {
-  display: none;
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--color-text-tertiary);
+  font-weight: 700;
+  opacity: 0.65;
 }
 
 .article-card:hover .article-number {
@@ -451,7 +476,7 @@ onUnmounted(() => {
 }
 
 .article-body {
-  padding: 16px;
+  padding: 14px 15px 15px;
 }
 
 .article-meta-top {
@@ -479,10 +504,10 @@ onUnmounted(() => {
 }
 
 .article-title {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 650;
   color: var(--color-text-primary);
-  line-height: 1.4;
+  line-height: 1.35;
   margin-bottom: 8px;
   letter-spacing: -0.01em;
   transition: none;
@@ -493,9 +518,9 @@ onUnmounted(() => {
 }
 
 .article-excerpt {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text-secondary);
-  line-height: 1.55;
+  line-height: 1.6;
   margin-bottom: 14px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -523,22 +548,23 @@ onUnmounted(() => {
   font-size: 13px;
   font-weight: 500;
   color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 .action-arrow {
   display: flex;
   align-items: center;
-  transition: none;
+  transition: transform 0.18s var(--ux-ease);
 }
 
 .article-card:hover .action-arrow {
-  transform: none;
+  transform: translateX(2px);
 }
 
 /* Back to Top */
 .back-to-top {
   position: fixed;
-  bottom: 32px;
+  bottom: calc(28px + var(--safe-bottom));
   right: 32px;
   width: 48px;
   height: 48px;
@@ -556,10 +582,10 @@ onUnmounted(() => {
 }
 
 .back-to-top:hover {
-  background: var(--color-surface);
-  border-color: var(--color-border);
+  background: color-mix(in srgb, var(--color-accent-subtle) 58%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
   color: var(--color-text-primary);
-  transform: none;
+  transform: translateY(-1px);
 }
 
 /* Empty State */
@@ -598,11 +624,13 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.18s var(--ux-ease), box-shadow 0.2s var(--ux-ease);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--color-accent) 28%, transparent);
 }
 
 .empty-btn:hover {
   background: var(--color-accent-hover);
+  transform: translateY(-1px);
 }
 
 /* Loading State */
@@ -651,11 +679,12 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.18s var(--ux-ease);
 }
 
 .retry-button:hover {
   background: var(--color-accent-hover);
+  transform: translateY(-1px);
 }
 
 /* Transitions */
@@ -688,10 +717,18 @@ onUnmounted(() => {
   border-radius: var(--radius-lg);
   padding: 20px;
   transition: all var(--transition-fast);
+  box-shadow: var(--ux-shadow-soft);
+  animation: fade-up-in var(--motion-base) var(--motion-spring) both;
 }
 
+.statuses-list .status-card:nth-child(1) { animation-delay: 40ms; }
+.statuses-list .status-card:nth-child(2) { animation-delay: 80ms; }
+.statuses-list .status-card:nth-child(3) { animation-delay: 120ms; }
+.statuses-list .status-card:nth-child(4) { animation-delay: 160ms; }
+
 .status-card:hover {
-  border-color: var(--color-accent-subtle);
+  border-color: color-mix(in srgb, var(--color-accent) 24%, var(--color-border-light));
+  transform: translateY(-1px);
 }
 
 .status-content {
@@ -729,19 +766,29 @@ onUnmounted(() => {
 /* Responsive */
 @media (max-width: 768px) {
   .hero {
-    padding: 80px 16px 60px;
+    padding: 56px 16px 40px;
   }
 
   .hero-title {
-    font-size: 40px;
+    font-size: 34px;
   }
 
   .hero-subtitle {
-    font-size: 17px;
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  .hero-stats {
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .stat-divider {
+    display: none;
   }
 
   .articles-section {
-    padding: 0 16px 80px;
+    padding: 0 16px 68px;
   }
 
   .articles-grid {
@@ -750,14 +797,32 @@ onUnmounted(() => {
   }
 
   .article-image {
-    height: 180px;
+    height: 56px;
+  }
+
+  .article-body {
+    padding: 14px;
   }
 
   .back-to-top {
-    bottom: 20px;
+    bottom: calc(16px + var(--safe-bottom));
     right: 20px;
     width: 44px;
     height: 44px;
+  }
+
+  .statuses-section {
+    padding: 0 16px calc(84px + var(--safe-bottom));
+  }
+}
+
+@media (max-width: 420px) {
+  .hero-title {
+    font-size: 30px;
+  }
+
+  .article-title {
+    font-size: 17px;
   }
 }
 </style>

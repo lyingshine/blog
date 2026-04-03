@@ -878,7 +878,7 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
 .planner-page {
   max-width: 920px;
   margin: 0 auto;
-  padding: 28px 22px 72px;
+  padding: 28px 22px calc(84px + var(--safe-bottom));
 }
 
 .planner-header {
@@ -928,6 +928,7 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
   border-radius: 10px;
   background: var(--color-surface-elevated);
   color: var(--color-text-primary);
+  min-height: 40px;
   padding: 9px 14px;
   font-size: 13px;
   font-weight: 600;
@@ -1084,6 +1085,7 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
   border-radius: 8px;
   background: var(--color-surface-elevated);
   color: var(--color-text-primary);
+  min-height: 40px;
   padding: 8px 10px;
   font-size: 14px;
 }
@@ -1445,7 +1447,7 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
 
 @media (max-width: 768px) {
   .planner-page {
-    padding: 20px 16px 60px;
+    padding: 18px 16px calc(72px + var(--safe-bottom));
   }
 
   .planner-title {
@@ -1454,6 +1456,7 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
 
   .header-actions {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .planner-job {
@@ -1467,7 +1470,7 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
   }
 
   .compose-meta {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .quick-date-actions {
@@ -1495,6 +1498,19 @@ watch(() => authStore.isLoggedIn, async (isLoggedIn, wasLoggedIn) => {
 
   .board-tools {
     align-items: flex-start;
+  }
+
+  .planner-footer {
+    position: sticky;
+    bottom: calc(8px + var(--safe-bottom));
+    z-index: 15;
+    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .save-btn {
+    width: 100%;
   }
 }
 </style>

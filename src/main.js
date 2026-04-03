@@ -17,7 +17,13 @@ app.use(pinia)
 app.use(router)
 app.mount('#app')
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+const canRegisterSw =
+  'serviceWorker' in navigator &&
+  (import.meta.env.PROD ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1')
+
+if (canRegisterSw) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch((error) => {
       console.error('Service worker registration failed:', error)
