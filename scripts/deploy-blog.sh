@@ -17,9 +17,11 @@ mkdir -p "$APP_DIR"
 # Allow git operations when repository owner differs from current runner user.
 git config --global --add safe.directory "$APP_DIR" || true
 
-# Backup .env to avoid overwrite by reset.
-if [ -f "$ENV_FILE" ]; then
+# Backup .env to avoid overwrite by reset (only when non-empty).
+if [ -s "$ENV_FILE" ]; then
   cp "$ENV_FILE" "$ENV_BAK"
+else
+  echo "[deploy] skip .env backup (missing or empty)"
 fi
 
 if [ ! -d "$APP_DIR/.git" ]; then
@@ -34,11 +36,14 @@ else
   git reset --hard "origin/$BRANCH"
 fi
 
-# Restore .env.
-if [ -f "$ENV_BAK" ]; then
+# Restore .env only if backup exists and is non-empty.
+if [ -s "$ENV_BAK" ]; then
   mkdir -p "$(dirname "$ENV_FILE")"
   cp "$ENV_BAK" "$ENV_FILE"
+  echo "[deploy] restored .env from backup"
   rm -f "$ENV_BAK"
+else
+  echo "[deploy] no valid .env backup to restore"
 fi
 
 cd "$APP_DIR"
