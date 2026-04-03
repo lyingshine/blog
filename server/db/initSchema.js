@@ -16,9 +16,12 @@ async function tryModifyColumn(tableName, columnSql) {
   try {
     await pool.write(`ALTER TABLE ${tableName} MODIFY COLUMN ${columnSql}`)
   } catch (error) {
-    if (error?.code !== 'ER_BAD_FIELD_ERROR') {
+    // Some managed MySQL instances may reject online column DDL intermittently.
+    // Do not block server startup on best-effort widening migration.
+    if (!['ER_BAD_FIELD_ERROR', 'ER_GET_ERRNO', 'ER_LOCK_WAIT_TIMEOUT'].includes(error?.code)) {
       throw error
     }
+    console.warn(`[Schema] Skip MODIFY ${tableName}: ${error?.code || 'UNKNOWN'} ${error?.sqlMessage || error?.message || ''}`)
   }
 }
 

@@ -29,7 +29,14 @@ async function ensureUserSchema() {
       }
     }
 
-    await pool.write("ALTER TABLE users MODIFY COLUMN avatar VARCHAR(300) DEFAULT 'U'")
+    try {
+      await pool.write("ALTER TABLE users MODIFY COLUMN avatar VARCHAR(300) DEFAULT 'U'")
+    } catch (error) {
+      if (!['ER_GET_ERRNO', 'ER_LOCK_WAIT_TIMEOUT'].includes(error?.code)) {
+        throw error
+      }
+      console.warn(`[Schema] Skip MODIFY users.avatar: ${error?.code || 'UNKNOWN'} ${error?.sqlMessage || error?.message || ''}`)
+    }
   })()
 
   return userSchemaReadyPromise
