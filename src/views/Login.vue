@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="auth-page">
-    <div class="auth-container">
+    <div class="auth-container ux-card">
       <div class="auth-header">
         <div class="auth-logo">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -32,7 +32,7 @@
           <label class="form-label">密码</label>
           <div class="form-input-wrapper">
             <input v-model="form.password" :type="showPassword ? 'text' : 'password'" class="form-input" placeholder="请输入密码" required />
-            <button type="button" class="password-toggle" @click="showPassword = !showPassword">{{ showPassword ? '隐藏' : '显示' }}</button>
+            <button type="button" class="password-toggle chip-button" @click="showPassword = !showPassword">{{ showPassword ? '隐藏' : '显示' }}</button>
           </div>
         </div>
 
@@ -40,7 +40,7 @@
           <div v-if="error" class="form-error">{{ error }}</div>
         </Transition>
 
-        <button type="submit" class="submit-btn" :disabled="loading">
+        <button type="submit" class="submit-btn chip-button" :disabled="loading">
           <span v-if="loading" class="loading-spinner"></span>
           <span v-else>{{ isLogin ? '登录' : '注册' }}</span>
         </button>
@@ -48,11 +48,7 @@
 
       <div class="auth-switch">
         <span>{{ isLogin ? '还没有账户？' : '已有账户？' }}</span>
-        <button type="button" class="switch-btn" @click="toggleMode">{{ isLogin ? '立即注册' : '立即登录' }}</button>
-      </div>
-
-      <div class="demo-hint">
-        <p>示例账户：admin / admin123</p>
+        <button type="button" class="switch-btn chip-button" @click="toggleMode">{{ isLogin ? '立即注册' : '立即登录' }}</button>
       </div>
     </div>
   </div>
@@ -103,8 +99,8 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-.auth-page { min-height: calc(100dvh - 48px - var(--safe-top)); display: flex; align-items: center; justify-content: center; padding: 32px 20px calc(40px + var(--safe-bottom)); }
-.auth-container { width: 100%; max-width: 400px; background: var(--color-surface); border-radius: var(--radius-xl); padding: 36px; box-shadow: var(--shadow-lg); border: 1px solid var(--color-border-light); }
+.auth-page { min-height: calc(100dvh - 48px - var(--safe-top)); display: flex; align-items: center; justify-content: center; padding: 32px var(--layout-gutter) calc(40px + var(--safe-bottom)); }
+.auth-container { width: 100%; max-width: 430px; border-radius: var(--panel-radius); padding: 30px var(--panel-padding); box-shadow: none; }
 .auth-header { text-align: center; margin-bottom: 32px; }
 .auth-logo { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: var(--color-accent); border-radius: 14px; color: white; margin-bottom: 20px; }
 .auth-title { font-size: 24px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 8px; }
@@ -115,19 +111,17 @@ const handleSubmit = async () => {
 .form-input-wrapper { position: relative; display: flex; align-items: center; }
 .form-input { width: 100%; height: 48px; padding: 0 14px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: 15px; color: var(--color-text-primary); transition: all 0.2s ease; }
 .form-input:focus { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-subtle); }
-.password-toggle { position: absolute; right: 12px; border: none; background: transparent; color: var(--color-text-tertiary); }
+.password-toggle { position: absolute; right: 8px; min-height: 30px; padding: 0 10px; color: var(--color-text-tertiary); background: color-mix(in srgb, var(--color-surface) 92%, transparent); }
 .form-error { padding: 12px 14px; background: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); color: #ef4444; font-size: 14px; }
 .submit-btn { width: 100%; height: 48px; background: var(--color-accent); color: white; border: none; border-radius: var(--radius-md); font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
 .submit-btn:disabled { opacity: .7; }
 .loading-spinner { width: 20px; height: 20px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
 .auth-switch { text-align: center; margin-top: 24px; font-size: 14px; color: var(--color-text-secondary); }
-.switch-btn { border: none; background: transparent; color: var(--color-accent); margin-left: 4px; }
-.demo-hint { text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--color-border-light); }
-.demo-hint p { font-size: 13px; color: var(--color-text-tertiary); }
+.switch-btn { min-height: 28px; border-color: color-mix(in srgb, var(--color-accent) 26%, var(--color-border-light)); background: color-mix(in srgb, var(--color-accent-subtle) 22%, transparent); color: var(--color-accent); margin-left: 4px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 768px) {
-  .auth-page { align-items: flex-start; padding: 20px 16px calc(28px + var(--safe-bottom)); }
+  .auth-page { align-items: flex-start; padding: 20px var(--layout-gutter-mobile) calc(28px + var(--safe-bottom)); }
   .auth-container { max-width: 100%; border-radius: 18px; padding: 24px 18px; box-shadow: var(--shadow-md); }
   .auth-header { margin-bottom: 24px; }
   .auth-logo { width: 48px; height: 48px; margin-bottom: 14px; }

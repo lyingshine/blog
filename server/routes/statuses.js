@@ -5,11 +5,33 @@ const { authMiddleware } = require('../middleware/auth')
 const { createNotification, getUnreadCountByUserId } = require('../data/notifications')
 const notificationHub = require('../utils/notificationHub')
 const pushService = require('../utils/pushService')
+const pool = require('../db/pool')
 
 // GET /api/statuses - 获取动态列表
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 50, cursor } = req.query
+    const { page = 1, limit = 50, cursor, authorId } = req.query
+    const parsedAuthorId = Number(authorId || 0)
+    const parsedLimit = Math.min(Math.max(Number(limit) || 50, 1), 100)
+
+    if (parsedAuthorId > 0) {
+      const params = [parsedAuthorId]
+      let query = 'SELECT id, content, author_id, author_username, author_avatar, likes, created_at FROM statuses WHERE author_id = ?'
+      if (cursor) {
+        query += ' AND id < ?'
+        params.push(parseInt(cursor, 10))
+      }
+      query += ' ORDER BY id DESC LIMIT ?'
+      params.push(parsedLimit + 1)
+
+      const [rows] = await pool.read(query, params)
+      const hasMore = rows.length > parsedLimit
+      const statuses = hasMore ? rows.slice(0, -1) : rows
+      const nextCursor = statuses.length ? statuses[statuses.length - 1].id : null
+
+      return res.json({ success: true, data: statuses, hasMore, nextCursor })
+    }
+
     const result = await getStatuses(page, limit, cursor)
     res.json({ success: true, data: result.statuses, hasMore: result.hasMore, nextCursor: result.nextCursor })
   } catch (err) {

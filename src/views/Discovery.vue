@@ -16,14 +16,14 @@
         {{ pullRefreshing ? '刷新中...' : pullReady ? '松开刷新' : '下拉刷新' }}
       </div>
     </div>
-    <header class="discovery-header">
+    <header class="discovery-header" :class="{ condensed: headerCondensed }">
       <h1 class="discovery-title">发现</h1>
       <p class="discovery-subtitle">发现新内容，也可以直接完成互动。</p>
-      <div class="tab-bar" role="tablist" aria-label="发现分类">
+      <div class="tab-bar ux-tab-shell" role="tablist" aria-label="发现分类">
         <button
           v-for="tab in tabs"
           :key="tab.key"
-          class="tab-btn"
+          class="tab-btn ux-tab"
           :class="{ active: activeTab === tab.key }"
           type="button"
           @click="switchTab(tab.key)"
@@ -53,9 +53,8 @@
     </section>
 
     <section v-else-if="activeTab === 'articles'" class="feed-list">
-      <article v-for="article in paginatedArticles" :key="`article-${article.id}`" class="item-card article-card">
-        <div class="item-head">
-          <span class="type-badge article">文章</span>
+      <article v-for="article in paginatedArticles" :key="`article-${article.id}`" class="item-card article-card ux-card">
+        <div class="item-head time-only">
           <span class="item-time">{{ formatDate(article.date) }}</span>
         </div>
         <router-link :to="`/article/${article.id}`" class="item-title-link">
@@ -67,53 +66,6 @@
           <span>{{ article.category }}</span>
           <span>{{ article.readTime }} 分钟阅读</span>
         </div>
-        <div class="item-actions">
-          <button class="action-btn" :class="{ active: getStats('article', article.id).myReaction === 1 }" type="button" @click="handleReaction('article', article.id, 'like')">赞 {{ getStats('article', article.id).likes }}</button>
-          <button class="action-btn" :class="{ active: getStats('article', article.id).myReaction === -1 }" type="button" @click="handleReaction('article', article.id, 'dislike')">踩 {{ getStats('article', article.id).dislikes }}</button>
-          <button class="action-btn" type="button" @click="toggleComments('article', article.id)">评论 {{ getStats('article', article.id).comments }}</button>
-          <button class="action-btn" type="button" @click="toggleActionPanel('article', article.id, 'share')">转发 {{ getStats('article', article.id).shares }}</button>
-          <button class="action-btn danger" type="button" @click="toggleActionPanel('article', article.id, 'report')">举报</button>
-        </div>
-        <div v-if="isCommentOpen('article', article.id)" class="panel-block">
-          <div v-if="commentLoadingMap[keyOf('article', article.id)]" class="panel-empty">评论加载中...</div>
-          <div v-else class="comment-list">
-            <div v-if="!(commentMap[keyOf('article', article.id)] || []).length" class="panel-empty">还没有评论</div>
-            <article v-for="comment in (commentMap[keyOf('article', article.id)] || [])" :key="comment.id" class="comment-item">
-              <header>
-                <strong>{{ comment.author_username || '用户' }}</strong>
-                <span>{{ formatDate(comment.created_at) }}</span>
-              </header>
-              <p>{{ comment.content }}</p>
-            </article>
-          </div>
-          <div v-if="authStore.isLoggedIn" class="panel-editor">
-            <textarea v-model="commentDrafts[keyOf('article', article.id)]" rows="2" maxlength="1000" placeholder="写下你的评论..."></textarea>
-            <button class="action-btn primary" type="button" @click="submitComment('article', article.id)">发送</button>
-          </div>
-        </div>
-        <div v-if="actionPanelMap[keyOf('article', article.id)]" class="panel-block">
-          <div v-if="actionPanelMap[keyOf('article', article.id)] === 'share'" class="panel-editor">
-            <textarea v-model="shareDrafts[keyOf('article', article.id)]" rows="2" maxlength="500" placeholder="可选：补充一句转发语..."></textarea>
-            <div class="panel-buttons">
-              <button class="action-btn" type="button" @click="closeActionPanel('article', article.id)">取消</button>
-              <button class="action-btn primary" type="button" @click="submitShare('article', article.id)">确认转发</button>
-            </div>
-          </div>
-          <div v-else class="panel-editor">
-            <select v-model="reportReasonMap[keyOf('article', article.id)]">
-              <option value="垃圾内容">垃圾内容</option>
-              <option value="骚扰辱骂">骚扰辱骂</option>
-              <option value="违法违规">违法违规</option>
-              <option value="侵权抄袭">侵权抄袭</option>
-            </select>
-            <textarea v-model="reportDetailMap[keyOf('article', article.id)]" rows="2" maxlength="600" placeholder="可选：补充说明..."></textarea>
-            <div class="panel-buttons">
-              <button class="action-btn" type="button" @click="closeActionPanel('article', article.id)">取消</button>
-              <button class="action-btn primary" type="button" @click="submitReport('article', article.id)">提交举报</button>
-            </div>
-          </div>
-        </div>
-        <p v-if="actionMessageMap[keyOf('article', article.id)]" class="action-message">{{ actionMessageMap[keyOf('article', article.id)] }}</p>
       </article>
       <div v-if="articlesPage < totalArticlePages" class="load-more-wrap">
         <button class="load-more-btn" type="button" :disabled="loadingMore" @click="loadMore('article')">{{ loadingMore ? '加载中...' : '加载更多' }}</button>
@@ -121,25 +73,18 @@
     </section>
 
     <section v-else-if="activeTab === 'statuses'" class="feed-list">
-      <article v-for="status in paginatedStatuses" :key="`status-${status.id}`" class="item-card status-card">
-        <div class="item-head">
-          <span class="type-badge status">动态</span>
+      <article v-for="status in paginatedStatuses" :key="`status-${status.id}`" class="item-card status-card ux-card">
+        <div class="item-head time-only">
           <span class="item-time">{{ formatRelative(status.date) }}</span>
         </div>
-        <div class="author-line">
-          <div class="author-avatar">
-            <img v-if="isImageAvatar(status.author_avatar)" :src="resolveAssetUrl(status.author_avatar)" alt="avatar" class="avatar-image" />
-            <span v-else>{{ getAvatarText(status.author_avatar, status.author_username) }}</span>
-          </div>
+        <p class="status-content">{{ status.content }}</p>
+        <div class="author-line subtle compact">
           <strong>{{ status.author_username || `用户${status.authorId}` }}</strong>
         </div>
-        <p class="status-content">{{ status.content }}</p>
         <div class="item-actions">
           <button class="action-btn" :class="{ active: getStats('status', status.id).myReaction === 1 }" type="button" @click="handleReaction('status', status.id, 'like')">赞 {{ getStats('status', status.id).likes }}</button>
-          <button class="action-btn" :class="{ active: getStats('status', status.id).myReaction === -1 }" type="button" @click="handleReaction('status', status.id, 'dislike')">踩 {{ getStats('status', status.id).dislikes }}</button>
           <button class="action-btn" type="button" @click="toggleComments('status', status.id)">评论 {{ getStats('status', status.id).comments }}</button>
-          <button class="action-btn" type="button" @click="toggleActionPanel('status', status.id, 'share')">转发 {{ getStats('status', status.id).shares }}</button>
-          <button class="action-btn danger" type="button" @click="toggleActionPanel('status', status.id, 'report')">举报</button>
+          <button class="action-btn" :class="{ active: actionPanelMap[keyOf('status', status.id)] === 'more' }" type="button" @click="toggleActionPanel('status', status.id, 'more')">更多</button>
         </div>
         <div v-if="isCommentOpen('status', status.id)" class="panel-block">
           <div v-if="commentLoadingMap[keyOf('status', status.id)]" class="panel-empty">评论加载中...</div>
@@ -159,7 +104,16 @@
           </div>
         </div>
         <div v-if="actionPanelMap[keyOf('status', status.id)]" class="panel-block">
-          <div v-if="actionPanelMap[keyOf('status', status.id)] === 'share'" class="panel-editor">
+          <div v-if="actionPanelMap[keyOf('status', status.id)] === 'more'" class="more-actions">
+            <button class="action-btn" :class="{ active: getStats('status', status.id).myReaction === -1 }" type="button" @click="handleReaction('status', status.id, 'dislike'); closeActionPanel('status', status.id)">
+              踩 {{ getStats('status', status.id).dislikes }}
+            </button>
+            <button class="action-btn" type="button" @click="toggleActionPanel('status', status.id, 'share')">
+              转发 {{ getStats('status', status.id).shares }}
+            </button>
+            <button class="action-btn danger" type="button" @click="toggleActionPanel('status', status.id, 'report')">举报</button>
+          </div>
+          <div v-else-if="actionPanelMap[keyOf('status', status.id)] === 'share'" class="panel-editor">
             <textarea v-model="shareDrafts[keyOf('status', status.id)]" rows="2" maxlength="500" placeholder="可选：补充一句转发语..."></textarea>
             <div class="panel-buttons">
               <button class="action-btn" type="button" @click="closeActionPanel('status', status.id)">取消</button>
@@ -191,7 +145,7 @@
       <article
         v-for="item in paginatedMixed"
         :key="`${item.type}-${item.id}`"
-        class="item-card"
+        class="item-card ux-card"
         :class="item.type === 'article' ? 'article-card mixed-article' : 'status-card mixed-status'"
       >
         <div class="item-head">
@@ -209,23 +163,17 @@
           </div>
         </template>
         <template v-else>
-          <div class="author-line">
-            <div class="author-avatar">
-              <img v-if="isImageAvatar(item.author_avatar)" :src="resolveAssetUrl(item.author_avatar)" alt="avatar" class="avatar-image" />
-              <span v-else>{{ getAvatarText(item.author_avatar, item.author_username) }}</span>
-            </div>
+          <p class="status-content">{{ item.content }}</p>
+          <div class="author-line subtle compact">
             <strong>{{ item.author_username || `用户${item.authorId}` }}</strong>
           </div>
-          <p class="status-content">{{ item.content }}</p>
         </template>
-        <div class="item-actions">
+        <div v-if="item.type === 'status'" class="item-actions">
           <button class="action-btn" :class="{ active: getStats(item.type, item.id).myReaction === 1 }" type="button" @click="handleReaction(item.type, item.id, 'like')">赞 {{ getStats(item.type, item.id).likes }}</button>
-          <button class="action-btn" :class="{ active: getStats(item.type, item.id).myReaction === -1 }" type="button" @click="handleReaction(item.type, item.id, 'dislike')">踩 {{ getStats(item.type, item.id).dislikes }}</button>
           <button class="action-btn" type="button" @click="toggleComments(item.type, item.id)">评论 {{ getStats(item.type, item.id).comments }}</button>
-          <button class="action-btn" type="button" @click="toggleActionPanel(item.type, item.id, 'share')">转发 {{ getStats(item.type, item.id).shares }}</button>
-          <button class="action-btn danger" type="button" @click="toggleActionPanel(item.type, item.id, 'report')">举报</button>
+          <button class="action-btn" :class="{ active: actionPanelMap[keyOf(item.type, item.id)] === 'more' }" type="button" @click="toggleActionPanel(item.type, item.id, 'more')">更多</button>
         </div>
-        <div v-if="isCommentOpen(item.type, item.id)" class="panel-block">
+        <div v-if="item.type === 'status' && isCommentOpen(item.type, item.id)" class="panel-block">
           <div v-if="commentLoadingMap[keyOf(item.type, item.id)]" class="panel-empty">评论加载中...</div>
           <div v-else class="comment-list">
             <div v-if="!(commentMap[keyOf(item.type, item.id)] || []).length" class="panel-empty">还没有评论</div>
@@ -242,8 +190,17 @@
             <button class="action-btn primary" type="button" @click="submitComment(item.type, item.id)">发送</button>
           </div>
         </div>
-        <div v-if="actionPanelMap[keyOf(item.type, item.id)]" class="panel-block">
-          <div v-if="actionPanelMap[keyOf(item.type, item.id)] === 'share'" class="panel-editor">
+        <div v-if="item.type === 'status' && actionPanelMap[keyOf(item.type, item.id)]" class="panel-block">
+          <div v-if="actionPanelMap[keyOf(item.type, item.id)] === 'more'" class="more-actions">
+            <button class="action-btn" :class="{ active: getStats(item.type, item.id).myReaction === -1 }" type="button" @click="handleReaction(item.type, item.id, 'dislike'); closeActionPanel(item.type, item.id)">
+              踩 {{ getStats(item.type, item.id).dislikes }}
+            </button>
+            <button class="action-btn" type="button" @click="toggleActionPanel(item.type, item.id, 'share')">
+              转发 {{ getStats(item.type, item.id).shares }}
+            </button>
+            <button class="action-btn danger" type="button" @click="toggleActionPanel(item.type, item.id, 'report')">举报</button>
+          </div>
+          <div v-else-if="actionPanelMap[keyOf(item.type, item.id)] === 'share'" class="panel-editor">
             <textarea v-model="shareDrafts[keyOf(item.type, item.id)]" rows="2" maxlength="500" placeholder="可选：补充一句转发语..."></textarea>
             <div class="panel-buttons">
               <button class="action-btn" type="button" @click="closeActionPanel(item.type, item.id)">取消</button>
@@ -264,7 +221,7 @@
             </div>
           </div>
         </div>
-        <p v-if="actionMessageMap[keyOf(item.type, item.id)]" class="action-message">{{ actionMessageMap[keyOf(item.type, item.id)] }}</p>
+        <p v-if="item.type === 'status' && actionMessageMap[keyOf(item.type, item.id)]" class="action-message">{{ actionMessageMap[keyOf(item.type, item.id)] }}</p>
       </article>
       <div v-if="mixedPage < totalMixedPages" class="load-more-wrap">
         <button class="load-more-btn" type="button" :disabled="loadingMore" @click="loadMore('mixed')">{{ loadingMore ? '加载中...' : '加载更多' }}</button>
@@ -274,7 +231,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import apiService, { resolveAssetUrl } from '../api'
 import { usePullToRefresh } from '../composables/usePullToRefresh'
@@ -290,6 +247,8 @@ const tabs = [
 const activeTab = ref('mixed')
 const loading = ref(true)
 const loadingMore = ref(false)
+const headerCondensed = ref(false)
+const lastScrollY = ref(0)
 
 const articles = ref([])
 const statuses = ref([])
@@ -596,16 +555,36 @@ const loadMore = async (type) => {
   }, 260)
 }
 
+const handleWindowScroll = () => {
+  const y = Math.max(window.scrollY || window.pageYOffset || 0, 0)
+  const delta = y - lastScrollY.value
+
+  // 仅在接近顶部时展开，避免上滑一点就立即展开头部。
+  if (y <= 12) {
+    headerCondensed.value = false
+  } else if (delta > 4) {
+    headerCondensed.value = true
+  }
+
+  lastScrollY.value = y
+}
+
 onMounted(async () => {
+  lastScrollY.value = Math.max(window.scrollY || window.pageYOffset || 0, 0)
+  window.addEventListener('scroll', handleWindowScroll, { passive: true })
   await fetchData()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleWindowScroll)
 })
 </script>
 
 <style scoped>
 .discovery-page {
-  max-width: 980px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: 0 22px calc(80px + var(--safe-bottom));
+  padding: 0 var(--layout-gutter) calc(80px + var(--safe-bottom));
 }
 
 .pull-refresh-indicator {
@@ -622,13 +601,13 @@ onMounted(async () => {
 }
 
 .pull-refresh-pill {
-  min-height: 28px;
+  min-height: var(--ui-tab-height);
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid var(--color-border-light);
   background: color-mix(in srgb, var(--color-surface) 92%, transparent);
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--ui-tab-font);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -661,50 +640,64 @@ onMounted(async () => {
 }
 
 .discovery-header {
-  padding: 24px 0 16px;
+  padding: var(--space-5) 0 var(--space-4);
   text-align: center;
+  transition: padding var(--motion-base) var(--motion-smooth);
 }
 
 .discovery-title {
-  font-size: 30px;
+  font-size: var(--type-display);
   font-weight: 650;
   letter-spacing: -0.02em;
   color: var(--color-text-primary);
   margin: 0;
+  transition: font-size var(--motion-base) var(--motion-smooth), opacity var(--motion-base) var(--motion-smooth);
 }
 
 .discovery-subtitle {
-  margin-top: 8px;
+  margin-top: var(--space-2);
   font-size: 14px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
+  transition: opacity var(--motion-base) var(--motion-smooth), max-height var(--motion-base) var(--motion-smooth), margin var(--motion-base) var(--motion-smooth);
+  max-height: 48px;
+  overflow: hidden;
 }
 
 .tab-bar {
-  margin-top: 14px;
+  margin-top: 12px;
   display: inline-flex;
-  gap: 6px;
-  padding: 5px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 14px;
-  background: var(--color-surface);
-  box-shadow: var(--ux-shadow-soft);
+  box-shadow: none;
+  opacity: 0.9;
+  transition: gap var(--motion-base) var(--motion-smooth), margin var(--motion-base) var(--motion-smooth), opacity var(--motion-base) var(--motion-smooth);
+}
+
+.discovery-header.condensed {
+  padding: 8px 0 6px;
+}
+
+.discovery-header.condensed .discovery-title {
+  font-size: clamp(22px, 3.4vw, 26px);
+}
+
+.discovery-header.condensed .discovery-subtitle {
+  opacity: 0;
+  max-height: 0;
+  margin-top: 0;
+}
+
+.discovery-header.condensed .tab-bar {
+  margin-top: 6px;
+  gap: 10px;
+  opacity: 0.96;
 }
 
 .tab-btn {
-  min-height: 38px;
-  min-width: 86px;
-  border-radius: 10px;
-  border: none;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  font-weight: 600;
+  min-height: var(--ui-tab-height);
 }
 
 .tab-btn.active {
-  color: var(--color-accent);
-  background: var(--color-accent-subtle);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 24%, var(--color-border-light));
+  background: transparent;
+  box-shadow: none;
 }
 
 .tab-btn:focus-visible,
@@ -778,23 +771,24 @@ onMounted(async () => {
 
 .feed-list {
   display: grid;
-  gap: 12px;
+  gap: 6px;
+  border-top: 0;
 }
 
 .mixed-list .mixed-article {
-  border-left: 4px solid color-mix(in srgb, var(--color-accent) 52%, var(--color-border-light));
+  border-left: 0;
 }
 
 .mixed-list .mixed-status {
-  border-left: 4px solid color-mix(in srgb, #16a34a 52%, var(--color-border-light));
+  border-left: 0;
 }
 
 .item-card {
-  border: 1px solid var(--color-border-light);
-  border-radius: 14px;
-  background: var(--color-surface);
-  padding: 12px;
-  box-shadow: var(--ux-shadow-soft);
+  display: grid;
+  gap: 6px;
+  border-radius: var(--panel-radius);
+  padding: 12px var(--panel-padding) 10px;
+  box-shadow: none;
   animation: fade-up-in var(--motion-base) var(--motion-spring) both;
 }
 
@@ -811,52 +805,61 @@ onMounted(async () => {
   gap: 10px;
 }
 
+.item-head.time-only {
+  justify-content: flex-start;
+}
+
 .type-badge {
-  min-height: 24px;
+  min-height: 18px;
   border-radius: 999px;
   border: 1px solid var(--color-border-light);
-  padding: 0 10px;
+  padding: 0 7px;
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  opacity: 0.74;
 }
 
 .type-badge.article {
-  color: var(--color-accent);
-  background: var(--color-accent-subtle);
-  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border-light));
+  color: var(--color-text-tertiary);
+  background: transparent;
+  border-color: var(--color-border-light);
 }
 
 .type-badge.status {
-  color: #15803d;
-  background: color-mix(in srgb, #16a34a 12%, var(--color-surface));
-  border-color: color-mix(in srgb, #16a34a 28%, var(--color-border-light));
+  color: var(--color-text-tertiary);
+  background: transparent;
+  border-color: var(--color-border-light);
 }
 
 .item-time {
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
+  opacity: 0.9;
 }
 
 .item-title-link {
   display: inline-block;
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 .item-title {
   margin: 0;
   color: var(--color-text-primary);
-  font-size: 19px;
-  line-height: 1.35;
+  font-size: var(--type-title);
+  line-height: 1.3;
+  font-weight: 640;
   letter-spacing: -0.01em;
 }
 
 .item-excerpt {
-  margin-top: 8px;
+  margin-top: 0;
   color: var(--color-text-secondary);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: var(--type-body);
+  line-height: 1.7;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -864,45 +867,67 @@ onMounted(async () => {
 }
 
 .item-meta {
-  margin-top: 10px;
+  margin-top: 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
+  opacity: 0.84;
+}
+
+.item-meta span + span::before {
+  content: "·";
+  margin-right: 5px;
+  color: color-mix(in srgb, var(--color-text-tertiary) 70%, transparent);
 }
 
 .author-line {
-  margin-top: 8px;
+  margin-top: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.author-line.subtle {
+  opacity: 0.82;
+}
+
+.author-line.compact {
+  margin-top: 0;
 }
 
 .author-avatar {
-  width: 30px;
-  height: 30px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   border: 1px solid var(--color-border-light);
-  background: var(--color-surface-elevated);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  color: var(--color-text-primary);
-  font-size: 12px;
-  font-weight: 700;
+  color: var(--color-text-tertiary);
+  font-size: 9px;
+  font-weight: 500;
 }
 
 .avatar-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  filter: saturate(0.62) grayscale(0.12);
+}
+
+.author-line strong {
+  font-size: var(--ui-meta-font);
+  font-weight: 450;
+  color: var(--color-text-tertiary);
 }
 
 .status-content {
-  margin-top: 8px;
+  margin-top: 0;
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.68;
@@ -910,22 +935,26 @@ onMounted(async () => {
 }
 
 .item-actions {
-  margin-top: 10px;
+  margin-top: 1px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 5px;
+  opacity: 0.76;
+  transition: opacity var(--motion-base) var(--motion-smooth);
 }
 
 .action-btn {
-  min-height: 32px;
+  min-height: var(--ui-action-height);
   border-radius: 999px;
-  border: 1px solid var(--color-border-light);
-  background: color-mix(in srgb, var(--color-surface-elevated) 92%, transparent);
-  color: var(--color-text-secondary);
-  padding: 0 10px;
-  font-size: 12px;
-  font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 82%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--color-text-tertiary) 92%, var(--color-text-secondary));
+  padding: 0 9px;
+  font-size: var(--ui-action-font);
+  font-weight: 550;
   transition:
     transform var(--motion-fast) var(--motion-spring),
     border-color var(--motion-base) var(--motion-smooth),
@@ -934,9 +963,9 @@ onMounted(async () => {
 }
 
 .action-btn.active {
-  color: var(--color-accent);
-  border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-border-light));
-  background: var(--color-accent-subtle);
+  color: var(--color-text-secondary);
+  border-color: color-mix(in srgb, var(--color-border) 86%, transparent);
+  background: var(--surface-embedded);
 }
 
 .action-btn.primary {
@@ -946,15 +975,36 @@ onMounted(async () => {
 }
 
 .action-btn.danger {
-  color: #c03f3f;
+  color: #b85f5f;
+}
+
+.item-card:hover .item-actions {
+  opacity: 1;
+}
+
+.item-card:hover .action-btn {
+  color: var(--color-text-secondary);
+  border-color: color-mix(in srgb, var(--color-accent) 16%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-accent-subtle) 22%, transparent);
+}
+
+.item-card:hover {
+  background: var(--surface-panel-hover);
+}
+
+.more-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .panel-block {
-  margin-top: 10px;
+  margin-top: 4px;
   border: 1px solid var(--color-border-light);
   border-radius: 10px;
-  padding: 10px;
-  background: color-mix(in srgb, var(--color-surface-elevated) 88%, transparent);
+  padding: 8px;
+  background: var(--surface-embedded);
 }
 
 .panel-empty {
@@ -964,13 +1014,13 @@ onMounted(async () => {
 
 .comment-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .comment-item {
   border: 1px solid var(--color-border-light);
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 7px 9px;
   background: var(--color-surface);
 }
 
@@ -984,7 +1034,7 @@ onMounted(async () => {
 }
 
 .comment-item p {
-  margin-top: 6px;
+  margin-top: 5px;
   font-size: 14px;
   color: var(--color-text-primary);
   white-space: pre-wrap;
@@ -993,7 +1043,7 @@ onMounted(async () => {
 
 .panel-editor {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .panel-editor textarea,
@@ -1010,12 +1060,12 @@ onMounted(async () => {
 .panel-buttons {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
 
 .action-message {
-  margin-top: 8px;
-  font-size: 12px;
+  margin-top: 6px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
 }
 
@@ -1031,7 +1081,7 @@ onMounted(async () => {
   border-radius: 10px;
   background: var(--color-surface);
   color: var(--color-text-secondary);
-  font-weight: 700;
+  font-weight: 600;
   padding: 0 16px;
   transition:
     transform var(--motion-fast) var(--motion-spring),
@@ -1042,14 +1092,14 @@ onMounted(async () => {
 
 .load-more-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--color-accent) 26%, var(--color-border-light));
+  border-color: color-mix(in srgb, var(--color-accent) 20%, var(--color-border-light));
   color: var(--color-text-primary);
-  background: color-mix(in srgb, var(--color-accent-subtle) 50%, var(--color-surface));
+  background: var(--surface-panel-hover);
 }
 
 @media (max-width: 768px) {
   .discovery-page {
-    padding: 0 16px calc(76px + var(--safe-bottom));
+    padding: 0 var(--layout-gutter-mobile) calc(76px + var(--safe-bottom));
   }
 
   .discovery-header {
@@ -1063,17 +1113,28 @@ onMounted(async () => {
 
   .tab-bar {
     width: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
+    justify-content: center;
+    gap: 14px;
   }
 
   .tab-btn {
-    width: 100%;
-    min-width: 0;
+    min-height: var(--ui-action-height);
   }
 
   .item-title {
     font-size: 18px;
+  }
+
+  .item-card {
+    padding: 11px 10px 9px;
+    border-radius: 10px;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .item-actions {
+    opacity: 0.78;
   }
 }
 </style>

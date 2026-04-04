@@ -2,11 +2,64 @@ const express = require('express')
 const router = express.Router()
 const { getArticles, getArticleById, getRelatedArticles, createArticle, updateArticle, deleteArticle, getCategories } = require('../data/articles')
 const { authMiddleware } = require('../middleware/auth')
+const pool = require('../db/pool')
 
 // GET /api/articles - 获取文章列表
 router.get('/', async (req, res) => {
   try {
-    const { category, page = 1, limit = 10, cursor } = req.query
+    const { category, page = 1, limit = 10, cursor, authorId } = req.query
+    const parsedAuthorId = Number(authorId || 0)
+    const parsedLimit = Math.min(Math.max(Number(limit) || 10, 1), 100)
+
+    if (parsedAuthorId > 0) {
+      const params = []
+      const where = ['author_id = ?']
+      params.push(parsedAuthorId)
+
+      if (category) {
+        where.push('category = ?')
+        params.push(category)
+      }
+      if (cursor) {
+        where.push('id < ?')
+        params.push(parseInt(cursor, 10))
+      }
+
+      const [rows] = await pool.read(
+        `SELECT id, title, category, read_time, excerpt, description, gradient, author_id, author_username, author_avatar, created_at
+         FROM articles
+         WHERE ${where.join(' AND ')}
+         ORDER BY id DESC
+         LIMIT ?`,
+        [...params, parsedLimit + 1]
+      )
+
+      const hasMore = rows.length > parsedLimit
+      const articles = hasMore ? rows.slice(0, -1) : rows
+      const nextCursor = articles.length ? articles[articles.length - 1].id : null
+
+      const countParams = [parsedAuthorId]
+      let countSql = 'SELECT COUNT(*) as count FROM articles WHERE author_id = ?'
+      if (category) {
+        countSql += ' AND category = ?'
+        countParams.push(category)
+      }
+      const [[{ count }]] = await pool.read(countSql, countParams)
+
+      return res.json({
+        success: true,
+        data: {
+          articles,
+          total: count,
+          hasMore,
+          nextCursor,
+          page: Number(page),
+          limit: parsedLimit,
+          totalPages: Math.ceil(count / parsedLimit)
+        }
+      })
+    }
+
     const result = await getArticles(category, page, limit, cursor)
     res.json({ success: true, data: result })
   } catch (err) {

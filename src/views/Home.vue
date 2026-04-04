@@ -18,7 +18,7 @@
       </div>
     </div>
     <!-- Hero Section -->
-    <header class="hero">
+    <header class="hero" :class="{ condensed: heroCondensed }">
       <div class="hero-content">
         <h1 class="hero-title">
           <span class="title-line">{{ heroTitle }}</span>
@@ -33,122 +33,104 @@
           <span class="stat">{{ totalReadTime }} 分钟阅读</span>
         </div>
       </div>
-      <div class="hero-decoration">
-        <div class="decoration-circle"></div>
-        <div class="decoration-circle"></div>
-        <div class="decoration-circle"></div>
-      </div>
     </header>
 
-    <!-- Articles Section -->
-    <section class="articles-section">
-      <div class="section-header">
-        <h2 class="section-title">我的文章</h2>
-        <div class="section-line"></div>
-      </div>
+    <div class="content-layout" :class="{ 'with-status': authStore.isLoggedIn }">
+      <!-- Articles Section -->
+      <section class="articles-section">
+        <div class="section-header">
+          <h2 class="section-title">{{ articleSectionTitle }}</h2>
+          <div class="section-line"></div>
+        </div>
 
-      <!-- Loading State -->
-      <div v-if="loading" class="loading-state">
-        <div class="home-skeleton-list" aria-hidden="true">
-          <div v-for="n in 3" :key="`home-skeleton-${n}`" class="home-skeleton-card">
-            <div class="skeleton-block home-skeleton-cover"></div>
-            <div class="skeleton-line home-skeleton-title"></div>
-            <div class="skeleton-line home-skeleton-line"></div>
-            <div class="skeleton-line home-skeleton-line short"></div>
+        <!-- Loading State -->
+        <div v-if="loading" class="loading-state">
+          <div class="home-skeleton-list" aria-hidden="true">
+            <div v-for="n in 3" :key="`home-skeleton-${n}`" class="home-skeleton-card">
+              <div class="skeleton-block home-skeleton-cover"></div>
+              <div class="skeleton-line home-skeleton-title"></div>
+              <div class="skeleton-line home-skeleton-line"></div>
+              <div class="skeleton-line home-skeleton-line short"></div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Error State -->
-      <div v-else-if="error" class="error-state">
-        <p>{{ error }}</p>
-        <button @click="fetchData" class="retry-button">重试</button>
-      </div>
-
-      <!-- Articles Grid -->
-      <div v-else-if="articles.length === 0" class="empty-state">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-        </svg>
-        <h3 class="empty-title">还没有文章</h3>
-        <p class="empty-text">从第一篇文章开始沉淀你的思考。</p>
-        <router-link v-if="!authStore.isLoggedIn" to="/login" class="empty-btn">去登录</router-link>
-        <router-link v-else to="/write" class="empty-btn">写文章</router-link>
-      </div>
-
-      <div v-else class="articles-grid">
-        <article
-          v-for="(article, index) in articles"
-          :key="article.id"
-          class="article-card"
-          :style="{ '--delay': `${index * 0.1}s` }"
-          @mouseenter="handleCardHover(article.id)"
-          @mouseleave="handleCardLeave"
-        >
-          <router-link :to="`/article/${article.id}`" class="article-link">
-            <div class="article-image">
-              <div class="image-overlay"></div>
-              <span class="article-number">{{ String(index + 1).padStart(2, '0') }}</span>
-            </div>
-
-            <div class="article-body">
-              <div class="article-meta-top">
-                <span class="article-category">{{ article.category }}</span>
-                <span class="article-read-time">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12 6 12 12 16 14"/>
-                  </svg>
-                  {{ article.readTime }} 分钟
-                </span>
-              </div>
-
-              <h2 class="article-title">{{ article.title }}</h2>
-              <p class="article-excerpt">{{ article.excerpt }}</p>
-
-              <div class="article-footer">
-                <span class="article-date">{{ formatDate(article.date) }}</span>
-                <span class="read-action">
-                  <span class="action-text">阅读全文</span>
-                  <span class="action-arrow">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
-                  </span>
-                </span>
-              </div>
-            </div>
-          </router-link>
-        </article>
-      </div>
-    </section>
-
-    <!-- Statuses Section -->
-    <section class="statuses-section" v-if="authStore.isLoggedIn">
-      <div class="section-header">
-        <h2 class="section-title">我的动态</h2>
-        <div class="section-line"></div>
-      </div>
-
-      <div v-if="statuses.length === 0" class="empty-state small">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-        <h3 class="empty-title">还没有动态</h3>
-        <p class="empty-text">开始发布第一条动态吧。</p>
-        <router-link to="/moments" class="empty-btn">发动态</router-link>
-      </div>
-
-      <div v-else class="statuses-list">
-        <div v-for="status in statuses" :key="status.id" class="status-card">
-          <p class="status-content">{{ status.content }}</p>
-          <span class="status-date">{{ formatDate(status.date) }}</span>
+        <!-- Error State -->
+        <div v-else-if="error" class="error-state">
+          <p>{{ error }}</p>
+          <button @click="fetchData" class="retry-button">重试</button>
         </div>
-      </div>
-    </section>
+
+        <!-- Articles Grid -->
+        <div v-else-if="articles.length === 0" class="empty-state">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <h3 class="empty-title">还没有文章</h3>
+          <p class="empty-text">从第一篇文章开始沉淀你的思考。</p>
+          <router-link v-if="!authStore.isLoggedIn" to="/login" class="empty-btn">去登录</router-link>
+          <router-link v-else to="/write" class="empty-btn">写文章</router-link>
+        </div>
+
+        <div v-else class="articles-grid">
+          <article
+            v-for="(article, index) in articles"
+            :key="article.id"
+            class="article-card ux-card"
+            :style="{ '--delay': `${index * 0.1}s` }"
+          >
+            <router-link :to="`/article/${article.id}`" class="article-link">
+              <div class="article-body">
+                <div class="article-meta-top">
+                  <span class="article-category">{{ article.category }}</span>
+                  <span class="article-read-time">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    {{ article.readTime }} 分钟
+                  </span>
+                </div>
+
+                <h2 class="article-title">{{ article.title }}</h2>
+                <p class="article-excerpt">{{ article.excerpt }}</p>
+
+                <div class="article-footer">
+                  <span class="article-date">{{ formatDate(article.date) }}</span>
+                </div>
+              </div>
+            </router-link>
+          </article>
+        </div>
+      </section>
+
+      <!-- Statuses Section -->
+      <section class="statuses-section" v-if="authStore.isLoggedIn">
+        <div class="section-header">
+          <h2 class="section-title">我的动态</h2>
+          <div class="section-line"></div>
+        </div>
+
+        <div v-if="statuses.length === 0" class="empty-state small">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <h3 class="empty-title">还没有动态</h3>
+          <p class="empty-text">开始发布第一条动态吧。</p>
+          <router-link to="/moments" class="empty-btn">发动态</router-link>
+        </div>
+
+        <div v-else class="statuses-list">
+          <div v-for="status in statuses" :key="status.id" class="status-card ux-card">
+            <p class="status-content">{{ status.content }}</p>
+            <span class="status-date">{{ formatDate(status.date) }}</span>
+          </div>
+        </div>
+      </section>
+    </div>
 
     <!-- Back to Top -->
     <Transition name="fade">
@@ -167,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import apiService from '../api'
 import { useAuthStore } from '../stores/auth'
 import { usePullToRefresh } from '../composables/usePullToRefresh'
@@ -176,7 +158,8 @@ const authStore = useAuthStore()
 
 const homeRef = ref(null)
 const showBackToTop = ref(false)
-const hoveredCard = ref(null)
+const heroCondensed = ref(false)
+const lastScrollY = ref(0)
 const loading = ref(true)
 const error = ref(null)
 
@@ -204,8 +187,23 @@ const heroSubtitle = computed(() => {
   return '一个面向所有兴趣与主题的个人记录空间'
 })
 
+const articleSectionTitle = computed(() => (authStore.isLoggedIn ? '我的文章' : '最新文章'))
+
 const totalReadTime = computed(() => {
   return articles.value.reduce((sum, article) => sum + (article.readTime || 0), 0)
+})
+
+const normalizeArticle = (a = {}) => ({
+  ...a,
+  authorId: a.authorId ?? a.author_id,
+  readTime: a.readTime ?? a.read_time ?? 0,
+  date: a.date ?? a.created_at
+})
+
+const normalizeStatus = (s = {}) => ({
+  ...s,
+  authorId: s.authorId ?? s.author_id,
+  date: s.date ?? s.created_at
 })
 
 const fetchData = async (options = {}) => {
@@ -217,30 +215,34 @@ const fetchData = async (options = {}) => {
 
   try {
     if (authStore.isLoggedIn) {
-      const userId = authStore.user?.id
-      const [articlesRes, statusesRes] = await Promise.all([
-        apiService.getArticles(),
-        apiService.getStatuses()
-      ])
-      articles.value = (articlesRes.data.articles || [])
-        .map((a) => ({
-          ...a,
-          authorId: a.authorId ?? a.author_id,
-          readTime: a.readTime ?? a.read_time ?? 0,
-          date: a.date ?? a.created_at
-        }))
-        .filter((a) => Number(a.authorId) === Number(userId))
-
-      statuses.value = (statusesRes.data || [])
-        .map((s) => ({
-          ...s,
-          authorId: s.authorId ?? s.author_id,
-          date: s.date ?? s.created_at
-        }))
-        .filter((s) => Number(s.authorId) === Number(userId))
+      const userId = Number(authStore.user?.id || 0)
+      if (userId > 0) {
+        const [articlesRes, statusesRes] = await Promise.all([
+          apiService.getArticles({ authorId: userId, limit: 100 }),
+          apiService.getStatuses({ authorId: userId, limit: 100 })
+        ])
+        articles.value = (articlesRes.data?.articles || []).map(normalizeArticle)
+        statuses.value = (statusesRes.data || []).map(normalizeStatus)
+      } else {
+        const [articlesRes, statusesRes] = await Promise.all([
+          apiService.getArticles({ limit: 100 }),
+          apiService.getStatuses({ limit: 100 })
+        ])
+        const normalizedArticles = (articlesRes.data.articles || []).map(normalizeArticle)
+        const normalizedStatuses = (statusesRes.data || []).map(normalizeStatus)
+        // 用户信息尚未就绪时避免误过滤为空，先展示列表，随后由 watch 自动刷新为“我的”数据
+        articles.value = normalizedArticles
+        statuses.value = normalizedStatuses
+      }
     } else {
-      articles.value = []
-      statuses.value = []
+      const [articlesRes, statusesRes] = await Promise.all([
+        apiService.getArticles({ limit: 100 }),
+        apiService.getStatuses({ limit: 100 })
+      ])
+      const normalizedArticles = (articlesRes.data.articles || []).map(normalizeArticle)
+      const normalizedStatuses = (statusesRes.data || []).map(normalizeStatus)
+      articles.value = normalizedArticles
+      statuses.value = normalizedStatuses
     }
   } catch (err) {
     if (!silent) error.value = '获取数据失败'
@@ -270,14 +272,6 @@ const formatDate = (dateStr) => {
   })
 }
 
-const handleCardHover = (id) => {
-  hoveredCard.value = id
-}
-
-const handleCardLeave = () => {
-  hoveredCard.value = null
-}
-
 const scrollToTop = () => {
   window.scrollTo({
     top: 0,
@@ -286,13 +280,33 @@ const scrollToTop = () => {
 }
 
 const handleScroll = () => {
-  showBackToTop.value = window.scrollY > 300
+  const y = Math.max(window.scrollY || window.pageYOffset || 0, 0)
+  const delta = y - lastScrollY.value
+
+  showBackToTop.value = y > 300
+
+  // 仅在接近顶部时展开，避免上滑一点就立即展开头部。
+  if (y <= 12) {
+    heroCondensed.value = false
+  } else if (delta > 4) {
+    heroCondensed.value = true
+  }
+
+  lastScrollY.value = y
 }
 
 onMounted(() => {
+  lastScrollY.value = Math.max(window.scrollY || window.pageYOffset || 0, 0)
   window.addEventListener('scroll', handleScroll)
   fetchData()
 })
+
+watch(
+  () => [authStore.isLoggedIn, authStore.user?.id],
+  () => {
+    fetchData({ silent: true })
+  }
+)
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
@@ -319,13 +333,13 @@ onUnmounted(() => {
 }
 
 .pull-refresh-pill {
-  min-height: 28px;
+  min-height: var(--ui-tab-height);
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid var(--color-border-light);
   background: color-mix(in srgb, var(--color-surface) 92%, transparent);
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--ui-tab-font);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -364,10 +378,24 @@ onUnmounted(() => {
 /* Hero Section */
 .hero {
   position: relative;
-  padding: 56px 22px 44px;
-  max-width: 980px;
+  padding: var(--space-7) 22px var(--space-6);
+  max-width: var(--layout-max-width);
   margin: 0 auto;
   overflow: visible;
+  transition: padding var(--motion-base) var(--motion-smooth);
+}
+
+.content-layout {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: 0 var(--layout-gutter) calc(var(--space-7) + var(--space-4));
+}
+
+.content-layout.with-status {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
 }
 
 .hero-content {
@@ -377,11 +405,12 @@ onUnmounted(() => {
 }
 
 .hero-title {
-  font-size: clamp(32px, 4.4vw, 44px);
+  font-size: var(--type-display);
   font-weight: 650;
   letter-spacing: -0.02em;
   line-height: 1.2;
-  margin-bottom: 14px;
+  margin-bottom: var(--space-3);
+  transition: font-size var(--motion-base) var(--motion-smooth), margin var(--motion-base) var(--motion-smooth);
 }
 
 .title-line {
@@ -396,10 +425,13 @@ onUnmounted(() => {
 }
 
 .hero-subtitle {
-  font-size: 16px;
-  color: var(--color-text-secondary);
+  font-size: 15px;
+  color: var(--color-text-tertiary);
   font-weight: 400;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-3);
+  transition: opacity var(--motion-base) var(--motion-smooth), max-height var(--motion-base) var(--motion-smooth), margin var(--motion-base) var(--motion-smooth);
+  max-height: 42px;
+  overflow: hidden;
 }
 
 .hero-stats {
@@ -408,8 +440,28 @@ onUnmounted(() => {
   justify-content: center;
   flex-wrap: wrap;
   gap: 12px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text-tertiary);
+  opacity: 0.84;
+  transition: opacity var(--motion-base) var(--motion-smooth), max-height var(--motion-base) var(--motion-smooth), margin var(--motion-base) var(--motion-smooth);
+  max-height: 36px;
+  overflow: hidden;
+}
+
+.hero.condensed {
+  padding: 10px 22px 10px;
+}
+
+.hero.condensed .hero-title {
+  font-size: clamp(24px, 3.6vw, 30px);
+  margin-bottom: 2px;
+}
+
+.hero.condensed .hero-subtitle,
+.hero.condensed .hero-stats {
+  opacity: 0;
+  max-height: 0;
+  margin-bottom: 0;
 }
 
 .stat-divider {
@@ -451,24 +503,22 @@ onUnmounted(() => {
 
 /* Articles Section */
 .articles-section {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 0 22px 72px;
+  min-width: 0;
 }
 
 .section-header {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 24px;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
 .section-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
+  font-size: var(--ui-meta-font);
+  font-weight: 550;
+  color: var(--color-text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   white-space: nowrap;
 }
 
@@ -481,20 +531,17 @@ onUnmounted(() => {
 /* Article Cards */
 .articles-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 18px;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  border-top: 0;
 }
 
 .article-card {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: none;
-  border: 1px solid var(--color-border-light);
+  background: var(--surface-panel);
+  border-radius: var(--panel-radius);
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
   transition: border-color var(--transition-fast), background-color var(--transition-fast);
-  animation: none;
-  opacity: 1;
-  box-shadow: var(--ux-shadow-soft);
   animation: fade-up-in var(--motion-base) var(--motion-spring) both;
 }
 
@@ -505,21 +552,11 @@ onUnmounted(() => {
 .articles-grid .article-card:nth-child(5) { animation-delay: 150ms; }
 .articles-grid .article-card:nth-child(6) { animation-delay: 180ms; }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .article-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--ux-shadow-card);
-  border-color: color-mix(in srgb, var(--color-accent) 22%, var(--color-border));
+  transform: none;
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--color-accent) 16%, var(--color-border-light));
+  background: var(--surface-panel-hover);
 }
 
 .article-link {
@@ -530,16 +567,7 @@ onUnmounted(() => {
 }
 
 .article-image {
-  height: 62px;
-  position: relative;
-  overflow: hidden;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-surface-elevated) 96%, transparent),
-      color-mix(in srgb, var(--color-surface) 96%, transparent)
-    );
-  border-bottom: 1px solid var(--color-border-light);
+  display: none;
 }
 
 .image-overlay {
@@ -570,39 +598,41 @@ onUnmounted(() => {
 }
 
 .article-body {
-  padding: 14px 15px 15px;
+  padding: 12px var(--panel-padding);
 }
 
 .article-meta-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .article-category {
-  background: var(--color-accent-subtle);
-  color: var(--color-accent);
-  padding: 4px 12px;
-  border-radius: 980px;
-  font-size: 12px;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  padding: 0;
+  border-radius: 0;
+  font-size: var(--ui-meta-font);
   font-weight: 500;
+  opacity: 0.9;
 }
 
 .article-read-time {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
+  opacity: 0.85;
 }
 
 .article-title {
-  font-size: 17px;
-  font-weight: 650;
+  font-size: var(--type-title);
+  font-weight: 640;
   color: var(--color-text-primary);
-  line-height: 1.35;
-  margin-bottom: 8px;
+  line-height: 1.32;
+  margin-bottom: var(--space-2);
   letter-spacing: -0.01em;
   transition: none;
 }
@@ -612,10 +642,10 @@ onUnmounted(() => {
 }
 
 .article-excerpt {
-  font-size: 13px;
+  font-size: var(--type-body);
   color: var(--color-text-secondary);
-  line-height: 1.6;
-  margin-bottom: 14px;
+  line-height: 1.72;
+  margin-bottom: 8px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -625,14 +655,15 @@ onUnmounted(() => {
 .article-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-top: 10px;
-  border-top: 1px solid var(--color-border-light);
+  justify-content: flex-start;
+  padding-top: 2px;
+  border-top: 0;
 }
 
 .article-date {
-  font-size: 13px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
+  opacity: 0.9;
 }
 
 .read-action {
@@ -676,8 +707,8 @@ onUnmounted(() => {
 }
 
 .back-to-top:hover {
-  background: color-mix(in srgb, var(--color-accent-subtle) 58%, var(--color-surface));
-  border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent-subtle) 42%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-accent) 22%, var(--color-border));
   color: var(--color-text-primary);
   transform: translateY(-1px);
 }
@@ -754,10 +785,10 @@ onUnmounted(() => {
 }
 
 .home-skeleton-card {
-  border: 1px solid var(--color-border-light);
-  border-radius: 16px;
-  background: var(--color-surface);
-  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
+  border-radius: var(--panel-radius);
+  background: var(--surface-panel);
+  padding: var(--panel-padding);
   box-shadow: var(--ux-shadow-soft);
 }
 
@@ -822,24 +853,28 @@ onUnmounted(() => {
 
 /* Statuses Section */
 .statuses-section {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 0 22px 100px;
+  min-width: 0;
+  padding-bottom: 100px;
+}
+
+.content-layout.with-status .statuses-section {
+  position: sticky;
+  top: calc(66px + var(--safe-top));
 }
 
 .statuses-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
+  border-top: 0;
 }
 
 .status-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  transition: all var(--transition-fast);
-  box-shadow: var(--ux-shadow-soft);
+  background: var(--surface-panel);
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
+  border-radius: var(--panel-radius);
+  padding: 12px var(--panel-padding);
+  transition: background-color var(--transition-fast);
   animation: fade-up-in var(--motion-base) var(--motion-spring) both;
 }
 
@@ -849,21 +884,22 @@ onUnmounted(() => {
 .statuses-list .status-card:nth-child(4) { animation-delay: 160ms; }
 
 .status-card:hover {
-  border-color: color-mix(in srgb, var(--color-accent) 24%, var(--color-border-light));
-  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-accent) 16%, var(--color-border-light));
+  transform: none;
+  background: var(--surface-panel-hover);
 }
 
 .status-content {
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: var(--type-body);
+  line-height: 1.66;
   color: var(--color-text-primary);
   white-space: pre-wrap;
   word-break: break-word;
-  margin: 0 0 12px;
+  margin: 0 0 8px;
 }
 
 .status-date {
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
 }
 
@@ -887,8 +923,28 @@ onUnmounted(() => {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .home {
+    position: relative;
+  }
+
+  .content-layout,
+  .content-layout.with-status {
+    display: block;
+    padding: 0 var(--layout-gutter-mobile) 68px;
+  }
+
   .hero {
-    padding: 56px 16px 40px;
+    position: sticky;
+    top: calc(44px + var(--safe-top));
+    z-index: 11;
+    padding: 56px var(--layout-gutter-mobile) 40px;
+    background: color-mix(in srgb, var(--color-bg) 94%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .hero.condensed {
+    padding: 8px var(--layout-gutter-mobile) 8px;
   }
 
   .hero-title {
@@ -896,7 +952,7 @@ onUnmounted(() => {
   }
 
   .hero-subtitle {
-    font-size: 16px;
+    font-size: 14px;
     margin-bottom: 12px;
   }
 
@@ -909,21 +965,13 @@ onUnmounted(() => {
     display: none;
   }
 
-  .articles-section {
-    padding: 0 16px 68px;
-  }
-
   .articles-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
-  }
-
-  .article-image {
-    height: 56px;
+    gap: 10px;
   }
 
   .article-body {
-    padding: 14px;
+    padding: 12px var(--panel-padding);
   }
 
   .back-to-top {
@@ -934,7 +982,13 @@ onUnmounted(() => {
   }
 
   .statuses-section {
-    padding: 0 16px calc(84px + var(--safe-bottom));
+    margin-top: 16px;
+    padding: 0 0 calc(84px + var(--safe-bottom));
+    position: static;
+  }
+
+  .statuses-list {
+    gap: 10px;
   }
 }
 

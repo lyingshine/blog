@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <div class="about-page">
-    <header class="about-header">
+    <header class="about-header ux-card">
       <div class="avatar-wrapper">
         <div class="avatar">
           <img
@@ -18,29 +18,33 @@
           class="avatar-input"
           @change="handleAvatarSelect"
         />
-        <button class="avatar-upload-btn" type="button" :disabled="uploadingAvatar" @click="triggerAvatarInput">
+        <button class="avatar-upload-btn chip-button" type="button" :disabled="uploadingAvatar" @click="triggerAvatarInput">
           {{ uploadingAvatar ? '上传中...' : '上传头像' }}
         </button>
-        <p class="avatar-tip">支持 png/jpg/webp/gif，大小不超过 2MB</p>
+        <p class="avatar-tip">支持 png/jpg/webp/gif，文件大小不超过 2MB</p>
         <p v-if="avatarError" class="avatar-error">{{ avatarError }}</p>
       </div>
+
       <h1 class="about-title">{{ authStore.user?.username || '个人资料' }}</h1>
-      <p class="about-subtitle">让你的主页更像一个真实、完整的你</p>
+      <p class="about-subtitle">完善你的公开信息，让主页展示更完整、更有温度。</p>
+
       <div class="profile-badges">
-        <span class="profile-badge">资料完善度 {{ profileCompletion }}%</span>
+        <span class="profile-badge">资料完整度 {{ profileCompletion }}%</span>
         <span class="profile-badge">{{ joinDateLabel }}</span>
         <span class="profile-badge">{{ authStore.user?.role === 'admin' ? '管理员账号' : '普通账号' }}</span>
       </div>
-      <div class="profile-progress" aria-label="资料完善度">
+
+      <div class="profile-progress" aria-label="资料完整度">
         <span :style="{ width: `${profileCompletion}%` }"></span>
       </div>
     </header>
 
-    <section class="about-card">
+    <section class="about-card ux-card">
       <template v-if="authStore.isLoggedIn">
         <form class="profile-form" @submit.prevent="handleSave">
-          <section class="form-section">
+          <section class="form-section ux-card">
             <h2 class="section-title">公开展示</h2>
+
             <label class="field">
               <span class="label">个人标语</span>
               <input
@@ -54,13 +58,13 @@
                   v-for="item in headlineSuggestions"
                   :key="item"
                   type="button"
-                  class="suggestion-btn"
+                  class="suggestion-btn chip-button"
                   @click="applyHeadline(item)"
                 >
                   {{ item }}
                 </button>
               </div>
-              <span class="hint">首页 Hero 会优先展示这句话</span>
+              <span class="hint">主页 Hero 区域会优先展示这句标语</span>
             </label>
 
             <label class="field">
@@ -69,13 +73,14 @@
                 v-model="form.bio"
                 maxlength="500"
                 rows="5"
-                placeholder="你关注什么、在做什么、希望在这里记录什么。"
+                placeholder="你在关注什么、在做什么、希望在这里记录什么"
               ></textarea>
             </label>
           </section>
 
-          <section class="form-section">
+          <section class="form-section ux-card">
             <h2 class="section-title">联系与身份</h2>
+
             <div class="grid">
               <label class="field">
                 <span class="label">所在地</span>
@@ -95,7 +100,7 @@
           </section>
 
           <div class="actions">
-            <button class="save-btn" type="submit" :disabled="saving">
+            <button class="save-btn chip-button" type="submit" :disabled="saving">
               {{ saving ? '保存中...' : '保存资料' }}
             </button>
             <span class="status" :class="{ error: saveError }">{{ statusText }}</span>
@@ -106,8 +111,8 @@
       <template v-else>
         <div class="guest-empty">
           <h3>登录后可编辑个人资料</h3>
-          <p>设置你的个人标语后，首页会呈现更自然、更有温度的个人表达。</p>
-          <router-link to="/login" class="login-link">去登录</router-link>
+          <p>设置标语和简介后，你的主页会更完整，也更有个人风格。</p>
+          <router-link to="/login" class="login-link chip-button">去登录</router-link>
         </div>
       </template>
     </section>
@@ -202,7 +207,7 @@ watch(
 const statusText = computed(() => {
   if (saveError.value) return saveError.value
   if (saveSuccess.value) return '资料已更新'
-  return '支持随时修改，立刻生效'
+  return '支持随时修改，保存后立即生效'
 })
 
 const handleSave = async () => {
@@ -257,7 +262,7 @@ const handleAvatarSelect = async (event) => {
   }
 
   if (file.size > 2 * 1024 * 1024) {
-    avatarError.value = '头像文件过大，请控制在 2MB 内'
+    avatarError.value = '头像文件过大，请控制在 2MB 以内'
     event.target.value = ''
     return
   }
@@ -278,27 +283,26 @@ const handleAvatarSelect = async (event) => {
 
 <style scoped>
 .about-page {
-  max-width: 960px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: 22px 22px calc(76px + var(--safe-bottom));
+  padding: 22px var(--layout-gutter) calc(76px + var(--safe-bottom));
 }
 
 .about-header {
   text-align: center;
-  padding: 42px 28px 58px;
-  border-radius: 24px;
-  border: 1px solid var(--color-border-light);
+  padding: 30px var(--panel-padding);
+  border-radius: 16px;
   background:
-    radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent 58%),
-    radial-gradient(circle at 85% 18%, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 55%),
-    linear-gradient(145deg, var(--color-surface), var(--color-surface-elevated));
-  box-shadow: 0 16px 32px rgba(12, 18, 31, 0.06);
+    radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 58%),
+    radial-gradient(circle at 85% 18%, color-mix(in srgb, var(--color-accent) 8%, transparent), transparent 55%),
+    var(--surface-panel);
+  box-shadow: none;
 }
 
 .avatar-wrapper {
   position: relative;
   width: fit-content;
-  margin: 0 auto 20px;
+  margin: 0 auto 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -306,19 +310,18 @@ const handleAvatarSelect = async (event) => {
 }
 
 .avatar {
-  width: 112px;
-  height: 112px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
-  border: 3px solid color-mix(in srgb, var(--color-accent) 24%, #fff);
+  border: 2px solid color-mix(in srgb, var(--color-accent) 24%, #fff);
   background: linear-gradient(145deg, var(--color-surface-elevated), var(--color-surface));
   color: var(--color-text-primary);
-  font-size: 38px;
+  font-size: 34px;
   font-weight: 650;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
 }
 
 .avatar-image {
@@ -333,27 +336,8 @@ const handleAvatarSelect = async (event) => {
 
 .avatar-upload-btn {
   margin-top: 12px;
-  border: 1px solid color-mix(in srgb, var(--color-accent) 20%, var(--color-border));
-  background: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
-  color: var(--color-text-primary);
-  border-radius: 999px;
-  min-height: 40px;
-  padding: 8px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
-}
-
-.avatar-upload-btn:hover:enabled {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
-  background: color-mix(in srgb, var(--color-accent) 16%, var(--color-surface));
-}
-
-.avatar-upload-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  min-height: 34px;
+  padding: 0 12px;
 }
 
 .avatar-tip {
@@ -369,11 +353,10 @@ const handleAvatarSelect = async (event) => {
 }
 
 .about-title {
-  font-size: 36px;
+  font-size: clamp(30px, 3.6vw, 36px);
   line-height: 1.1;
   letter-spacing: -0.02em;
   margin: 0;
-  text-shadow: 0 3px 12px rgba(15, 23, 42, 0.08);
 }
 
 .about-title + .about-subtitle {
@@ -387,7 +370,7 @@ const handleAvatarSelect = async (event) => {
 }
 
 .profile-badges {
-  margin-top: 18px;
+  margin-top: 14px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -426,30 +409,24 @@ const handleAvatarSelect = async (event) => {
 }
 
 .about-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  border-radius: 20px;
-  box-shadow: 0 10px 26px rgba(9, 16, 33, 0.06);
-  padding: 24px;
-  margin-top: -24px;
-  position: relative;
-  z-index: 1;
+  border-radius: var(--panel-radius);
+  box-shadow: none;
+  padding: var(--panel-padding);
+  margin-top: 12px;
 }
 
 .profile-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .form-section {
-  border: 1px solid var(--color-border-light);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--color-surface) 75%, var(--color-surface-elevated));
-  padding: 16px;
+  border-radius: var(--panel-radius);
+  padding: var(--panel-padding);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .section-title {
@@ -462,7 +439,7 @@ const handleAvatarSelect = async (event) => {
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 12px;
 }
 
 .field {
@@ -481,8 +458,8 @@ input,
 textarea {
   width: 100%;
   border: 1px solid var(--color-border);
-  border-radius: 14px;
-  padding: 12px 14px;
+  border-radius: 12px;
+  padding: 11px 12px;
   background: var(--color-surface-elevated);
   color: var(--color-text-primary);
   font-size: 14px;
@@ -518,52 +495,30 @@ textarea {
 }
 
 .suggestion-btn {
-  border: 1px solid var(--color-border-light);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border-radius: 999px;
+  min-height: 30px;
   font-size: 12px;
   line-height: 1;
-  padding: 8px 10px;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.suggestion-btn:hover {
-  border-color: var(--color-accent-subtle);
-  color: var(--color-accent);
-  background: var(--color-accent-subtle);
-  transform: translateY(-1px);
+  padding: 0 10px;
 }
 
 .actions {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding-top: 6px;
+  gap: 12px;
+  padding-top: 2px;
 }
 
 .save-btn {
-  border: none;
-  border-radius: 999px;
-  min-height: 42px;
-  padding: 10px 20px;
+  min-height: 38px;
+  padding: 0 16px;
   background: var(--color-accent);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
-  transition: transform var(--transition-fast), background-color var(--transition-fast);
 }
 
 .save-btn:hover:enabled {
   background: var(--color-accent-hover);
-  transform: translateY(-1px);
-}
-
-.save-btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
 }
 
 .status {
@@ -591,27 +546,28 @@ textarea {
 }
 
 .login-link {
-  display: inline-block;
-  border-radius: 999px;
-  padding: 10px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 16px;
   background: var(--color-accent);
   color: #fff;
 }
 
 @media (max-width: 768px) {
   .about-page {
-    padding: 16px 16px calc(64px + var(--safe-bottom));
+    padding: 16px var(--layout-gutter-mobile) calc(64px + var(--safe-bottom));
   }
 
   .about-header {
-    padding: 34px 16px 50px;
-    border-radius: 18px;
+    padding: 24px var(--panel-padding);
   }
 
   .avatar {
-    width: 98px;
-    height: 98px;
-    font-size: 34px;
+    width: 92px;
+    height: 92px;
+    font-size: 32px;
   }
 
   .about-title {
@@ -623,7 +579,7 @@ textarea {
   }
 
   .profile-badges {
-    margin-top: 14px;
+    margin-top: 12px;
     gap: 6px;
   }
 
@@ -636,16 +592,6 @@ textarea {
   .profile-progress {
     width: 88%;
     margin-top: 10px;
-  }
-
-  .about-card {
-    padding: 20px;
-    margin-top: -18px;
-  }
-
-  .form-section {
-    padding: 14px;
-    border-radius: 14px;
   }
 
   .grid {

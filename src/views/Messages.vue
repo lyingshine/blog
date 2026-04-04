@@ -1,31 +1,35 @@
 ﻿<template>
   <div class="messages-page">
+    <Transition name="feedback-fade">
+      <p v-if="feedbackText" class="feedback-banner" :class="feedbackType">{{ feedbackText }}</p>
+    </Transition>
+
     <section class="messages-header">
       <div>
         <h1>消息中心</h1>
         <p>通知、私信和关注管理都在这里。</p>
       </div>
       <div class="header-actions" v-if="activeTab === 'notifications'">
-        <button class="outline-btn" type="button" @click="enablePush" :disabled="notificationsStore.pushEnabled">
+        <button class="outline-btn chip-button" type="button" @click="enablePush" :disabled="notificationsStore.pushEnabled">
           {{ notificationsStore.pushEnabled ? '离线推送已开启' : '开启离线推送' }}
         </button>
-        <button class="outline-btn" type="button" @click="sendPushTest" :disabled="!notificationsStore.pushEnabled">
+        <button class="outline-btn chip-button" type="button" @click="sendPushTest" :disabled="!notificationsStore.pushEnabled">
           发送测试推送
         </button>
-        <button class="outline-btn" type="button" @click="markAllRead" :disabled="notificationsStore.unreadCount === 0">
+        <button class="outline-btn chip-button" type="button" @click="markAllRead" :disabled="notificationsStore.unreadCount === 0">
           全部已读
         </button>
       </div>
     </section>
 
-    <div class="tab-bar">
-      <button class="tab-btn" :class="{ active: activeTab === 'notifications' }" type="button" @click="activeTab = 'notifications'">
+    <div class="tab-bar ux-tab-shell">
+      <button class="tab-btn ux-tab" :class="{ active: activeTab === 'notifications' }" type="button" @click="activeTab = 'notifications'">
         通知
       </button>
-      <button class="tab-btn" :class="{ active: activeTab === 'dm' }" type="button" @click="activeTab = 'dm'">
+      <button class="tab-btn ux-tab" :class="{ active: activeTab === 'dm' }" type="button" @click="activeTab = 'dm'">
         私信
       </button>
-      <button class="tab-btn" :class="{ active: activeTab === 'follows' }" type="button" @click="activeTab = 'follows'">
+      <button class="tab-btn ux-tab" :class="{ active: activeTab === 'follows' }" type="button" @click="activeTab = 'follows'">
         关注
       </button>
     </div>
@@ -44,7 +48,7 @@
         <article
           v-for="item in notificationsStore.items"
           :key="item.id"
-          class="message-card"
+          class="message-card ux-card"
           :class="{ unread: !item.is_read }"
         >
           <div class="message-main" @click="openMessage(item)">
@@ -54,7 +58,7 @@
           </div>
           <button
             v-if="!item.is_read"
-            class="mini-btn"
+            class="mini-btn chip-button"
             type="button"
             @click.stop="markOne(item.id)"
           >
@@ -72,7 +76,7 @@
         <button
           v-for="item in conversations"
           :key="item.peer_id"
-          class="conversation-item"
+          class="conversation-item ux-card"
           :class="{ active: activePeerId === item.peer_id }"
           type="button"
           @click="selectConversation(item.peer_id)"
@@ -103,7 +107,7 @@
           </div>
           <div class="dm-editor">
             <textarea v-model="dmDraft" rows="2" maxlength="1000" placeholder="输入私信内容..."></textarea>
-            <button type="button" class="outline-btn" @click="sendDm">发送</button>
+            <button type="button" class="outline-btn chip-button" @click="sendDm">发送</button>
           </div>
         </template>
         <div v-else class="empty-state">从左侧选择会话，或在关注页发起私信</div>
@@ -112,7 +116,7 @@
 
     <section v-else class="follows-section">
       <div class="follows-grid">
-        <article v-for="user in userList" :key="user.id" class="user-card">
+        <article v-for="user in userList" :key="user.id" class="user-card ux-card">
           <div class="user-main">
             <div class="avatar-box">
               <img v-if="isImageAvatar(user.avatar)" :src="resolveAssetUrl(user.avatar)" alt="avatar" class="avatar-image" />
@@ -125,14 +129,14 @@
           </div>
           <div class="user-actions">
             <button
-              class="outline-btn"
+              class="outline-btn chip-button"
               type="button"
               :class="{ primary: followStates[user.id] }"
               @click="toggleFollow(user)"
             >
               {{ followStates[user.id] ? '已关注' : '关注' }}
             </button>
-            <button class="outline-btn" type="button" @click="startDm(user)">私信</button>
+            <button class="outline-btn chip-button" type="button" @click="startDm(user)">私信</button>
           </div>
         </article>
       </div>
@@ -163,7 +167,10 @@ const dmListRef = ref(null)
 
 const userList = ref([])
 const followStates = ref({})
+const feedbackText = ref('')
+const feedbackType = ref('success')
 let dmPollTimer = null
+let feedbackTimer = null
 
 const activePeer = computed(() => conversations.value.find((item) => Number(item.peer_id) === Number(activePeerId.value))?.peer || null)
 
@@ -182,21 +189,30 @@ const getAvatarText = (avatar, username) => {
   return (username || 'U').charAt(0).toUpperCase()
 }
 
+const setFeedback = (text, type = 'success') => {
+  feedbackText.value = text
+  feedbackType.value = type
+  if (feedbackTimer) clearTimeout(feedbackTimer)
+  feedbackTimer = setTimeout(() => {
+    feedbackText.value = ''
+  }, 2200)
+}
+
 const enablePush = async () => {
   try {
     await notificationsStore.subscribeSystemPush()
-    alert('离线推送已开启')
+    setFeedback('离线推送已开启')
   } catch (error) {
-    alert(error.message || '开启离线推送失败')
+    setFeedback(error.message || '开启离线推送失败', 'error')
   }
 }
 
 const sendPushTest = async () => {
   try {
     await notificationsStore.sendPushTest()
-    alert('测试推送已发送')
+    setFeedback('测试推送已发送')
   } catch (error) {
-    alert(error.message || '测试推送发送失败')
+    setFeedback(error.message || '测试推送发送失败', 'error')
   }
 }
 
@@ -267,7 +283,7 @@ const refreshActiveMessages = async () => {
 
 const sendDm = async () => {
   if (!authStore.isLoggedIn) {
-    alert('请先登录')
+    setFeedback('请先登录', 'error')
     return
   }
   const content = dmDraft.value.trim()
@@ -284,7 +300,7 @@ const sendDm = async () => {
     }
   } catch (error) {
     console.error('发送私信失败:', error)
-    alert(error.message || '发送失败')
+    setFeedback(error.message || '发送失败', 'error')
   }
 }
 
@@ -306,7 +322,7 @@ const loadUsers = async () => {
 
 const toggleFollow = async (user) => {
   if (!authStore.isLoggedIn) {
-    alert('请先登录')
+    setFeedback('请先登录', 'error')
     return
   }
 
@@ -322,7 +338,7 @@ const toggleFollow = async (user) => {
     }
   } catch (error) {
     console.error('关注操作失败:', error)
-    alert(error.message || '操作失败')
+    setFeedback(error.message || '操作失败', 'error')
   }
 }
 
@@ -387,14 +403,46 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopDmPolling()
+  if (feedbackTimer) {
+    clearTimeout(feedbackTimer)
+    feedbackTimer = null
+  }
 })
 </script>
 
 <style scoped>
 .messages-page {
-  max-width: 960px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: 22px 16px calc(88px + var(--safe-bottom));
+  padding: 22px var(--layout-gutter) calc(88px + var(--safe-bottom));
+}
+
+.feedback-banner {
+  margin-bottom: 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #0f8a63 30%, var(--color-border-light));
+  background: color-mix(in srgb, #0f8a63 12%, var(--color-surface));
+  color: #0f8a63;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 12px;
+}
+
+.feedback-banner.error {
+  border-color: color-mix(in srgb, #dc2626 28%, var(--color-border-light));
+  background: color-mix(in srgb, #dc2626 10%, var(--color-surface));
+  color: #b42323;
+}
+
+.feedback-fade-enter-active,
+.feedback-fade-leave-active {
+  transition: opacity var(--motion-base) var(--motion-smooth), transform var(--motion-fast) var(--motion-spring);
+}
+
+.feedback-fade-enter-from,
+.feedback-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .messages-header {
@@ -402,36 +450,33 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
+  padding: 12px var(--panel-padding);
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
+  border-radius: 14px;
+  background: var(--surface-panel);
 }
 
-h1 {
-  font-size: 28px;
+.messages-header h1 {
+  font-size: clamp(26px, 2.8vw, 32px);
   letter-spacing: -0.02em;
   margin: 0 0 6px;
 }
 
-p {
+.messages-header p {
   margin: 0;
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
+  font-size: 14px;
 }
 
 .tab-bar {
-  margin-top: 14px;
+  margin-top: 12px;
   display: inline-flex;
-  gap: 6px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  border-radius: 12px;
-  padding: 4px;
+  gap: 16px;
+  opacity: 0.9;
 }
 
 .tab-btn {
-  min-height: 38px;
-  min-width: 82px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-text-secondary);
+  min-height: var(--ui-tab-height);
   transition:
     transform var(--motion-fast) var(--motion-spring),
     background-color var(--motion-base) var(--motion-smooth),
@@ -439,12 +484,12 @@ p {
 }
 
 .tab-btn.active {
-  background: var(--color-accent-subtle);
-  color: var(--color-accent);
+  background: transparent;
+  color: var(--color-text-secondary);
 }
 
 .tab-btn:hover {
-  transform: translateY(-1px);
+  transform: none;
 }
 
 .messages-section {
@@ -459,13 +504,10 @@ p {
 }
 
 .outline-btn {
-  min-height: 36px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border-radius: 10px;
-  padding: 6px 10px;
-  font-size: 12px;
+  min-height: var(--ui-action-height);
+  border-radius: 999px;
+  padding: 0 11px;
+  font-size: var(--ui-action-font);
   font-weight: 600;
 }
 
@@ -475,24 +517,25 @@ p {
 }
 
 .outline-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.58;
 }
 
 .messages-stats {
   margin-top: 12px;
   display: flex;
   gap: 8px;
+  opacity: 0.84;
 }
 
 .stat-pill {
-  min-height: 28px;
+  min-height: var(--ui-tab-height);
   border-radius: 999px;
   padding: 0 10px;
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--color-border-light);
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
 }
 
 .stat-pill.ok {
@@ -503,14 +546,13 @@ p {
 .messages-list {
   margin-top: 14px;
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  border-top: 0;
 }
 
 .message-card {
-  border: 1px solid var(--color-border-light);
-  border-radius: 14px;
-  background: var(--color-surface);
-  padding: 12px;
+  border-radius: var(--panel-radius);
+  padding: 12px var(--panel-padding);
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -523,8 +565,8 @@ p {
 .messages-list .message-card:nth-child(4) { animation-delay: 95ms; }
 
 .message-card.unread {
-  border-color: color-mix(in srgb, var(--color-accent) 32%, var(--color-border));
-  background: color-mix(in srgb, var(--color-accent) 5%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-accent) 26%, var(--color-border-light));
+  background: color-mix(in srgb, var(--surface-panel-hover) 84%, transparent);
 }
 
 .message-main {
@@ -535,30 +577,27 @@ p {
 .message-main h3 {
   font-size: 15px;
   margin: 0;
+  color: var(--color-text-primary);
 }
 
 .message-main p {
-  margin-top: 4px;
-  line-height: 1.5;
+  margin-top: 5px;
+  line-height: 1.55;
   color: var(--color-text-secondary);
 }
 
 .meta {
   margin-top: 8px;
   display: inline-block;
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
 }
 
 .mini-btn {
   align-self: center;
-  min-height: 34px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border-light);
-  background: var(--color-surface-elevated);
-  color: var(--color-text-secondary);
-  font-size: 12px;
+  min-height: var(--ui-tab-height);
+  padding: 0 9px;
+  font-size: var(--ui-action-font);
 }
 
 .empty-state {
@@ -577,16 +616,16 @@ p {
 .dm-layout {
   margin-top: 14px;
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 12px;
+  grid-template-columns: 290px 1fr;
+  gap: 14px;
 }
 
 .dm-sidebar,
 .dm-main {
   border: 1px solid var(--color-border-light);
   border-radius: 12px;
-  background: var(--color-surface);
-  padding: 10px;
+  background: var(--surface-panel);
+  padding: var(--panel-padding);
 }
 
 .sidebar-title {
@@ -598,10 +637,8 @@ p {
 .conversation-item {
   width: 100%;
   text-align: left;
-  border: 1px solid var(--color-border-light);
   border-radius: 10px;
-  background: var(--color-surface-elevated);
-  padding: 8px;
+  padding: 10px;
   margin-bottom: 8px;
   position: relative;
   transition:
@@ -611,24 +648,26 @@ p {
 }
 
 .conversation-item.active {
-  border-color: color-mix(in srgb, var(--color-accent) 36%, var(--color-border-light));
+  border-color: color-mix(in srgb, var(--color-accent) 16%, var(--color-border-light));
+  background: var(--surface-panel-hover);
 }
 
 .conversation-item:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--color-accent) 26%, var(--color-border-light));
+  transform: none;
+  border-color: color-mix(in srgb, var(--color-accent) 14%, var(--color-border-light));
+  background: var(--surface-panel-hover);
 }
 
 .peer-name {
   display: block;
-  font-size: 13px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-primary);
 }
 
 .peer-preview {
   display: block;
-  margin-top: 2px;
-  font-size: 12px;
+  margin-top: 3px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -637,12 +676,12 @@ p {
 
 .peer-badge {
   position: absolute;
-  right: 8px;
-  top: 8px;
+  right: 10px;
+  top: 10px;
   min-width: 18px;
   height: 18px;
   border-radius: 999px;
-  background: #ef4444;
+  background: #e55454;
   color: #fff;
   font-size: 11px;
   line-height: 18px;
@@ -650,8 +689,9 @@ p {
 }
 
 .dm-header h3 {
-  margin: 2px 0 10px;
-  font-size: 16px;
+  margin: 2px 0 8px;
+  font-size: 15px;
+  color: var(--color-text-secondary);
 }
 
 .dm-messages {
@@ -666,16 +706,17 @@ p {
 
 .dm-message {
   max-width: 80%;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 76%, transparent);
   border-radius: 10px;
   padding: 8px 10px;
-  background: var(--color-surface-elevated);
+  background: var(--surface-embedded);
   animation: soft-pop-in var(--motion-fast) var(--motion-spring) both;
 }
 
 .dm-message.mine {
   align-self: flex-end;
-  border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-border-light));
+  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border-light));
+  background: var(--surface-panel-hover);
 }
 
 .dm-message p {
@@ -688,7 +729,7 @@ p {
 .dm-message span {
   display: block;
   margin-top: 6px;
-  font-size: 11px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
 }
 
@@ -705,7 +746,7 @@ p {
   padding: 8px 10px;
   resize: vertical;
   min-height: 64px;
-  background: var(--color-surface);
+  background: var(--surface-embedded);
   color: var(--color-text-primary);
   font-family: inherit;
 }
@@ -720,10 +761,7 @@ p {
 }
 
 .user-card {
-  border: 1px solid var(--color-border-light);
-  border-radius: 12px;
-  background: var(--color-surface);
-  padding: 10px;
+  padding: var(--panel-padding);
 }
 
 .user-main {
@@ -733,10 +771,10 @@ p {
 }
 
 .avatar-box {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: var(--color-surface-elevated);
+  background: var(--surface-embedded);
   border: 1px solid var(--color-border-light);
   display: flex;
   align-items: center;
@@ -744,6 +782,7 @@ p {
   overflow: hidden;
   font-weight: 600;
   color: var(--color-text-primary);
+  font-size: 11px;
 }
 
 .avatar-image {
@@ -754,12 +793,13 @@ p {
 
 .user-info h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
 }
 
 .user-info p {
   margin-top: 4px;
-  font-size: 13px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
 }
 
@@ -770,6 +810,10 @@ p {
 }
 
 @media (max-width: 768px) {
+  .messages-page {
+    padding: 18px var(--layout-gutter-mobile) calc(88px + var(--safe-bottom));
+  }
+
   .messages-header {
     flex-direction: column;
   }
@@ -779,8 +823,8 @@ p {
   }
 
   .tab-bar {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
+    justify-content: center;
     width: 100%;
   }
 

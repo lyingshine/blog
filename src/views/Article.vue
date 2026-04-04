@@ -56,21 +56,10 @@
           <h1 class="article-title">{{ article.title }}</h1>
           <p class="article-description">{{ article.description }}</p>
           <div class="article-author-row">
-            <div class="author-meta">
-              <div class="author-avatar">
-                <img
-                  v-if="isImageAvatar(article.author_avatar)"
-                  :src="resolveAssetUrl(article.author_avatar)"
-                  alt="avatar"
-                  class="avatar-image"
-                />
-                <span v-else>{{ getAvatarText(article.author_avatar, article.author_username) }}</span>
-              </div>
-              <div class="author-info">
-                <strong>{{ article.author_username || `用户${article.author_id}` }}</strong>
-                <span>作者</span>
-              </div>
-            </div>
+            <p class="author-meta">
+              <span class="byline-label">作者</span>
+              <strong>{{ article.author_username || `用户${article.author_id}` }}</strong>
+            </p>
             <div
               v-if="authStore.isLoggedIn && Number(article.author_id) && Number(article.author_id) !== Number(authStore.user?.id)"
               class="author-actions"
@@ -254,7 +243,7 @@
 import { computed, ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ReadingProgress from '../components/ReadingProgress.vue'
-import apiService, { resolveAssetUrl } from '../api'
+import apiService from '../api'
 import { useAuthStore } from '../stores/auth'
 
 const route = useRoute()
@@ -335,17 +324,6 @@ const fetchArticle = async (id) => {
   }
 }
 
-const isImageAvatar = (avatar) =>
-  typeof avatar === 'string' &&
-  /^(https?:\/\/|\/uploads\/|data:image\/)/i.test(avatar)
-
-const getAvatarText = (avatar, username) => {
-  if (isImageAvatar(avatar)) return (username || 'U').charAt(0).toUpperCase()
-  const trimmed = typeof avatar === 'string' ? avatar.trim() : ''
-  if (trimmed) return trimmed.charAt(0).toUpperCase()
-  return (username || 'U').charAt(0).toUpperCase()
-}
-
 const loadAuthorFollowState = async (authorId) => {
   if (!authStore.isLoggedIn || !authorId || Number(authorId) === Number(authStore.user?.id)) {
     authorFollowed.value = false
@@ -363,7 +341,7 @@ const toggleAuthorFollow = async () => {
   const authorId = Number(article.value?.author_id || 0)
   if (!authorId || authorId === Number(authStore.user?.id)) return
   if (!authStore.isLoggedIn) {
-    alert('请先登录')
+    setActionNotice('请先登录')
     return
   }
 
@@ -377,7 +355,7 @@ const toggleAuthorFollow = async () => {
     }
   } catch (err) {
     console.error('关注操作失败:', err)
-    alert(err.message || '操作失败')
+    setActionNotice(err.message || '操作失败')
   }
 }
 
@@ -385,17 +363,16 @@ const messageAuthor = async () => {
   const authorId = Number(article.value?.author_id || 0)
   if (!authorId || authorId === Number(authStore.user?.id)) return
   if (!authStore.isLoggedIn) {
-    alert('请先登录')
+    setActionNotice('请先登录')
     return
   }
-  const content = prompt(`发给 ${article.value?.author_username || '作者'} 的私信内容：`) || ''
-  if (!content.trim()) return
+  const content = `你好，我想和你交流一下《${article.value?.title || '这篇文章'}》的内容。`
   try {
     await apiService.sendPrivateMessage(authorId, content)
-    alert('私信已发送')
+    setActionNotice('私信已发送，可在消息中心继续沟通')
   } catch (err) {
     console.error('发送私信失败:', err)
-    alert(err.message || '发送失败')
+    setActionNotice(err.message || '发送失败')
   }
 }
 
@@ -417,7 +394,7 @@ const loadEngagement = async (articleId) => {
 
 const reactArticle = async (reaction) => {
   if (!authStore.isLoggedIn) {
-    alert('请先登录后再互动')
+    setActionNotice('请先登录后再互动')
     return
   }
   if (!article.value?.id) return
@@ -468,7 +445,7 @@ const loadComments = async () => {
 
 const submitComment = async () => {
   if (!authStore.isLoggedIn) {
-    alert('请先登录后再评论')
+    setActionNotice('请先登录后再评论')
     return
   }
   const content = commentDraft.value.trim()
@@ -493,7 +470,7 @@ const submitComment = async () => {
     engagement.value.comments += 1
   } catch (err) {
     console.error('评论失败:', err)
-    alert(err.message || '评论失败')
+    setActionNotice(err.message || '评论失败')
   }
 }
 
@@ -616,6 +593,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('scroll', updateActiveToc)
+  if (actionNoticeTimer) {
+    clearTimeout(actionNoticeTimer)
+    actionNoticeTimer = null
+  }
 })
 
 // 监听路由变化，重新获取文章
@@ -687,9 +668,9 @@ watch(() => route.params.id, (newId) => {
 /* Layout */
 .article-layout {
   display: flex;
-  max-width: 1200px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 0 22px calc(76px + var(--safe-bottom));
+  padding: 0 22px calc(var(--space-7) + var(--safe-bottom));
   gap: 42px;
 }
 
@@ -759,13 +740,13 @@ watch(() => route.params.id, (newId) => {
 /* Article Container */
 .article-container {
   flex: 1;
-  max-width: 720px;
+  max-width: 700px;
   margin: 0 auto;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  border-radius: 20px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   padding: 0 28px 30px;
-  box-shadow: var(--ux-shadow-soft);
+  box-shadow: none;
   animation: fade-up-in var(--motion-base) var(--motion-spring) both;
 }
 
@@ -779,9 +760,10 @@ watch(() => route.params.id, (newId) => {
 
 /* Article Header */
 .article-header {
-  padding: 28px 0 20px;
+  padding: var(--space-5) 0 var(--space-4);
+  border-top: 0;
   border-bottom: 1px solid var(--color-border-light);
-  margin-bottom: 18px;
+  margin-bottom: var(--space-4);
   animation: fade-up-in var(--motion-base) var(--motion-spring) both;
   animation-delay: 30ms;
 }
@@ -791,34 +773,35 @@ watch(() => route.params.id, (newId) => {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 }
 
 .focus-toggle {
   margin-left: auto;
-  border: 1px solid var(--color-border-light);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border-radius: 8px;
-  min-height: 34px;
-  padding: 6px 12px;
-  font-size: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  border-radius: 999px;
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 11px;
   line-height: 1;
   transition: border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .focus-toggle:hover {
-  border-color: var(--color-border);
-  color: var(--color-text-primary);
+  border-color: var(--color-border-light);
+  color: var(--color-text-secondary);
 }
 
 .article-category {
-  background: var(--color-accent-subtle);
-  color: var(--color-accent);
-  padding: 4px 12px;
-  border-radius: 980px;
-  font-size: 12px;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  padding: 0;
+  border-radius: 0;
+  font-size: 11px;
   font-weight: 500;
+  opacity: 0.9;
 }
 
 .meta-divider {
@@ -830,27 +813,27 @@ watch(() => route.params.id, (newId) => {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 14px;
-  color: var(--color-text-secondary);
+  font-size: var(--ui-meta-font);
+  color: var(--color-text-tertiary);
 }
 
 .article-title {
-  font-size: clamp(30px, 4.4vw, 40px);
-  font-weight: 650;
+  font-size: var(--type-display);
+  font-weight: 640;
   letter-spacing: -0.018em;
   line-height: 1.18;
   color: var(--color-text-primary);
-  margin-bottom: 10px;
+  margin-bottom: var(--space-2);
 }
 
 .article-description {
-  font-size: 16px;
-  color: var(--color-text-secondary);
-  line-height: 1.68;
+  font-size: 15px;
+  color: var(--color-text-tertiary);
+  line-height: 1.78;
 }
 
 .article-author-row {
-  margin-top: 12px;
+  margin-top: 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -860,42 +843,21 @@ watch(() => route.params.id, (newId) => {
 .author-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.author-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--color-surface-elevated);
-  border: 1px solid var(--color-border-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.author-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.author-info strong {
-  font-size: 14px;
-  color: var(--color-text-primary);
-}
-
-.author-info span {
-  font-size: 12px;
+  gap: 6px;
+  margin: 0;
   color: var(--color-text-tertiary);
+  font-size: var(--ui-meta-font);
+}
+
+.byline-label {
+  letter-spacing: 0.04em;
+  opacity: 0.88;
+}
+
+.author-meta strong {
+  font-size: var(--ui-meta-font);
+  font-weight: 500;
+  color: var(--color-text-secondary);
 }
 
 .author-actions {
@@ -904,13 +866,13 @@ watch(() => route.params.id, (newId) => {
 }
 
 .author-btn {
-  min-height: 32px;
+  min-height: var(--ui-action-height);
   border: 1px solid var(--color-border-light);
-  border-radius: 8px;
-  background: var(--color-surface-elevated);
-  color: var(--color-text-secondary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-tertiary);
   padding: 0 10px;
-  font-size: 12px;
+  font-size: var(--ui-action-font);
 }
 
 .author-btn.active {
@@ -919,24 +881,30 @@ watch(() => route.params.id, (newId) => {
 }
 
 .article-actions {
-  margin-top: 14px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
+  border-radius: 10px;
+  background: var(--surface-panel);
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  opacity: 0.72;
+  transition: opacity var(--motion-base) var(--motion-smooth);
 }
 
 .action-btn {
-  min-height: 34px;
+  min-height: var(--ui-action-height);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 12px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border-light);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-size: 13px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: var(--ui-action-font);
 }
 
 .action-btn.active {
@@ -945,15 +913,19 @@ watch(() => route.params.id, (newId) => {
 }
 
 .action-btn.danger {
-  color: #d64f4f;
+  color: #c06565;
+}
+
+.article-header:hover .article-actions {
+  opacity: 0.96;
 }
 
 .action-panel {
-  margin-top: 10px;
+  margin-top: 8px;
   border: 1px solid var(--color-border-light);
   border-radius: 10px;
   padding: 10px;
-  background: color-mix(in srgb, var(--color-surface-elevated) 90%, transparent);
+  background: var(--surface-embedded);
 }
 
 .action-form {
@@ -979,16 +951,20 @@ watch(() => route.params.id, (newId) => {
 }
 
 .action-notice {
-  margin-top: 8px;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
+  background: var(--surface-embedded);
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
 }
 
 /* Article Hero */
 .article-hero {
-  height: 68px;
-  border-radius: 10px;
-  margin-bottom: 20px;
+  height: 46px;
+  border-radius: 8px;
+  margin-bottom: 16px;
   position: relative;
   overflow: hidden;
 }
@@ -996,13 +972,13 @@ watch(() => route.params.id, (newId) => {
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 /* Article Body */
 .article-body {
-  font-size: 16px;
-  line-height: 1.85;
+  font-size: var(--type-body);
+  line-height: 1.9;
   color: var(--color-text-primary);
   max-width: 66ch;
   margin: 0 auto;
@@ -1072,22 +1048,26 @@ watch(() => route.params.id, (newId) => {
 
 .comment-section {
   margin-top: 24px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 12px;
-  padding: 14px;
-  background: color-mix(in srgb, var(--color-surface-elevated) 68%, transparent);
+  border: 0;
+  border-top: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border-light);
+  border-radius: 0;
+  padding: 14px 0;
+  background: transparent;
 }
 
 .comment-section h3 {
   margin: 0 0 10px;
-  font-size: 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
 }
 
 .comment-loading,
 .comment-empty,
 .comment-hint {
   color: var(--color-text-tertiary);
-  font-size: 13px;
+  font-size: var(--ui-meta-font);
 }
 
 .comment-list {
@@ -1096,9 +1076,10 @@ watch(() => route.params.id, (newId) => {
 }
 
 .comment-item {
-  border: 1px solid var(--color-border-light);
-  border-radius: 10px;
-  padding: 10px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-light);
+  border-radius: 0;
+  padding: 10px 0;
 }
 
 .comment-item header {
@@ -1107,7 +1088,7 @@ watch(() => route.params.id, (newId) => {
   justify-content: space-between;
   gap: 10px;
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
 }
 
 .comment-item p {
@@ -1118,19 +1099,19 @@ watch(() => route.params.id, (newId) => {
 
 .reply-parent {
   margin: 6px 0 0;
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
 }
 
 .reply-btn {
   margin-top: 6px;
-  min-height: 28px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 8px;
-  background: var(--color-surface-elevated);
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  padding: 0 10px;
+  min-height: var(--ui-tab-height);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: var(--ui-action-font);
+  padding: 0 8px;
 }
 
 .comment-editor {
@@ -1147,7 +1128,7 @@ watch(() => route.params.id, (newId) => {
   border: 1px dashed var(--color-border);
   border-radius: 8px;
   padding: 6px 8px;
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
 }
 
@@ -1155,7 +1136,7 @@ watch(() => route.params.id, (newId) => {
   border: none;
   background: none;
   color: var(--color-accent);
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
 }
 
 .comment-editor textarea {
@@ -1171,25 +1152,19 @@ watch(() => route.params.id, (newId) => {
 
 .submit-comment {
   justify-self: end;
-  min-height: 36px;
+  min-height: var(--ui-action-height);
   border: 1px solid var(--color-border-light);
-  border-radius: 8px;
-  background: var(--color-surface-elevated);
+  border-radius: 999px;
+  background: transparent;
   color: var(--color-text-secondary);
-  padding: 0 12px;
+  padding: 0 10px;
+  font-size: var(--ui-action-font);
 }
 
 .submit-comment.primary {
   color: #fff;
   border-color: transparent;
   background: var(--color-accent);
-}
-
-.article-author-row,
-.article-actions,
-.comment-section,
-.related-card {
-  box-shadow: var(--ux-shadow-soft);
 }
 
 .author-btn,
@@ -1205,7 +1180,7 @@ watch(() => route.params.id, (newId) => {
 .action-btn,
 .reply-btn,
 .submit-comment {
-  background: color-mix(in srgb, var(--color-surface-elevated) 94%, transparent);
+  background: transparent;
 }
 
 .author-btn:hover,
@@ -1213,13 +1188,13 @@ watch(() => route.params.id, (newId) => {
 .reply-btn:hover,
 .submit-comment:hover,
 .back-button:hover {
-  border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
-  color: var(--color-text-primary);
-  background: color-mix(in srgb, var(--color-accent-subtle) 54%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-accent) 14%, var(--color-border-light));
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-accent-subtle) 20%, transparent);
 }
 
 .action-btn.active {
-  background: color-mix(in srgb, var(--color-accent-subtle) 72%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-accent-subtle) 28%, transparent);
 }
 
 .action-btn.danger:hover {
@@ -1239,7 +1214,7 @@ watch(() => route.params.id, (newId) => {
 }
 
 .comment-item {
-  background: color-mix(in srgb, var(--color-surface-elevated) 76%, transparent);
+  background: transparent;
   animation: fade-up-in var(--motion-fast) var(--motion-spring) both;
 }
 
@@ -1267,12 +1242,12 @@ watch(() => route.params.id, (newId) => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  color: var(--color-text-primary);
-  font-size: 14px;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid var(--color-border-light);
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  font-size: var(--ui-action-font);
   font-weight: 500;
   transition: border-color var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
   text-decoration: none;
@@ -1307,26 +1282,25 @@ watch(() => route.params.id, (newId) => {
 .related-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
+  gap: 10px;
+  padding: 12px 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-light);
+  border-radius: 0;
   text-decoration: none;
-  transition: border-color var(--transition-fast);
+  transition: background-color var(--transition-fast);
 }
 
 .related-card:hover {
-  border-color: var(--color-border);
+  border-color: var(--color-border-light);
+  background: color-mix(in srgb, var(--color-accent-subtle) 18%, transparent);
   transform: none;
   box-shadow: none;
 }
 
 .related-image {
-  width: 60px;
-  height: 60px;
-  border-radius: var(--radius-md);
-  flex-shrink: 0;
+  display: none;
 }
 
 .related-content {
@@ -1336,14 +1310,14 @@ watch(() => route.params.id, (newId) => {
 
 .related-category {
   display: block;
-  font-size: 11px;
-  color: var(--color-accent);
+  font-size: var(--ui-meta-font);
+  color: var(--color-text-tertiary);
   font-weight: 500;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .related-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text-primary);
   line-height: 1.3;
@@ -1415,12 +1389,11 @@ watch(() => route.params.id, (newId) => {
   }
 
   .article-container {
-    border-radius: 14px;
     padding: 0 14px 22px;
   }
 
   .article-header {
-    padding: 22px 0 16px;
+    padding: 18px 0 14px;
   }
 
   .article-meta {
@@ -1434,7 +1407,7 @@ watch(() => route.params.id, (newId) => {
 
   .article-date,
   .article-read-time {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .focus-toggle {
@@ -1451,7 +1424,7 @@ watch(() => route.params.id, (newId) => {
   }
 
   .article-description {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .article-author-row {
@@ -1468,9 +1441,9 @@ watch(() => route.params.id, (newId) => {
   }
 
   .article-hero {
-    height: 140px;
-    margin-bottom: 24px;
-    border-radius: var(--radius-lg);
+    height: 34px;
+    margin-bottom: 14px;
+    border-radius: 8px;
   }
 
   .article-body {

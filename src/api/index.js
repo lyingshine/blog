@@ -163,8 +163,10 @@ class ApiService {
     })
   }
 
-  async getStatuses() {
-    return this.request('/statuses')
+  async getStatuses(params = {}) {
+    const queryString = new URLSearchParams(params).toString()
+    const endpoint = `/statuses${queryString ? `?${queryString}` : ''}`
+    return this.request(endpoint)
   }
 
   async createStatus(content) {

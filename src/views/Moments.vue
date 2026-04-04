@@ -1,5 +1,9 @@
 ﻿<template>
   <div class="moments-page">
+    <Transition name="page-feedback-fade">
+      <p v-if="pageNotice" class="page-notice">{{ pageNotice }}</p>
+    </Transition>
+
     <section class="moments-hero">
       <p class="hero-kicker">Moments</p>
       <h1 class="hero-title">把一瞬间，写成可回看的轨迹</h1>
@@ -11,7 +15,7 @@
       </div>
     </section>
 
-    <section v-if="authStore.isLoggedIn" class="composer">
+    <section v-if="authStore.isLoggedIn" class="composer ux-card">
       <div class="composer-header">
         <h2>写下此刻</h2>
         <span class="composer-count" :class="{ warn: newStatus.length > 450 }">{{ newStatus.length }}/500</span>
@@ -24,11 +28,11 @@
       ></textarea>
       <div class="composer-footer">
         <div class="composer-hints">
-          <button type="button" class="hint-btn" @click="applyHint('今天学到的一件事：')">今天学到</button>
-          <button type="button" class="hint-btn" @click="applyHint('本周想推进的目标：')">本周目标</button>
-          <button type="button" class="hint-btn" @click="applyHint('当前在思考的问题：')">正在思考</button>
+          <button type="button" class="hint-btn chip-button" @click="applyHint('今天学到的一件事：')">今天学到</button>
+          <button type="button" class="hint-btn chip-button" @click="applyHint('本周想推进的目标：')">本周目标</button>
+          <button type="button" class="hint-btn chip-button" @click="applyHint('当前在思考的问题：')">正在思考</button>
         </div>
-        <button class="publish-btn" :disabled="submitting || !newStatus.trim()" @click="handlePost">
+        <button class="publish-btn chip-button" :disabled="submitting || !newStatus.trim()" @click="handlePost">
           {{ submitting ? '发布中...' : '发布记录' }}
         </button>
       </div>
@@ -53,18 +57,9 @@
           <div class="item-line">
             <span class="item-dot"></span>
           </div>
-          <div class="item-card">
+          <div class="item-card ux-card">
             <div class="item-header">
               <div class="author-meta">
-                <div class="author-avatar">
-                  <img
-                    v-if="isImageAvatar(status.author_avatar)"
-                    :src="resolveAssetUrl(status.author_avatar)"
-                    alt="avatar"
-                    class="avatar-image"
-                  />
-                  <span v-else>{{ getAvatarText(status.author_avatar, status.author_username) }}</span>
-                </div>
                 <div class="author-info">
                   <strong>{{ status.author_username || `用户${status.authorId}` }}</strong>
                   <span>{{ formatDate(status.date) }}</span>
@@ -73,13 +68,13 @@
               <div v-if="authStore.isLoggedIn && Number(status.authorId) !== Number(authStore.user?.id)" class="author-actions">
                 <button
                   type="button"
-                  class="mini-outline"
+                  class="mini-outline chip-button"
                   :class="{ active: !!followStates[status.authorId] }"
                   @click="toggleFollow(status)"
                 >
                   {{ followStates[status.authorId] ? '已关注' : '关注' }}
                 </button>
-                <button type="button" class="mini-outline" @click="sendDmToAuthor(status)">私信</button>
+                <button type="button" class="mini-outline chip-button" @click="sendDmToAuthor(status)">私信</button>
               </div>
             </div>
             <p class="item-content">{{ status.content }}</p>
@@ -216,9 +211,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import apiService, { resolveAssetUrl } from '../api'
+import apiService from '../api'
 
 const authStore = useAuthStore()
 
@@ -239,6 +234,16 @@ const reportReasonMap = ref({})
 const reportDetailMap = ref({})
 const actionMessageMap = ref({})
 const actionMessageTimerMap = {}
+const pageNotice = ref('')
+let pageNoticeTimer = null
+
+const setPageNotice = (message) => {
+  pageNotice.value = message
+  if (pageNoticeTimer) clearTimeout(pageNoticeTimer)
+  pageNoticeTimer = setTimeout(() => {
+    pageNotice.value = ''
+  }, 2200)
+}
 
 const applyHint = (text) => {
   if (!newStatus.value.trim()) {
@@ -283,17 +288,6 @@ const normalizeStatus = (s = {}) => ({
   shares: Number(s.shares || 0),
   myReaction: Number(s.myReaction || 0)
 })
-
-const isImageAvatar = (avatar) =>
-  typeof avatar === 'string' &&
-  /^(https?:\/\/|\/uploads\/|data:image\/)/i.test(avatar)
-
-const getAvatarText = (avatar, username) => {
-  if (isImageAvatar(avatar)) return (username || 'U').charAt(0).toUpperCase()
-  const trimmed = typeof avatar === 'string' ? avatar.trim() : ''
-  if (trimmed) return trimmed.charAt(0).toUpperCase()
-  return (username || 'U').charAt(0).toUpperCase()
-}
 
 const loadFollowStates = async () => {
   if (!authStore.isLoggedIn || !statuses.value.length) return
@@ -377,7 +371,7 @@ const handleDelete = async (id) => {
 
 const handleReaction = async (status, reaction = 'like') => {
   if (!authStore.isLoggedIn) {
-    alert('请先登录后再互动')
+    setPageNotice('请先登录后再互动')
     return
   }
   if (!status?.id) return
@@ -433,7 +427,7 @@ const loadComments = async (statusId) => {
 
 const submitComment = async (status) => {
   if (!authStore.isLoggedIn) {
-    alert('请先登录后再评论')
+    setPageNotice('请先登录后再评论')
     return
   }
   const text = (commentDrafts.value[status.id] || '').trim()
@@ -481,7 +475,7 @@ const toggleFollow = async (status) => {
   const authorId = Number(status?.authorId || 0)
   if (!authorId || authorId === Number(authStore.user?.id)) return
   if (!authStore.isLoggedIn) {
-    alert('请先登录')
+    setPageNotice('请先登录')
     return
   }
 
@@ -496,7 +490,7 @@ const toggleFollow = async (status) => {
     }
   } catch (error) {
     console.error('关注操作失败:', error)
-    alert(error.message || '操作失败')
+    setPageNotice(error.message || '操作失败')
   }
 }
 
@@ -504,17 +498,16 @@ const sendDmToAuthor = async (status) => {
   const authorId = Number(status?.authorId || 0)
   if (!authorId || authorId === Number(authStore.user?.id)) return
   if (!authStore.isLoggedIn) {
-    alert('请先登录')
+    setPageNotice('请先登录')
     return
   }
-  const content = prompt(`发给 ${status.author_username || '对方'} 的私信内容：`) || ''
-  if (!content.trim()) return
+  const content = `你好，我看到了你这条动态，想和你聊聊。`
   try {
     await apiService.sendPrivateMessage(authorId, content)
-    alert('私信已发送')
+    setPageNotice('私信已发送，可在消息中心继续沟通')
   } catch (error) {
     console.error('发送私信失败:', error)
-    alert(error.message || '发送失败')
+    setPageNotice(error.message || '发送失败')
   }
 }
 
@@ -586,46 +579,75 @@ const submitReport = async (status) => {
 onMounted(() => {
   fetchStatuses()
 })
+
+onUnmounted(() => {
+  if (pageNoticeTimer) {
+    clearTimeout(pageNoticeTimer)
+    pageNoticeTimer = null
+  }
+})
 </script>
 
 <style>
 .moments-page {
-  max-width: 860px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: 24px 22px calc(84px + var(--safe-bottom));
+  padding: var(--space-5) var(--layout-gutter) calc(var(--space-7) + var(--safe-bottom));
+}
+
+.moments-page .page-notice {
+  margin: 0 0 10px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 12px;
+}
+
+.page-feedback-fade-enter-active,
+.page-feedback-fade-leave-active {
+  transition: opacity var(--motion-base) var(--motion-smooth), transform var(--motion-fast) var(--motion-spring);
+}
+
+.page-feedback-fade-enter-from,
+.page-feedback-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .moments-page .moments-hero {
   text-align: center;
-  padding: 14px 0 16px;
+  padding: var(--space-3) 0 var(--space-4);
 }
 
 .moments-page .hero-kicker {
-  font-size: 11px;
+  font-size: var(--ui-meta-font);
   letter-spacing: 0.08em;
   color: var(--color-text-tertiary);
   margin-bottom: 6px;
 }
 
 .moments-page .hero-title {
-  font-size: clamp(26px, 4.6vw, 36px);
+  font-size: var(--type-display);
   letter-spacing: -0.02em;
   line-height: 1.2;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .moments-page .hero-subtitle {
   max-width: 620px;
   margin: 0 auto;
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  line-height: 1.65;
+  color: var(--color-text-tertiary);
+  font-size: 15px;
+  line-height: 1.72;
 }
 
 .moments-page .hero-meta {
   margin-top: 10px;
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
 }
 
 .moments-page .dot {
@@ -634,11 +656,9 @@ onMounted(() => {
 
 .moments-page .composer {
   margin: 12px auto 22px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 14px;
-  background: var(--color-surface);
+  border-radius: 10px;
   box-shadow: none;
-  padding: 14px;
+  padding: 12px var(--panel-padding);
 }
 
 .moments-page .composer-header {
@@ -649,12 +669,14 @@ onMounted(() => {
 }
 
 .moments-page .composer-header h2 {
-  font-size: 20px;
-  letter-spacing: -0.02em;
+  font-size: 14px;
+  letter-spacing: 0;
+  font-weight: 600;
+  color: var(--color-text-secondary);
 }
 
 .moments-page .composer-count {
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
 }
 
@@ -693,39 +715,37 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  opacity: 0.82;
 }
 
 .moments-page .hint-btn {
-  border: 1px solid var(--color-border-light);
-  border-radius: 999px;
-  min-height: 34px;
-  padding: 6px 10px;
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  background: var(--color-surface-elevated);
+  min-height: var(--ui-action-height);
+  padding: 0 10px;
+  font-size: var(--ui-action-font);
+  color: var(--color-text-tertiary);
   transition: all var(--transition-fast);
 }
 
 .moments-page .hint-btn:hover {
   color: var(--color-accent);
-  border-color: var(--color-accent-subtle);
-  background: var(--color-accent-subtle);
+  border-color: color-mix(in srgb, var(--color-accent) 16%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-accent-subtle) 24%, transparent);
 }
 
 .moments-page .publish-btn {
-  border: none;
-  border-radius: 999px;
-  min-height: 42px;
-  padding: 9px 18px;
-  font-size: 14px;
+  min-height: var(--ui-action-height);
+  padding: 0 14px;
+  font-size: var(--ui-action-font);
   font-weight: 600;
-  color: #fff;
-  background: var(--color-accent);
-  transition: background-color var(--transition-fast);
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-accent-subtle) 22%, transparent);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .moments-page .publish-btn:hover:enabled {
-  background: var(--color-accent-hover);
+  color: var(--color-text-primary);
+  border-color: color-mix(in srgb, var(--color-accent) 16%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-accent-subtle) 30%, transparent);
 }
 
 .moments-page .publish-btn:disabled {
@@ -740,7 +760,8 @@ onMounted(() => {
 .moments-page .timeline {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  border-top: 0;
 }
 
 .moments-page .timeline-item {
@@ -765,16 +786,14 @@ onMounted(() => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--color-border);
+  background: color-mix(in srgb, var(--color-border) 92%, transparent);
   box-shadow: none;
 }
 
 .moments-page .item-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  border-radius: 12px;
+  border-radius: var(--panel-radius);
   box-shadow: none;
-  padding: 14px;
+  padding: 12px var(--panel-padding);
   transition:
     border-color var(--motion-base) var(--motion-smooth),
     transform var(--motion-fast) var(--motion-spring),
@@ -782,8 +801,9 @@ onMounted(() => {
 }
 
 .moments-page .item-card:hover {
-  border-color: color-mix(in srgb, var(--color-accent) 22%, var(--color-border));
-  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-accent) 16%, var(--color-border-light));
+  transform: none;
+  background: var(--surface-panel-hover);
 }
 
 .moments-page .item-header {
@@ -797,44 +817,27 @@ onMounted(() => {
 .moments-page .author-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0;
   min-width: 0;
-}
-
-.moments-page .author-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--color-surface-elevated);
-  border: 1px solid var(--color-border-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  color: var(--color-text-primary);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.moments-page .avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  opacity: 0.82;
 }
 
 .moments-page .author-info {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
   min-width: 0;
 }
 
 .moments-page .author-info strong {
-  font-size: 13px;
-  color: var(--color-text-primary);
+  font-size: var(--ui-meta-font);
+  color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 .moments-page .author-info span {
-  font-size: 11px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
 }
 
@@ -844,13 +847,10 @@ onMounted(() => {
 }
 
 .moments-page .mini-outline {
-  min-height: 30px;
-  padding: 0 10px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 8px;
-  background: var(--color-surface-elevated);
-  color: var(--color-text-secondary);
-  font-size: 12px;
+  min-height: var(--ui-tab-height);
+  padding: 0 9px;
+  color: color-mix(in srgb, var(--color-text-tertiary) 90%, var(--color-text-secondary));
+  font-size: var(--ui-action-font);
 }
 
 .moments-page .mini-outline.active {
@@ -861,15 +861,15 @@ onMounted(() => {
 .moments-page .item-content {
   margin: 0;
   color: var(--color-text-primary);
-  line-height: 1.75;
+  line-height: 1.85;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .moments-page .item-footer {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border-light);
+  margin-top: 10px;
+  padding-top: 0;
+  border-top: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -878,27 +878,37 @@ onMounted(() => {
 
 .moments-page .item-date {
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
 }
 
 .moments-page .item-actions {
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
+  border-radius: 10px;
+  background: var(--surface-panel);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  opacity: 0.62;
+  transition: opacity var(--motion-base) var(--motion-smooth);
 }
 
 .moments-page .icon-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border: none;
-  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 82%, transparent);
+  border-radius: 999px;
   background: transparent;
-  color: var(--color-text-tertiary);
-  min-height: 36px;
-  padding: 5px 10px;
-  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text-tertiary) 92%, var(--color-text-secondary));
+  min-height: var(--ui-action-height);
+  padding: 4px 9px;
+  font-size: var(--ui-action-font);
   transition: all var(--transition-fast);
+}
+
+.moments-page .item-card:hover .item-actions {
+  opacity: 0.9;
 }
 
 .moments-page .like-btn:hover,
@@ -918,15 +928,17 @@ onMounted(() => {
 }
 
 .moments-page .comment-panel {
-  margin-top: 12px;
-  border-top: 1px solid var(--color-border-light);
-  padding-top: 12px;
+  margin-top: 10px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
+  border-radius: 10px;
+  padding: 10px;
+  background: var(--surface-embedded);
   animation: fade-up-in var(--motion-fast) var(--motion-spring) both;
 }
 
 .moments-page .comment-loading,
 .moments-page .comment-empty {
-  font-size: 13px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
 }
 
@@ -936,9 +948,11 @@ onMounted(() => {
 }
 
 .moments-page .comment-item {
-  border: 1px solid var(--color-border-light);
-  border-radius: 10px;
-  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-light);
+  border-radius: 0;
+  padding: 8px 0;
+  background: var(--surface-embedded);
 }
 
 .moments-page .comment-meta {
@@ -947,7 +961,7 @@ onMounted(() => {
   justify-content: space-between;
   gap: 10px;
   color: var(--color-text-tertiary);
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
 }
 
 .moments-page .comment-item p {
@@ -960,19 +974,19 @@ onMounted(() => {
 
 .moments-page .reply-parent {
   margin: 6px 0 0;
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
 }
 
 .moments-page .reply-btn {
   margin-top: 6px;
-  min-height: 28px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 8px;
-  background: var(--color-surface-elevated);
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  padding: 0 10px;
+  min-height: var(--ui-tab-height);
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 82%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-text-tertiary) 90%, var(--color-text-secondary));
+  font-size: var(--ui-action-font);
+  padding: 0 8px;
 }
 
 .moments-page .comment-editor {
@@ -989,7 +1003,7 @@ onMounted(() => {
   border: 1px dashed var(--color-border);
   border-radius: 8px;
   padding: 6px 8px;
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
 }
 
@@ -997,7 +1011,7 @@ onMounted(() => {
   border: none;
   background: none;
   color: var(--color-accent);
-  font-size: 12px;
+  font-size: var(--ui-meta-font);
 }
 
 .moments-page .comment-editor textarea {
@@ -1012,12 +1026,13 @@ onMounted(() => {
 
 .moments-page .mini-submit {
   justify-self: end;
-  min-height: 34px;
+  min-height: var(--ui-action-height);
   border: 1px solid var(--color-border-light);
-  background: var(--color-surface-elevated);
-  border-radius: 8px;
-  padding: 0 12px;
+  background: transparent;
+  border-radius: 999px;
+  padding: 0 10px;
   color: var(--color-text-secondary);
+  font-size: var(--ui-action-font);
 }
 
 .moments-page .mini-submit.primary {
@@ -1027,11 +1042,11 @@ onMounted(() => {
 }
 
 .moments-page .action-panel {
-  margin-top: 10px;
+  margin-top: 8px;
   border: 1px solid var(--color-border-light);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 10px;
-  background: color-mix(in srgb, var(--color-surface-elevated) 90%, transparent);
+  background: var(--surface-embedded);
   animation: soft-pop-in var(--motion-base) var(--motion-spring) both;
 }
 
@@ -1058,13 +1073,13 @@ onMounted(() => {
 }
 
 .moments-page .action-message {
-  margin-top: 8px;
-  font-size: 12px;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
+  background: var(--surface-embedded);
+  font-size: var(--ui-meta-font);
   color: var(--color-text-tertiary);
-}
-
-.moments-page .item-card {
-  box-shadow: var(--ux-shadow-soft);
 }
 
 .moments-page .icon-btn,
@@ -1078,16 +1093,16 @@ onMounted(() => {
 }
 
 .moments-page .icon-btn {
-  border: 1px solid transparent;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 82%, transparent);
   border-radius: 999px;
-  min-height: 34px;
-  padding: 4px 10px;
+  min-height: var(--ui-action-height);
+  padding: 4px 9px;
 }
 
 .moments-page .icon-btn:hover {
-  border-color: var(--color-border-light);
-  background: color-mix(in srgb, var(--color-surface-elevated) 88%, transparent);
-  color: var(--color-text-primary);
+  border-color: color-mix(in srgb, var(--color-accent) 15%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-accent-subtle) 18%, transparent);
+  color: var(--color-text-secondary);
 }
 
 .moments-page .icon-btn:focus-visible,
@@ -1111,20 +1126,20 @@ onMounted(() => {
 .moments-page .hint-btn,
 .moments-page .mini-submit,
 .moments-page .reply-btn {
-  background: color-mix(in srgb, var(--color-surface-elevated) 94%, transparent);
+  background: transparent;
 }
 
 .moments-page .mini-outline:hover,
 .moments-page .hint-btn:hover,
 .moments-page .mini-submit:hover,
 .moments-page .reply-btn:hover {
-  background: color-mix(in srgb, var(--color-accent-subtle) 60%, var(--color-surface-elevated));
-  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border-light));
-  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-accent-subtle) 16%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 15%, var(--color-border-light));
+  color: var(--color-text-secondary);
 }
 
 .moments-page .publish-btn {
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--color-accent) 28%, transparent);
+  box-shadow: none;
 }
 
 .moments-page .publish-btn:hover:enabled {
@@ -1132,7 +1147,7 @@ onMounted(() => {
 }
 
 .moments-page .comment-item {
-  background: color-mix(in srgb, var(--color-surface-elevated) 74%, transparent);
+  background: var(--surface-embedded);
 }
 
 .moments-page .author-info strong {
@@ -1182,7 +1197,7 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .moments-page {
-    padding: 18px 16px calc(72px + var(--safe-bottom));
+    padding: 18px var(--layout-gutter-mobile) calc(72px + var(--safe-bottom));
   }
 
   .moments-page .hero-title {
@@ -1217,3 +1232,4 @@ onMounted(() => {
   }
 }
 </style>
+

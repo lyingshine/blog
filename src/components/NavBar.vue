@@ -14,7 +14,7 @@
 
       <div class="nav-right">
         <ul class="nav-links" :class="{ open: isMenuOpen }">
-          <li>
+          <li class="mobile-primary-duplicate">
             <router-link to="/" @click="closeMenu" class="nav-item">
               <span class="nav-icon">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -25,7 +25,7 @@
               首页
             </router-link>
           </li>
-          <li>
+          <li class="mobile-primary-duplicate">
             <router-link to="/discovery" @click="closeMenu" class="nav-item">
               <span class="nav-icon">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -36,7 +36,7 @@
               发现
             </router-link>
           </li>
-          <li>
+          <li class="mobile-primary-duplicate">
             <router-link to="/moments" @click="closeMenu" class="nav-item">
               <span class="nav-icon">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -46,7 +46,7 @@
               发动态
             </router-link>
           </li>
-          <li>
+          <li class="mobile-primary-duplicate">
             <router-link to="/messages" @click="closeMenu" class="nav-item">
               <span class="nav-icon">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -59,7 +59,7 @@
               </span>
             </router-link>
           </li>
-          <li>
+          <li class="mobile-primary-duplicate">
             <router-link to="/write" @click="closeMenu" class="nav-item">
               <span class="nav-icon">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -199,7 +199,7 @@
             <span>登录</span>
           </router-link>
 
-          <button class="menu-toggle" :class="{ active: isMenuOpen }" @click="toggleMenu" :aria-expanded="isMenuOpen" aria-label="菜单">
+          <button class="menu-toggle" :class="{ active: isMenuOpen }" @click="toggleMenu" :aria-expanded="isMenuOpen" aria-label="更多入口">
             <span class="menu-line" :class="{ open: isMenuOpen }"></span>
           </button>
         </div>
@@ -309,9 +309,9 @@ watch(
 }
 
 .navbar-container {
-  max-width: 980px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: 0 22px;
+  padding: 0 var(--layout-gutter);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -665,8 +665,12 @@ watch(
 }
 
 @media (max-width: 768px) {
+  .mobile-primary-duplicate {
+    display: none;
+  }
+
   .navbar-container {
-    padding: 0 16px;
+    padding: 0 var(--layout-gutter-mobile);
     height: 44px;
   }
 

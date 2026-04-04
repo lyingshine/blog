@@ -1,31 +1,35 @@
 ﻿<template>
   <div class="admin-reports-page">
-    <header class="page-header">
+    <Transition name="notice-fade">
+      <p v-if="noticeText" class="notice-banner">{{ noticeText }}</p>
+    </Transition>
+
+    <header class="page-header ux-card">
       <div>
         <h1>举报审核</h1>
         <p>管理用户提交的举报，及时处理违规内容。</p>
       </div>
-      <router-link class="back-link" to="/admin">返回管理台</router-link>
+      <router-link class="back-link chip-button" to="/admin">返回管理台</router-link>
     </header>
 
-    <section class="toolbar">
+    <section class="toolbar ux-tab-shell">
       <button
         v-for="item in filters"
         :key="item.value"
-        class="filter-btn"
+        class="filter-btn ux-tab"
         :class="{ active: statusFilter === item.value }"
         type="button"
         @click="changeFilter(item.value)"
       >
         {{ item.label }}
       </button>
-      <button class="refresh-btn" type="button" @click="loadReports" :disabled="loading">刷新</button>
+      <button class="refresh-btn chip-button" type="button" @click="loadReports" :disabled="loading">刷新</button>
     </section>
 
     <section class="list-section">
       <div v-if="loading" class="empty-state">加载中...</div>
       <div v-else-if="!reports.length" class="empty-state">当前没有符合条件的举报</div>
-      <article v-for="report in reports" :key="report.id" class="report-card">
+      <article v-for="report in reports" :key="report.id" class="report-card ux-card">
         <header class="report-header">
           <div class="report-title">
             <strong>#{{ report.id }} · {{ report.target_type }} / {{ report.target_id }}</strong>
@@ -40,18 +44,18 @@
         </div>
 
         <footer class="report-actions">
-          <button type="button" class="action-btn" @click="updateStatus(report, 'pending')" :disabled="report.status === 'pending'">
+          <button type="button" class="action-btn chip-button" @click="updateStatus(report, 'pending')" :disabled="report.status === 'pending'">
             标记待处理
           </button>
-          <button type="button" class="action-btn success" @click="updateStatus(report, 'resolved')" :disabled="report.status === 'resolved'">
+          <button type="button" class="action-btn chip-button success" @click="updateStatus(report, 'resolved')" :disabled="report.status === 'resolved'">
             标记已处理
           </button>
-          <button type="button" class="action-btn danger" @click="updateStatus(report, 'rejected')" :disabled="report.status === 'rejected'">
+          <button type="button" class="action-btn chip-button danger" @click="updateStatus(report, 'rejected')" :disabled="report.status === 'rejected'">
             驳回
           </button>
           <router-link
             v-if="report.target_type === 'article'"
-            class="jump-link"
+            class="jump-link chip-button"
             :to="`/article/${report.target_id}`"
             target="_blank"
           >
@@ -59,7 +63,7 @@
           </router-link>
           <router-link
             v-else
-            class="jump-link"
+            class="jump-link chip-button"
             to="/moments"
             target="_blank"
           >
@@ -72,7 +76,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import apiService from '../api'
 
 const filters = [
@@ -85,6 +89,16 @@ const filters = [
 const statusFilter = ref('pending')
 const loading = ref(false)
 const reports = ref([])
+const noticeText = ref('')
+let noticeTimer = null
+
+const setNotice = (message) => {
+  noticeText.value = message
+  if (noticeTimer) clearTimeout(noticeTimer)
+  noticeTimer = setTimeout(() => {
+    noticeText.value = ''
+  }, 2200)
+}
 
 const statusLabel = (status) => {
   if (status === 'resolved') return '已处理'
@@ -107,7 +121,7 @@ const loadReports = async () => {
     reports.value = res.data || []
   } catch (error) {
     console.error('加载举报失败:', error)
-    alert(error.message || '加载举报失败')
+    setNotice(error.message || '加载举报失败')
   } finally {
     loading.value = false
   }
@@ -125,20 +139,49 @@ const updateStatus = async (report, status) => {
     reports.value = reports.value.map((item) => (item.id === report.id ? { ...item, ...updated } : item))
   } catch (error) {
     console.error('更新举报状态失败:', error)
-    alert(error.message || '更新失败')
+    setNotice(error.message || '更新失败')
   }
 }
 
 onMounted(async () => {
   await loadReports()
 })
+
+onUnmounted(() => {
+  if (noticeTimer) {
+    clearTimeout(noticeTimer)
+    noticeTimer = null
+  }
+})
 </script>
 
 <style scoped>
 .admin-reports-page {
-  max-width: 1040px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: 24px 18px calc(84px + var(--safe-bottom));
+  padding: 24px var(--layout-gutter) calc(84px + var(--safe-bottom));
+}
+
+.notice-banner {
+  margin-bottom: 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #c44536 30%, var(--color-border-light));
+  background: color-mix(in srgb, #c44536 10%, var(--color-surface));
+  color: #b23a2f;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 12px;
+}
+
+.notice-fade-enter-active,
+.notice-fade-leave-active {
+  transition: opacity var(--motion-base) var(--motion-smooth), transform var(--motion-fast) var(--motion-spring);
+}
+
+.notice-fade-enter-from,
+.notice-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .page-header {
@@ -146,6 +189,7 @@ onMounted(async () => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  padding: var(--panel-padding);
 }
 
 .page-header h1 {
@@ -160,10 +204,8 @@ onMounted(async () => {
 }
 
 .back-link {
-  min-height: 36px;
+  min-height: 34px;
   padding: 0 12px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 10px;
   color: var(--color-text-secondary);
   display: inline-flex;
   align-items: center;
@@ -179,18 +221,13 @@ onMounted(async () => {
 
 .filter-btn,
 .refresh-btn {
-  min-height: 36px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 10px;
+  min-height: 34px;
   padding: 0 12px;
-  background: var(--color-surface);
   color: var(--color-text-secondary);
 }
 
 .filter-btn.active {
-  color: var(--color-accent);
-  border-color: color-mix(in srgb, var(--color-accent) 36%, var(--color-border-light));
-  background: var(--color-accent-subtle);
+  color: var(--color-text-primary);
 }
 
 .list-section {
@@ -200,10 +237,7 @@ onMounted(async () => {
 }
 
 .report-card {
-  border: 1px solid var(--color-border-light);
-  border-radius: 14px;
-  background: var(--color-surface);
-  padding: 12px;
+  padding: var(--panel-padding);
 }
 
 .report-header {
@@ -276,9 +310,6 @@ onMounted(async () => {
 
 .action-btn {
   min-height: 34px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 8px;
-  background: var(--color-surface-elevated);
   color: var(--color-text-secondary);
   padding: 0 10px;
   font-size: 12px;
@@ -294,9 +325,6 @@ onMounted(async () => {
 
 .jump-link {
   min-height: 34px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 8px;
-  background: var(--color-surface);
   color: var(--color-text-secondary);
   padding: 0 10px;
   display: inline-flex;
@@ -304,7 +332,7 @@ onMounted(async () => {
 }
 
 .empty-state {
-  border: 1px dashed var(--color-border);
+  border: 1px dashed color-mix(in srgb, var(--color-border) 88%, var(--color-border-light));
   border-radius: 12px;
   padding: 22px;
   text-align: center;
@@ -312,6 +340,10 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
+  .admin-reports-page {
+    padding: 18px var(--layout-gutter-mobile) calc(84px + var(--safe-bottom));
+  }
+
   .page-header {
     flex-direction: column;
   }
