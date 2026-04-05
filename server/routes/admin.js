@@ -88,7 +88,7 @@ async function getMetrics() {
     pool.read('SHOW STATUS LIKE "Threads_connected"')
   ])
 
-  // 鑾峰彇MySQL鏈嶅姟鍣ㄦ€昏繛鎺ユ暟
+  // 获取 MySQL 服务端总连接数
   const mysqlTotalConnections = dbConn?.[0]?.[0]?.Value || 0
   
   // 获取应用连接池当前连接数
@@ -248,19 +248,19 @@ router.get('/load-config', authMiddleware, (req, res) => {
   }
 })
 
-router.post('/load-config/preset', authMiddleware, (req, res) => {
+router.post('/load-config/preset', authMiddleware, async (req, res) => {
   try {
     const { presetId } = req.body || {}
-    const runtime = sim.applyPreset(presetId)
+    const runtime = await sim.applyPreset(presetId)
     res.json({ ok: true, simulator: runtime })
   } catch (error) {
     res.status(400).json({ error: error.message || 'Invalid preset' })
   }
 })
 
-router.post('/load-config', authMiddleware, (req, res) => {
+router.post('/load-config', authMiddleware, async (req, res) => {
   try {
-    const runtime = sim.updateConfig(req.body || {})
+    const runtime = await sim.updateConfig(req.body || {})
     res.json({ ok: true, simulator: runtime })
   } catch (error) {
     res.status(400).json({ error: error.message || 'Invalid config' })
@@ -276,15 +276,62 @@ router.post('/simulator/control', authMiddleware, async (req, res) => {
     } else if (action === 'pause') {
       sim.pauseSimulator()
     } else if (action === 'stop') {
-      sim.stopSimulator()
+      await sim.stopSimulator()
     } else {
-      return res.status(400).json({ error: 'Invalid action. Use start/pause/stop.' })
+      return res.status(400).json({ message: 'Invalid action. Use start/pause/stop.' })
     }
 
     const runtime = sim.getRuntimeStats ? sim.getRuntimeStats() : null
     res.json({ ok: true, simulator: runtime })
   } catch (error) {
-    res.status(500).json({ error: error.message || 'Internal server error' })
+    res.status(500).json({ message: error.message || 'Internal server error' })
+  }
+})
+
+router.get('/simulator/seed-status', authMiddleware, async (req, res) => {
+  try {
+    const seed = sim.getSeedStatus ? await sim.getSeedStatus() : null
+    res.json({ ok: true, seed })
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Internal server error' })
+  }
+})
+
+router.post('/simulator/seed/users', authMiddleware, async (req, res) => {
+  try {
+    const count = Math.max(1, Math.min(5000, Number(req.body?.count || 1000)))
+    const seed = sim.generateSimUsers ? await sim.generateSimUsers(count) : null
+    res.json({ ok: true, seed })
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Internal server error' })
+  }
+})
+
+router.delete('/simulator/seed/users', authMiddleware, async (req, res) => {
+  try {
+    const seed = sim.deleteSimUsers ? await sim.deleteSimUsers() : null
+    res.json({ ok: true, seed })
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Internal server error' })
+  }
+})
+
+router.post('/simulator/seed/data', authMiddleware, async (req, res) => {
+  try {
+    const count = Math.max(1, Math.min(5000, Number(req.body?.count || 1000)))
+    const seed = sim.generateSimContent ? await sim.generateSimContent(count) : null
+    res.json({ ok: true, seed })
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Internal server error' })
+  }
+})
+
+router.delete('/simulator/seed/data', authMiddleware, async (req, res) => {
+  try {
+    const seed = sim.deleteSimContent ? await sim.deleteSimContent() : null
+    res.json({ ok: true, seed })
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Internal server error' })
   }
 })
 
@@ -303,13 +350,13 @@ router.get('/activity', authMiddleware, async (req, res) => {
     const activeSessions = sim.getActiveSessions();
     const completedSessions = sim.getCompletedSessions();
     
-    // 鑾峰彇娲昏穬鐢ㄦ埛绫诲瀷鍒嗗竷
+    // 获取活跃用户类型分布
     const typeDistribution = activeSessions.reduce((acc, session) => {
       acc[session.type] = (acc[session.type] || 0) + 1;
       return acc;
     }, {});
     
-    // 璁＄畻骞冲潎浼氳瘽鏃堕暱
+    // 计算平均会话时长
     let totalDuration = 0;
     if (completedSessions.length > 0) {
       totalDuration = completedSessions.reduce((sum, session) => sum + session.duration, 0) / completedSessions.length;
@@ -321,7 +368,7 @@ router.get('/activity', authMiddleware, async (req, res) => {
       avgDuration: totalDuration,
       totalSessions: completedSessions.length,
       typeDistribution,
-      recentSessions: completedSessions.slice(-20) // 鏈€杩?0涓畬鎴愮殑浼氳瘽
+      recentSessions: completedSessions.slice(-20) // 最近 20 个完成的会话
     });
   } catch (error) {
     console.error('Error getting activity:', error);

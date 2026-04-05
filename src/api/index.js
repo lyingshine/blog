@@ -169,6 +169,12 @@ class ApiService {
     return this.request(endpoint)
   }
 
+  async getDiscoveryRecommendations(params = {}) {
+    const query = new URLSearchParams(params).toString()
+    const endpoint = `/social/recommendations${query ? `?${query}` : ''}`
+    return this.request(endpoint)
+  }
+
   async createStatus(content) {
     return this.request('/statuses', {
       method: 'POST',

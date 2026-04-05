@@ -6,13 +6,14 @@
 
     <header class="admin-hero ux-card">
       <div class="hero-copy">
-        <p class="hero-kicker">绔欑偣鍚庡彴</p>
+        <p class="hero-kicker">站点后台</p>
         <h1 class="hero-title">管理控制台</h1>
         <p class="hero-subtitle">
-          瀹炴椂鏌ョ湅鍗氬杩愯鐘舵€併€佽闂椿璺冨害涓庣郴缁熷閲忥紝璁╁悗鍙颁篃淇濇寔鍜屽墠鍙颁竴鑷寸殑缁嗚吇浣撻獙銆?        </p>
+          实时查看博客运行状态、访问活跃度与系统容量，让后台也保持和前台一致的体验。
+        </p>
         <div class="hero-actions">
           <span class="hero-pill" :class="healthClass">{{ healthText }}</span>
-          <span class="hero-pill hero-pill-neutral">褰撳墠鍘嬫祴 {{ displayPreset.label }}</span>
+          <span class="hero-pill hero-pill-neutral">当前压测 {{ displayPreset.label }}</span>
         </div>
       </div>
 
@@ -20,33 +21,33 @@
         <div class="hero-orb hero-orb-large"></div>
         <div class="hero-orb hero-orb-small"></div>
         <div class="hero-status-card">
-          <span class="status-label">褰撳墠鍦ㄧ嚎</span>
+          <span class="status-label">当前在线</span>
           <strong class="status-value">{{ num(activity.currentOnline) }}</strong>
-          <span class="status-meta">宄板€肩洰鏍?{{ num(displayPreset.peakOnlineTarget) }}</span>
+          <span class="status-meta">峰值目标 {{ num(displayPreset.peakOnlineTarget) }}</span>
         </div>
       </div>
     </header>
 
     <div class="tab-bar ux-tab-shell" role="tablist" aria-label="后台标签页">
       <button class="tab-button ux-tab" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">
-        鎬昏
+        总览
       </button>
       <button class="tab-button ux-tab" :class="{ active: activeTab === 'sessions' }" @click="activeTab = 'sessions'">
-        浼氳瘽
+        会话
       </button>
     </div>
 
     <section class="profile-card ux-card">
       <div class="profile-grid">
         <div>
-          <p class="section-kicker">鍘嬫祴绯荤粺</p>
+          <p class="section-kicker">压测系统</p>
           <h2 class="profile-title">{{ displayPreset.label }}</h2>
           <p class="profile-meta">{{ displayPreset.description }}</p>
         </div>
         <div class="profile-stats">
-          <span>鐢ㄦ埛姹?{{ num(displayPreset.maxRegisteredUsers) }}</span>
-          <span>鍦ㄧ嚎鐩爣 {{ num(displayPreset.peakOnlineTarget) }}</span>
-          <span>浼扮畻宄板€艰姹?{{ num(displayPreset.targetPeakRpm) }}/鍒嗛挓</span>
+          <span>用户池 {{ num(displayPreset.maxRegisteredUsers) }}</span>
+          <span>在线目标 {{ num(displayPreset.peakOnlineTarget) }}</span>
+          <span>估算峰值请求 {{ num(displayPreset.targetPeakRpm) }}/分钟</span>
         </div>
       </div>
       <p class="profile-note">压测参数已改为固定档位选择。先选择档位，再点击“应用档位”生效，避免误触切换。</p>
@@ -60,10 +61,30 @@
             {{ simulatorActionLoading === 'start' ? '启动中...' : '启动' }}
           </button>
           <button class="ghost-button chip-button" :disabled="simulatorActionLoading || !canPauseSimulator" @click="controlSimulator('pause')">
-            {{ simulatorActionLoading === 'pause' ? '鏆傚仠涓?..' : '鏆傚仠' }}
+            {{ simulatorActionLoading === 'pause' ? '暂停中...' : '暂停' }}
           </button>
           <button class="apply-button chip-button" :disabled="simulatorActionLoading || !canStopSimulator" @click="controlSimulator('stop')">
-            {{ simulatorActionLoading === 'stop' ? '鍋滄涓?..' : '鍋滄' }}
+            {{ simulatorActionLoading === 'stop' ? '停止中...' : '停止' }}
+          </button>
+        </div>
+      </div>
+      <div class="simulator-controls seed-controls">
+        <div class="simulator-state">
+          <span class="state-label">初始数据状态</span>
+          <strong class="state-value" :class="{ running: seedState.ready, paused: !seedState.ready }">{{ seedReadyText }}</strong>
+        </div>
+        <div class="simulator-buttons">
+          <button class="ghost-button chip-button" :disabled="seedActionLoading === 'generateUsers'" @click="runSeedAction('generateUsers')">
+            {{ seedActionLoading === "generateUsers" ? "生成中..." : "生成用户(+1000)" }}
+          </button>
+          <button class="ghost-button chip-button" :disabled="seedActionLoading === 'deleteUsers'" @click="runSeedAction('deleteUsers')">
+            {{ seedActionLoading === "deleteUsers" ? "删除中..." : "删除用户" }}
+          </button>
+          <button class="ghost-button chip-button" :disabled="seedActionLoading === 'generateData'" @click="runSeedAction('generateData')">
+            {{ seedActionLoading === "generateData" ? "生成中..." : "生成数据(+1000文章+1000动态+评论)" }}
+          </button>
+          <button class="apply-button chip-button" :disabled="seedActionLoading === 'deleteData'" @click="runSeedAction('deleteData')">
+            {{ seedActionLoading === "deleteData" ? "删除中..." : "删除数据" }}
           </button>
         </div>
       </div>
@@ -88,10 +109,10 @@
         </p>
         <div class="preset-action-buttons">
           <button class="ghost-button chip-button" :disabled="savingConfig || !hasPendingPresetChange" @click="stagedPresetId = selectedPresetId">
-            鍙栨秷閫夋嫨
+            取消选择
           </button>
           <button class="apply-button chip-button" :disabled="savingConfig || !hasPendingPresetChange" @click="applyPreset(stagedPresetId)">
-            {{ savingConfig ? "搴旂敤涓?.." : "搴旂敤妗ｄ綅" }}
+            {{ savingConfig ? "应用中..." : "应用档位" }}
           </button>
         </div>
       </div>
@@ -107,12 +128,12 @@
               {{ preset.label }}
               <em v-if="selectedPresetId === preset.id" class="preset-badge">生效中</em>
             </strong>
-            <span>{{ num(preset.targetPeakRpm) }}/鍒嗛挓</span>
+            <span>{{ num(preset.targetPeakRpm) }}/分钟</span>
           </div>
           <p>{{ preset.description }}</p>
           <div class="preset-card-meta">
-            <span>鐢ㄦ埛姹?{{ num(preset.maxRegisteredUsers) }}</span>
-            <span>鍦ㄧ嚎 {{ num(preset.peakOnlineTarget) }}</span>
+            <span>用户池 {{ num(preset.maxRegisteredUsers) }}</span>
+            <span>在线 {{ num(preset.peakOnlineTarget) }}</span>
           </div>
         </article>
       </div>
@@ -120,8 +141,8 @@
 
     <section v-if="!authStore.isAdmin" class="login-card ux-card">
       <div class="section-heading">
-        <p class="section-kicker">璁块棶鍙楅檺</p>
-        <h2>闇€瑕佺鐞嗗憳鏉冮檺</h2>
+        <p class="section-kicker">访问受限</p>
+        <h2>需要管理员权限</h2>
         <p>只有角色为 `admin` 的用户可以进入后台。当前请使用用户名为 `lyingshine` 的账号登录。</p>
       </div>
     </section>
@@ -129,37 +150,37 @@
     <template v-else-if="activeTab === 'overview'">
       <section class="metrics-grid">
         <article class="metric-card feature-card">
-          <p class="metric-label">姣忓垎閽熻姹傛暟</p>
+          <p class="metric-label">每分钟请求数</p>
           <p class="metric-value">{{ num(metrics.app?.requestPerMinute) }}</p>
-          <p class="metric-meta">鏈€杩?1 鍒嗛挓婊氬姩娴侀噺</p>
+          <p class="metric-meta">最近 1 分钟滚动流量</p>
         </article>
         <article class="metric-card ux-card">
-          <p class="metric-label">P95 寤惰繜</p>
+          <p class="metric-label">P95 延迟</p>
           <p class="metric-value">{{ formatMs(metrics.app?.p95LatencyMs) }}</p>
           <p class="metric-meta">P99 {{ formatMs(metrics.app?.p99LatencyMs) }}</p>
         </article>
         <article class="metric-card ux-card">
           <p class="metric-label">错误率</p>
           <p class="metric-value">{{ formatPct(metrics.app?.errorRate) }}</p>
-          <p class="metric-meta">鏈€杩?1 鍒嗛挓 5xx 鍗犳瘮</p>
+          <p class="metric-meta">最近 1 分钟 5xx 占比</p>
         </article>
         <article class="metric-card ux-card">
-          <p class="metric-label">鍦ㄧ嚎鐢ㄦ埛</p>
+          <p class="metric-label">在线用户</p>
           <p class="metric-value">{{ num(activity.currentOnline) }}</p>
-          <p class="metric-meta">宄板€煎湪绾跨洰鏍?{{ num(displayPreset.peakOnlineTarget) }}</p>
+          <p class="metric-meta">峰值在线目标 {{ num(displayPreset.peakOnlineTarget) }}</p>
         </article>
         <article class="metric-card ux-card">
           <p class="metric-label">峰值请求目标</p>
           <p class="metric-value">{{ num(displayPreset.targetPeakRpm) }}</p>
-          <p class="metric-meta">姣忓垎閽熻姹傛暟鍩虹嚎</p>
+          <p class="metric-meta">每分钟请求数基线</p>
         </article>
         <article class="metric-card ux-card">
-          <p class="metric-label">闃熷垪鍗犵敤</p>
+          <p class="metric-label">队列占用</p>
           <p class="metric-value">{{ formatPct(queueUsage) }}</p>
           <p class="metric-meta">{{ num(metrics.simulator?.queue?.active) }} / {{ num(metrics.simulator?.queue?.limit) }}</p>
         </article>
         <article class="metric-card ux-card">
-          <p class="metric-label">鏁版嵁搴撹繛鎺ユ睜</p>
+          <p class="metric-label">数据库连接池</p>
           <p class="metric-value">{{ formatPct(dbUsage) }}</p>
           <p class="metric-meta">{{ num(metrics.database.appTotal) }} / {{ num(totalDbLimit) }}</p>
         </article>
@@ -167,9 +188,9 @@
           <p class="metric-label">流量阀门</p>
           <p class="metric-value">{{ valveStateText }}</p>
           <p class="metric-meta">
-            闃€闂?{{ formatPct(metrics.simulator?.valve?.intake || 0) }} 路
-            P95 {{ formatMs(metrics.simulator?.valve?.p95LatencyMs || 0) }} 路
-            閿欒鐜?{{ formatPct(metrics.simulator?.valve?.errorRate || 0) }}
+            阀门 {{ formatPct(metrics.simulator?.valve?.intake || 0) }} ·
+            P95 {{ formatMs(metrics.simulator?.valve?.p95LatencyMs || 0) }} ·
+            错误率 {{ formatPct(metrics.simulator?.valve?.errorRate || 0) }}
           </p>
         </article>
       </section>
@@ -178,8 +199,8 @@
         <article class="panel-card wide-panel">
           <header class="panel-header">
             <div>
-              <p class="section-kicker">绯荤粺璧勬簮</p>
-              <h3>杩愯瀹归噺</h3>
+              <p class="section-kicker">系统资源</p>
+              <h3>运行容量</h3>
             </div>
             <span>{{ metrics.platform }} {{ metrics.arch }}</span>
           </header>
@@ -201,29 +222,29 @@
             </div>
             <div class="meter-item">
               <div class="meter-head">
-                <span>鍦ㄧ嚎瀹归噺</span>
+                <span>在线容量</span>
                 <strong>{{ formatPct(onlineUsage) }}</strong>
               </div>
               <div class="meter"><div class="fill online" :style="{ width: `${toPercent(onlineUsage)}%` }" /></div>
             </div>
           </div>
 
-          <p class="footnote">Node {{ metrics.nodeVersion }} 路 PID {{ metrics.pid }} 路 Worker {{ metrics.cluster.workers }}</p>
+          <p class="footnote">Node {{ metrics.nodeVersion }} · PID {{ metrics.pid }} · Worker {{ metrics.cluster.workers }}</p>
         </article>
 
         <article class="panel-card ux-card">
           <header class="panel-header">
             <div>
-              <p class="section-kicker">鎬ц兘鐑偣</p>
+              <p class="section-kicker">性能热点</p>
               <h3>慢接口</h3>
             </div>
-            <span>寤惰繜鏈€楂樼殑璺敱</span>
+            <span>延迟最高的路由</span>
           </header>
           <div class="route-list" v-if="metrics.app?.slowRoutes?.length">
             <div class="route-item" v-for="r in metrics.app.slowRoutes" :key="r.route">
               <div>
                 <p class="route-name">{{ r.route }}</p>
-                <p class="route-meta">璇锋眰 {{ num(r.count) }} 路 閿欒 {{ formatPct(r.errorRate) }}</p>
+                <p class="route-meta">请求 {{ num(r.count) }} · 错误 {{ formatPct(r.errorRate) }}</p>
               </div>
               <strong>{{ formatMs(r.avgDurationMs) }}</strong>
             </div>
@@ -234,8 +255,8 @@
         <article class="panel-card ux-card">
           <header class="panel-header">
             <div>
-              <p class="section-kicker">娴侀噺鍒嗗竷</p>
-              <h3>楂橀璺敱</h3>
+              <p class="section-kicker">流量分布</p>
+              <h3>高频路由</h3>
             </div>
             <span>请求量排名</span>
           </header>
@@ -243,7 +264,7 @@
             <div class="route-item" v-for="r in metrics.app.topRoutes" :key="r.route">
               <div>
                 <p class="route-name">{{ r.route }}</p>
-                <p class="route-meta">骞冲潎 {{ formatMs(r.avgDurationMs) }} 路 宄板€?{{ formatMs(r.maxDurationMs) }}</p>
+                <p class="route-meta">平均 {{ formatMs(r.avgDurationMs) }} · 峰值 {{ formatMs(r.maxDurationMs) }}</p>
               </div>
               <strong>{{ num(r.count) }}</strong>
             </div>
@@ -257,7 +278,7 @@
               <p class="section-kicker">数据层</p>
               <h3>存储状态</h3>
             </div>
-            <span>鏁版嵁搴撲笌缂撳瓨</span>
+            <span>数据库与缓存</span>
           </header>
           <div class="kv-list">
             <div class="kv">
@@ -269,7 +290,7 @@
               <strong>{{ num(metrics.database.appTotal) }} / {{ num(totalDbLimit) }}</strong>
             </div>
             <div class="kv">
-              <span>缂撳瓨鏉＄洰</span>
+              <span>缓存条目</span>
               <strong>{{ num(metrics.cache.size) }}</strong>
             </div>
             <div class="kv">
@@ -278,35 +299,35 @@
             </div>
             <div class="kv">
               <span>Redis 状态</span>
-              <strong>{{ metrics.cache.redis || '鏈煡' }}</strong>
+              <strong>{{ metrics.cache.redis || '未知' }}</strong>
             </div>
           </div>
           <div class="mini-stats">
-            <span>鏂囩珷 {{ num(metrics.database.articles) }}</span>
-            <span>鍔ㄦ€?{{ num(metrics.database.statuses) }}</span>
-            <span>鐢ㄦ埛 {{ num(metrics.database.users) }}</span>
-            <span>鍛戒腑 {{ num(metrics.cache.hits) }} / 鏈懡涓?{{ num(metrics.cache.misses) }}</span>
+            <span>文章 {{ num(metrics.database.articles) }}</span>
+            <span>动态 {{ num(metrics.database.statuses) }}</span>
+            <span>用户 {{ num(metrics.database.users) }}</span>
+            <span>命中 {{ num(metrics.cache.hits) }} / 未命中 {{ num(metrics.cache.misses) }}</span>
           </div>
         </article>
 
         <article class="panel-card wide-panel logs-panel">
           <header class="panel-header">
             <div>
-              <p class="section-kicker">鍚庣杈撳嚭</p>
+              <p class="section-kicker">后端输出</p>
               <h3>服务器日志</h3>
             </div>
             <div class="log-actions">
               <div class="log-switch">
-                <button type="button" class="log-switch-btn chip-button" :class="{ active: logView === 'both' }" @click="logView = 'both'">鍏ㄩ儴</button>
+                <button type="button" class="log-switch-btn chip-button" :class="{ active: logView === 'both' }" @click="logView = 'both'">全部</button>
                 <button type="button" class="log-switch-btn chip-button" :class="{ active: logView === 'out' }" @click="logView = 'out'">stdout</button>
                 <button type="button" class="log-switch-btn chip-button" :class="{ active: logView === 'err' }" @click="logView = 'err'">stderr</button>
               </div>
               <button class="ghost-button chip-button" :disabled="logsLoading" @click="refreshServerLogs">
-                {{ logsLoading ? "鍒锋柊涓?.." : "鍒锋柊鏃ュ織" }}
+                {{ logsLoading ? "刷新中..." : "刷新日志" }}
               </button>
             </div>
           </header>
-          <p class="log-meta">鏈€杩?{{ num(serverLogs.lines) }} 琛?路 鏇存柊鏃堕棿 {{ logUpdatedAt }}</p>
+          <p class="log-meta">最近 {{ num(serverLogs.lines) }} 行 · 更新时间 {{ logUpdatedAt }}</p>
           <div class="log-shell" v-if="renderedLogText">
             <pre class="log-content">{{ renderedLogText }}</pre>
           </div>
@@ -318,22 +339,22 @@
     <template v-else>
       <section class="metrics-grid">
         <article class="metric-card feature-card">
-          <p class="metric-label">褰撳墠鍦ㄧ嚎浜烘暟</p>
+          <p class="metric-label">当前在线人数</p>
           <p class="metric-value">{{ num(activity.currentOnline) }}</p>
-          <p class="metric-meta">瀹炴椂骞跺彂浼氳瘽</p>
+          <p class="metric-meta">实时并发会话</p>
         </article>
         <article class="metric-card ux-card">
-          <p class="metric-label">骞冲潎鍋滅暀鏃堕暱</p>
+          <p class="metric-label">平均停留时长</p>
           <p class="metric-value">{{ formatDuration(activity.avgDuration) }}</p>
-          <p class="metric-meta">浠呯粺璁″凡瀹屾垚浼氳瘽</p>
+          <p class="metric-meta">仅统计已完成会话</p>
         </article>
         <article class="metric-card ux-card">
           <p class="metric-label">完成会话数</p>
           <p class="metric-value">{{ num(activity.totalSessions) }}</p>
-          <p class="metric-meta">婊氬姩鍘嗗彶绐楀彛</p>
+          <p class="metric-meta">滚动历史窗口</p>
         </article>
         <article class="metric-card ux-card">
-          <p class="metric-label">妯℃嫙鍣ㄩ敊璇巼</p>
+          <p class="metric-label">模拟器错误率</p>
           <p class="metric-value">{{ formatPct(metrics.simulator?.errorRate) }}</p>
           <p class="metric-meta">客户端请求失败占比</p>
         </article>
@@ -343,10 +364,10 @@
         <article class="panel-card ux-card">
           <header class="panel-header">
             <div>
-              <p class="section-kicker">鐢ㄦ埛缁撴瀯</p>
-              <h3>璁块棶鏋勬垚</h3>
+              <p class="section-kicker">用户结构</p>
+              <h3>访问构成</h3>
             </div>
-            <span>瀹炴椂缁勬垚</span>
+            <span>实时组成</span>
           </header>
           <div class="mix-list">
             <div class="mix-item" v-for="item in audienceMix" :key="item.key">
@@ -367,13 +388,13 @@
               <p class="section-kicker">最近会话</p>
               <h3>最新完成记录</h3>
             </div>
-            <span>鍊掑簭灞曠ず</span>
+            <span>倒序展示</span>
           </header>
           <div class="route-list" v-if="activity.recentSessions?.length">
             <div class="route-item" v-for="(s, i) in recentSessions" :key="i">
               <div>
                 <p class="route-name">{{ typeLabel(s.type) }}</p>
-                <p class="route-meta">鍋滅暀 {{ formatDuration(s.duration) }}</p>
+                <p class="route-meta">停留 {{ formatDuration(s.duration) }}</p>
               </div>
               <strong>{{ num(s.actions) }} 次操作</strong>
             </div>
@@ -397,6 +418,7 @@ const selectedPresetId = ref("");
 const stagedPresetId = ref("");
 const savingConfig = ref(false);
 const simulatorActionLoading = ref("");
+const seedActionLoading = ref("");
 const logView = ref("both");
 const logsLoading = ref(false);
 const LOG_LINE_COUNT = 120;
@@ -468,8 +490,16 @@ const activity = ref({
   totalSessions: 0,
   recentSessions: []
 });
+const seedState = ref({
+  users: 0,
+  articles: 0,
+  statuses: 0,
+  comments: 0,
+  targetContent: 10000,
+  ready: false
+});
 
-let intervalId = null;
+let pollTimerId = null;
 
 const totalDbLimit = computed(() => (metrics.value.database.readPoolLimit || 0) + (metrics.value.database.writePoolLimit || 0));
 const dbUsage = computed(() => (totalDbLimit.value > 0 ? metrics.value.database.appTotal / totalDbLimit.value : 0));
@@ -485,9 +515,9 @@ const queueUsage = computed(() => {
 const valveStateText = computed(() => {
   const intake = Number(metrics.value.simulator?.valve?.intake || 0);
   if (intake >= 1.15) return "可加压";
-  if (intake >= 0.85) return "绋冲畾鏀鹃噺";
+  if (intake >= 0.85) return "稳定放量";
   if (intake >= 0.5) return "开始收紧";
-  return "寮哄姏闄愭祦";
+  return "强力限流";
 });
 
 const valveStateClass = computed(() => {
@@ -502,7 +532,7 @@ const displayPreset = computed(() => {
   const fromMetrics = metrics.value.simulator || {};
   const fallback = presets.value.find((preset) => preset.id === selectedPresetId.value) || presets.value.find((preset) => preset.id === "medium");
   return {
-    label: fromMetrics.scale || fallback?.label || "涓帇",
+    label: fromMetrics.scale || fallback?.label || "中压",
     description: fromMetrics.description || fallback?.description || "默认压测档，读流量和写流量比较均衡。",
     maxRegisteredUsers: fromMetrics.maxRegisteredUsers || fallback?.maxRegisteredUsers || 0,
     peakOnlineTarget: fromMetrics.peakOnlineTarget || fallback?.peakOnlineTarget || 0,
@@ -527,6 +557,10 @@ const simulatorStateClass = computed(() => {
 const canStartSimulator = computed(() => simulatorState.value !== "running");
 const canPauseSimulator = computed(() => simulatorState.value === "running");
 const canStopSimulator = computed(() => simulatorState.value !== "stopped");
+const seedReadyText = computed(() => {
+  if (seedState.value.ready) return "已满足启动条件";
+  return `未就绪：用户 ${num(seedState.value.users)}，文章 ${num(seedState.value.articles)}，动态 ${num(seedState.value.statuses)}，评论 ${num(seedState.value.comments)}（目标 文章/动态各 ${num(seedState.value.targetContent)}）`;
+});
 
 function syncStagedPreset() {
   if (!stagedPresetId.value || stagedPresetId.value === selectedPresetId.value) {
@@ -538,14 +572,14 @@ const healthText = computed(() => {
   const err = metrics.value.app?.errorRate || 0;
   const p95 = metrics.value.app?.p95LatencyMs || 0;
   if (err > 0.03 || p95 > 600) return "需要关注";
-  if (err > 0.01 || p95 > 300) return "娉ㄦ剰娉㈠姩";
-  return "杩愯绋冲畾";
+  if (err > 0.01 || p95 > 300) return "注意波动";
+  return "运行稳定";
 });
 
 const healthClass = computed(() => {
   const text = healthText.value;
   if (text === "需要关注") return "danger";
-  if (text === "娉ㄦ剰娉㈠姩") return "warn";
+  if (text === "注意波动") return "warn";
   return "ok";
 });
 
@@ -556,7 +590,7 @@ const audienceMix = computed(() => {
     { key: "ACTIVE_VETERAN", label: "活跃老用户", count: map.ACTIVE_VETERAN || 0 },
     { key: "SILENT_VETERAN", label: "沉默老用户", count: map.SILENT_VETERAN || 0 },
     { key: "NEW_USER", label: "新用户", count: map.NEW_USER || 0 },
-    { key: "VISITOR", label: "璁垮", count: map.VISITOR || 0 }
+    { key: "VISITOR", label: "访客", count: map.VISITOR || 0 }
   ];
   return rows.map((r) => ({ ...r, ratio: r.count / total }));
 });
@@ -630,17 +664,37 @@ async function fetchLoadConfig() {
   }
 }
 
+async function fetchSeedStatus() {
+  try {
+    const data = await apiService.request("/admin/simulator/seed-status");
+    if (data?.seed) {
+      seedState.value = {
+        ...seedState.value,
+        ...data.seed
+      };
+    }
+  } catch (err) {
+    console.error("seed status failed", err);
+  }
+}
+
 function startPolling() {
+  if (pollTimerId) {
+    clearTimeout(pollTimerId);
+    pollTimerId = null;
+  }
+
   async function fetchData() {
     try {
       const logQuery = new URLSearchParams({
         type: logView.value,
         lines: String(LOG_LINE_COUNT)
       }).toString();
-      const [mRes, aRes, lRes] = await Promise.allSettled([
+      const [mRes, aRes, lRes, seedRes] = await Promise.allSettled([
         apiService.request("/admin/metrics"),
         apiService.request("/admin/activity"),
-        apiService.request(`/admin/logs?${logQuery}`)
+        apiService.request(`/admin/logs?${logQuery}`),
+        apiService.request("/admin/simulator/seed-status")
       ]);
 
       if (mRes.status === "fulfilled" && mRes.value) {
@@ -656,13 +710,36 @@ function startPolling() {
       if (lRes.status === "fulfilled" && lRes.value?.sources) {
         serverLogs.value = lRes.value;
       }
+
+      if (seedRes && seedRes.status === "fulfilled" && seedRes.value?.seed) {
+        seedState.value = {
+          ...seedState.value,
+          ...seedRes.value.seed
+        };
+      }
     } catch (err) {
       console.error("admin poll failed", err);
     }
   }
 
-  fetchData();
-  intervalId = setInterval(fetchData, 3000);
+  function getNextPollIntervalMs() {
+    const running = Boolean(metrics.value.simulator?.running);
+    const statusesPerMinute = Number(metrics.value.simulator?.ratesPerMinute?.statuses || 0);
+
+    if (!running) return 8000;
+    if (!Number.isFinite(statusesPerMinute) || statusesPerMinute <= 0) return 12000;
+
+    const generationIntervalMs = 60000 / statusesPerMinute;
+    return Math.max(3000, Math.min(30000, Math.round(generationIntervalMs)));
+  }
+
+  async function loop() {
+    await fetchData();
+    const nextMs = getNextPollIntervalMs();
+    pollTimerId = setTimeout(loop, nextMs);
+  }
+
+  loop();
 }
 
 async function applyPreset(presetId) {
@@ -689,7 +766,7 @@ async function applyPreset(presetId) {
     }
   } catch (err) {
     console.error("apply preset failed", err);
-    setAdminNotice("鍒囨崲棰勮澶辫触");
+    setAdminNotice("切换预设失败");
   } finally {
     savingConfig.value = false;
   }
@@ -719,9 +796,43 @@ async function controlSimulator(action) {
     }
   } catch (err) {
     console.error("control simulator failed", err);
-    setAdminNotice("模拟器控制失败");
+    setAdminNotice(err?.message || "模拟器控制失败");
   } finally {
     simulatorActionLoading.value = "";
+  }
+}
+
+async function runSeedAction(action) {
+  if (seedActionLoading.value === action) return;
+  seedActionLoading.value = action;
+  try {
+    if (action === "generateUsers") {
+      await apiService.request("/admin/simulator/seed/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ count: 1000 })
+      });
+      setAdminNotice("已生成 1000 个模拟用户");
+    } else if (action === "deleteUsers") {
+      await apiService.request("/admin/simulator/seed/users", { method: "DELETE" });
+      setAdminNotice("已删除模拟用户");
+    } else if (action === "generateData") {
+      await apiService.request("/admin/simulator/seed/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ count: 1000 })
+      });
+      setAdminNotice("已生成 1000 篇文章、1000 条动态和评论");
+    } else if (action === "deleteData") {
+      await apiService.request("/admin/simulator/seed/data", { method: "DELETE" });
+      setAdminNotice("已删除模拟数据");
+    }
+    await fetchSeedStatus();
+  } catch (err) {
+    console.error("seed action failed", err);
+    setAdminNotice(err?.message || "操作失败");
+  } finally {
+    seedActionLoading.value = "";
   }
 }
 
@@ -758,13 +869,13 @@ function typeLabel(type) {
     ACTIVE_VETERAN: "活跃老用户",
     SILENT_VETERAN: "沉默老用户",
     NEW_USER: "新用户",
-    VISITOR: "璁垮"
+    VISITOR: "访客"
   };
-  return labels[type] || type || "鏈煡";
+  return labels[type] || type || "未知";
 }
 
 onUnmounted(() => {
-  if (intervalId) clearInterval(intervalId);
+  if (pollTimerId) clearTimeout(pollTimerId);
   if (adminNoticeTimer) {
     clearTimeout(adminNoticeTimer);
     adminNoticeTimer = null;
@@ -786,6 +897,7 @@ onMounted(async () => {
 
   startPolling();
   fetchLoadConfig();
+  fetchSeedStatus();
   fetchServerLogs({ silent: false });
 });
 </script>
@@ -1092,7 +1204,24 @@ onMounted(async () => {
 
 .simulator-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+  justify-content: flex-end;
+}
+
+.seed-controls .simulator-state {
+  flex: 1 1 360px;
+}
+
+.seed-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  justify-content: initial;
+}
+
+.seed-controls .simulator-buttons {
+  justify-content: flex-start;
 }
 
 .preset-actions {
@@ -1596,11 +1725,25 @@ onMounted(async () => {
   }
 
   .preset-action-buttons {
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
 
   .simulator-buttons {
-    justify-content: flex-end;
+    justify-content: flex-start;
+  }
+
+  .seed-controls .simulator-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .seed-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .seed-controls .simulator-buttons .chip-button {
+    width: 100%;
   }
 
   .wide-panel {
@@ -1663,11 +1806,24 @@ onMounted(async () => {
     flex: 1;
   }
 
+  .simulator-buttons,
+  .preset-action-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .simulator-buttons .chip-button,
+  .preset-action-buttons .chip-button {
+    width: 100%;
+  }
+
   .tab-button {
     flex: 1;
     text-align: center;
   }
 }
 </style>
+
 
 

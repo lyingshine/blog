@@ -10,12 +10,18 @@ const savedTheme = localStorage.getItem('blog-theme')
 const initialTheme = availableThemes.has(savedTheme) ? savedTheme : 'classic'
 document.documentElement.setAttribute('data-theme', initialTheme)
 
+const themeFallbackColor = {
+  classic: '#f4f6fa',
+  dark: '#0f131a',
+  midnight: '#101b2b',
+  sand: '#f4efe7',
+  mist: '#edf1f6'
+}
+
 const getThemeColor = (theme) => {
-  if (theme === 'dark') return '#000000'
-  if (theme === 'midnight') return '#0d1b2a'
-  if (theme === 'mist') return '#f2f2f7'
-  if (theme === 'sand') return '#faf8f5'
-  return '#fbfbfd'
+  const cssColor = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim()
+  if (cssColor) return cssColor
+  return themeFallbackColor[theme] || themeFallbackColor.classic
 }
 
 const syncSystemUiTheme = () => {
@@ -28,7 +34,7 @@ const syncSystemUiTheme = () => {
     themeColorMeta.setAttribute('content', getThemeColor(theme))
   }
   if (appleStatusBarMeta) {
-    appleStatusBarMeta.setAttribute('content', isDarkLike ? 'black' : 'black-translucent')
+    appleStatusBarMeta.setAttribute('content', isDarkLike ? 'black' : 'default')
   }
 }
 

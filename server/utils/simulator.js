@@ -94,6 +94,8 @@ let registeredUsers = []
 let activeSessions = new Map()
 let completedSessions = []
 const MAX_HISTORY = 200
+let runGeneratedUsernames = new Set()
+let userByUsername = new Map()
 
 const USER_TYPES = {
   ACTIVE_VETERAN: {
@@ -250,6 +252,13 @@ const domains = ['gmail.com', 'outlook.com', 'qq.com', '163.com', 'foxmail.com',
 
 const articleTemplates = require('./articleTemplates')
 const statusPool = require('./statusPool')
+const {
+  assignHumanIdentity,
+  generateHumanArticle,
+  generateHumanStatus,
+  generateHumanComment,
+  createHumanUsername
+} = require('./simHumanGenerator')
 const telemetry = require('./telemetry')
 const pool = require('../db/pool')
 const bcrypt = require('bcryptjs')
@@ -258,6 +267,17 @@ const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + mi
 const pick = (arr) => arr[randomInt(0, arr.length - 1)]
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const SIM_STOCK_PASSWORD = 'SimUser@123'
+const SIM_USER_EMAIL_DOMAIN = 'sim.local'
+const SIM_CONTENT_TARGET = Math.max(1000, Number(process.env.SIM_CONTENT_TARGET || 10000))
+const SIM_SEED_BATCH_SIZE = Math.max(100, Number(process.env.SIM_SEED_BATCH_SIZE || 1000))
+const SIM_RUNTIME_ALLOW_WRITES = String(process.env.SIM_RUNTIME_ALLOW_WRITES || 'false').toLowerCase() === 'true'
+
+const CN_LAST_NAMES = ['王', '李', '张', '刘', '陈', '杨', '黄', '周', '吴', '赵', '徐', '孙', '马', '朱', '胡', '林', '郭', '何', '高', '罗']
+const CN_GIVEN_NAMES = [
+  '子涵', '雨桐', '浩然', '思远', '欣怡', '宇辰', '佳宁', '晨曦', '泽宇', '一诺', '可欣', '铭轩', '梓涵', '若彤', '俊杰',
+  '昊天', '沐阳', '诗雨', '嘉悦', '星辰', '语彤', '知夏', '景行', '明轩', '安然', '念一', '北辰', '初夏', '晚晴', '时雨'
+]
+const CN_USER_SUFFIX = ['日常', '随笔', '生活志', '记录本', '慢生活', '小站']
 
 function clamp(num, min, max) {
   return Math.max(min, Math.min(max, num))
@@ -288,6 +308,7 @@ function randomPastTimestamp(minDaysAgo, maxDaysAgo) {
 function normalizeUserProfile(user) {
   const profile = {
     id: user.id,
+    dbUserId: Number(user.dbUserId || user.db_user_id || 0),
     username: user.username,
     token: user.token || null,
     refreshToken: user.refreshToken || null,
@@ -295,18 +316,119 @@ function normalizeUserProfile(user) {
     articleCount: user.articleCount || 0,
     statusCount: user.statusCount || 0,
     browses: user.browses || 0,
+    humanProfile: user.humanProfile || null,
+    socialCircle: Array.isArray(user.socialCircle) ? user.socialCircle.slice(0, 16) : [],
     registrationTime: user.registrationTime || randomPastTimestamp(5, 540),
     userType: user.userType || assignCohortByMix(),
     nextLoginAt: user.nextLoginAt || 0,
     lastSessionEndedAt: user.lastSessionEndedAt || 0
   }
 
+  assignHumanIdentity(profile)
   profile.userType = inferUserType(profile)
   return profile
 }
 
 function normalizeRegisteredUsers(users) {
   return users.map(normalizeUserProfile)
+}
+
+function rebuildUserIndex() {
+  userByUsername = new Map()
+  for (const user of registeredUsers) {
+    if (user?.username) userByUsername.set(user.username, user)
+  }
+}
+
+function rememberUser(user) {
+  if (!user?.username) return
+  userByUsername.set(user.username, user)
+}
+
+function getUserByUsername(username) {
+  if (!username) return null
+  return userByUsername.get(username) || null
+}
+
+function pickDistinctUsers(sampleSize, exceptUsername) {
+  const chosen = []
+  const used = new Set([exceptUsername])
+  let guard = 0
+  while (chosen.length < sampleSize && guard < sampleSize * 12 && registeredUsers.length > 1) {
+    guard += 1
+    const candidate = pick(registeredUsers)
+    if (!candidate?.username || used.has(candidate.username)) continue
+    used.add(candidate.username)
+    chosen.push(candidate.username)
+  }
+  return chosen
+}
+
+function ensureSocialCircle(user) {
+  if (!user || user.isVisitor) return []
+  if (Array.isArray(user.socialCircle) && user.socialCircle.length >= 4) {
+    return user.socialCircle
+  }
+
+  const targetSize = user.userType === 'ACTIVE_VETERAN' ? randomInt(8, 16) : user.userType === 'NEW_USER' ? randomInt(4, 9) : randomInt(5, 12)
+  user.socialCircle = pickDistinctUsers(targetSize, user.username)
+  return user.socialCircle
+}
+
+function pickCircleUser(user) {
+  const circle = ensureSocialCircle(user)
+  if (!circle.length) return null
+  const shuffledPick = pick(circle)
+  return getUserByUsername(shuffledPick)
+}
+
+function pickCircleAuthorId(user) {
+  const circleUser = pickCircleUser(user)
+  if (!circleUser?.dbUserId || circleUser.dbUserId <= 0) return 0
+  return circleUser.dbUserId
+}
+
+async function reactToContent(user, targetType, targetId, reaction = 'like') {
+  if (!user || !user.token || !targetType || !targetId) return null
+  return apiRequestAsUser(user, '/social/reactions', {
+    method: 'POST',
+    body: JSON.stringify({
+      targetType,
+      targetId,
+      reaction
+    })
+  })
+}
+
+async function commentOnContent(user, targetType, targetId, seed = {}) {
+  if (!SIM_RUNTIME_ALLOW_WRITES) return null
+  if (!user || !user.token || !targetType || !targetId) return null
+  const comment = await generateHumanComment(user, {
+    targetType,
+    title: seed.title || '',
+    excerpt: seed.excerpt || '',
+    topic: seed.topic || ''
+  })
+
+  return apiRequestAsUser(user, '/social/comments', {
+    method: 'POST',
+    body: JSON.stringify({
+      targetType,
+      targetId,
+      content: comment
+    })
+  })
+}
+
+async function maybeFollowFromCircle(user) {
+  if (!user || !user.token || !user.dbUserId) return false
+  if (Math.random() > 0.18) return false
+
+  const target = pickCircleUser(user)
+  if (!target?.dbUserId || target.dbUserId === user.dbUserId) return false
+
+  const resp = await apiRequestAsUser(user, `/social/follows/${target.dbUserId}`, { method: 'POST' })
+  return Boolean(resp?.success)
 }
 
 function inferUserType(user) {
@@ -375,9 +497,21 @@ function enrichProfileAsStockUser(profile) {
 }
 
 function getBootstrapPoolSize() {
-  const byOnline = Math.max(2000, Math.round(currentScale.peakOnlineUsers * 8))
-  const byPreset = Math.max(5000, Math.round(currentScale.maxRegisteredUsers * 0.15))
-  return Math.min(currentScale.maxRegisteredUsers, 120000, Math.max(byOnline, byPreset))
+  const maxPresetPool = Object.values(LOAD_PRESETS).reduce((best, preset) => {
+    const byOnline = Math.max(2000, Math.round(preset.peakOnlineUsers * 8))
+    const byPreset = Math.max(5000, Math.round(preset.maxRegisteredUsers * 0.15))
+    const value = Math.min(preset.maxRegisteredUsers, 120000, Math.max(byOnline, byPreset))
+    return Math.max(best, value)
+  }, 0)
+  return Math.max(5000, maxPresetPool)
+}
+
+function makeStockUsername(index) {
+  const first = firstNames[index % firstNames.length]
+  const last = lastNames[Math.floor(index / firstNames.length) % lastNames.length]
+  const bucket = pick(['notes', 'daily', 'lab', 'studio', 'works'])
+  const serial = String(Math.floor(index / (firstNames.length * lastNames.length)) + 1).padStart(4, '0')
+  return `${first}.${last}_${bucket}${serial}`
 }
 
 async function bootstrapStockUsers() {
@@ -386,7 +520,7 @@ async function bootstrapStockUsers() {
 
   const seeded = []
   for (let i = 0; i < target; i++) {
-    const username = `stock_${pick(lastNames)}_${pick(firstNames)}_${String(i + 1).padStart(7, '0')}`
+    const username = makeStockUsername(i)
     const profile = enrichProfileAsStockUser(
       normalizeUserProfile({
         id: `stock_${i + 1}`,
@@ -402,35 +536,45 @@ async function bootstrapStockUsers() {
       })
     )
     seeded.push(profile)
+    runGeneratedUsernames.add(username)
   }
 
   // 直接导入数据库作为存量账号，后续仍走正常 /auth/login 流程。
   const hashedPassword = await bcrypt.hash(SIM_STOCK_PASSWORD, 10)
-  const batchSize = 500
-  for (let i = 0; i < seeded.length; i += batchSize) {
-    const chunk = seeded.slice(i, i + batchSize)
-    const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, NOW())').join(', ')
-    const values = []
-    for (const user of chunk) {
-      values.push(
-        user.username,
-        `${user.username}@stock.local`,
-        hashedPassword,
-        String(user.username || 'S').charAt(0).toUpperCase(),
-        'user'
-      )
+  const [[{ existingStockUsers }]] = await pool.read(
+    "SELECT COUNT(*) AS existingStockUsers FROM users WHERE email LIKE '%@stock.local'"
+  )
+
+  if (Number(existingStockUsers || 0) < target) {
+    const batchSize = 500
+    for (let i = 0; i < seeded.length; i += batchSize) {
+      const chunk = seeded.slice(i, i + batchSize)
+      const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, NOW())').join(', ')
+      const values = []
+      for (const user of chunk) {
+        values.push(
+          user.username,
+          `${user.username}@stock.local`,
+          hashedPassword,
+          String(user.username || 'S').charAt(0).toUpperCase(),
+          'user'
+        )
+      }
+      try {
+        await pool.write(
+          `INSERT IGNORE INTO users (username, email, password, avatar, role, created_at) VALUES ${placeholders}`,
+          values
+        )
+      } catch (err) {
+        console.error('[Sim] 存量用户导入失败:', err?.message || err)
+      }
     }
-    try {
-      await pool.write(
-        `INSERT IGNORE INTO users (username, email, password, avatar, role, created_at) VALUES ${placeholders}`,
-        values
-      )
-    } catch (err) {
-      console.error('[Sim] 存量用户导入失败:', err?.message || err)
-    }
+  } else {
+    console.log(`[Sim] 复用已有存量用户池：${Number(existingStockUsers).toLocaleString()}`)
   }
 
   registeredUsers = seeded
+  rebuildUserIndex()
   console.log(`[Sim] 已导入存量用户池：${registeredUsers.length.toLocaleString()}（直导 DB，登录走 /auth/login）`)
 }
 
@@ -549,11 +693,12 @@ function getBehaviorWeights(behavior) {
   const pressure = getPressureLevel()
   const writeThrottle = 1 - pressure * 0.75
   const writeMultiplier = (currentScale.writeMultiplier || 1) * Math.max(0.2, writeThrottle)
+  const allowWrites = SIM_RUNTIME_ALLOW_WRITES
   const weights = {
     browseArticles: behavior.browseArticles,
     browseStatuses: behavior.browseStatuses,
-    publishArticle: behavior.publishArticle * writeMultiplier,
-    publishStatus: behavior.publishStatus * writeMultiplier,
+    publishArticle: allowWrites ? behavior.publishArticle * writeMultiplier : 0,
+    publishStatus: allowWrites ? behavior.publishStatus * writeMultiplier : 0,
     likeContent: behavior.likeContent
   }
 
@@ -594,6 +739,9 @@ async function loginAndStoreTokens(user, increaseLoginCount = false) {
 
   user.token = data.data.accessToken || data.data.token || null
   user.refreshToken = data.data.refreshToken || null
+  user.dbUserId = Number(data?.data?.user?.id || user.dbUserId || 0)
+  rememberUser(user)
+  ensureSocialCircle(user)
   if (increaseLoginCount) {
     user.loginCount = (user.loginCount || 0) + 1
   }
@@ -611,6 +759,8 @@ async function refreshAndStoreTokens(user) {
 
   user.token = data.data.accessToken || data.data.token || user.token || null
   user.refreshToken = data.data.refreshToken || user.refreshToken || null
+  user.dbUserId = Number(data?.data?.user?.id || user.dbUserId || 0)
+  rememberUser(user)
   return Boolean(user.token)
 }
 
@@ -719,6 +869,7 @@ class Session {
 
     this.userTypeConfig = USER_TYPES[type] || USER_TYPES.SILENT_VETERAN
     this.duration = this.getDuration()
+    this.recentSeen = []
   }
 
   getDuration() {
@@ -731,6 +882,11 @@ class Session {
   }
 
   async run() {
+    if (!this.user.isVisitor) {
+      ensureSocialCircle(this.user)
+      await maybeFollowFromCircle(this.user)
+    }
+
     while (this.isAlive && Date.now() - this.startTime < this.duration) {
       if (isPaused) {
         await sleep(200)
@@ -750,6 +906,54 @@ class Session {
     this.isAlive = false
     this.endTime = Date.now()
     this.finish()
+  }
+
+  rememberSeen(targetType, item) {
+    if (!item?.id) return
+    this.recentSeen.push({
+      targetType,
+      id: Number(item.id),
+      authorId: Number(item.author_id || item.authorId || 0),
+      title: item.title || '',
+      excerpt: item.excerpt || item.content || ''
+    })
+    if (this.recentSeen.length > 18) this.recentSeen.shift()
+  }
+
+  pickSeenTarget() {
+    if (!this.recentSeen.length) return null
+
+    if (Math.random() > 0.55) {
+      const circleIds = ensureSocialCircle(this.user)
+        .map((name) => getUserByUsername(name))
+        .map((u) => Number(u?.dbUserId || 0))
+        .filter((id) => id > 0)
+      const socialTargets = this.recentSeen.filter((item) => circleIds.includes(item.authorId))
+      if (socialTargets.length) return pick(socialTargets)
+    }
+
+    return pick(this.recentSeen)
+  }
+
+  async maybeReactOrComment(target) {
+    if (!target || this.user.isVisitor) return
+    const pressure = getPressureLevel()
+    const reactRate = clamp(0.28 - pressure * 0.2, 0.06, 0.28)
+    const commentRate = clamp(0.14 - pressure * 0.1, 0.03, 0.14)
+
+    if (Math.random() < reactRate) {
+      const reaction = Math.random() > 0.12 ? 'like' : 'dislike'
+      const reacted = await reactToContent(this.user, target.targetType, target.id, reaction)
+      if (reacted?.success && reaction === 'like') stats.likes++
+    }
+
+    if (Math.random() < commentRate) {
+      const commented = await commentOnContent(this.user, target.targetType, target.id, {
+        title: target.title,
+        excerpt: target.excerpt
+      })
+      if (commented?.success) this.actionsInSession++
+    }
   }
 
   finish() {
@@ -805,11 +1009,23 @@ class Session {
   async browseArticles() {
     this.user.browses = (this.user.browses || 0) + 1
     this.actionsInSession++
-    const data = await apiRequestAsUser(this.user, '/articles?limit=20')
+    const preferredAuthorId = pickCircleAuthorId(this.user)
+    const endpoint = preferredAuthorId && Math.random() > 0.35 ? `/articles?limit=20&authorId=${preferredAuthorId}` : '/articles?limit=20'
+    const data = await apiRequestAsUser(this.user, endpoint)
     if (data?.success && data.data.articles?.length) {
       const article = pick(data.data.articles)
       await sleep(getActionDelay(1000, 3000))
       await apiRequestAsUser(this.user, `/articles/${article.id}`)
+      this.rememberSeen('article', article)
+      if (!this.user.isVisitor && Math.random() < 0.24) {
+        await this.maybeReactOrComment({
+          targetType: 'article',
+          id: article.id,
+          authorId: article.author_id,
+          title: article.title,
+          excerpt: article.excerpt
+        })
+      }
       stats.browses++
     }
   }
@@ -817,12 +1033,19 @@ class Session {
   async browseStatuses() {
     await sleep(getActionDelay(800, 2000))
     this.actionsInSession++
-    const data = await apiRequestAsUser(this.user, '/statuses?limit=20')
+    const preferredAuthorId = pickCircleAuthorId(this.user)
+    const endpoint = preferredAuthorId && Math.random() > 0.3 ? `/statuses?limit=20&authorId=${preferredAuthorId}` : '/statuses?limit=20'
+    const data = await apiRequestAsUser(this.user, endpoint)
     if (data?.success && data.data?.length) {
       const status = pick(data.data)
-      if (!this.user.isVisitor && Math.random() > 0.8) {
-        await apiRequestAsUser(this.user, `/statuses/${status.id}/like`, { method: 'POST' })
-        stats.likes++
+      this.rememberSeen('status', status)
+      if (!this.user.isVisitor && Math.random() < 0.34) {
+        await this.maybeReactOrComment({
+          targetType: 'status',
+          id: status.id,
+          authorId: status.author_id,
+          excerpt: status.content
+        })
       }
       stats.browses++
     }
@@ -832,16 +1055,18 @@ class Session {
     if (this.user.isVisitor) return
 
     await sleep(getActionDelay(2000, 5000))
+    const generated = await generateHumanArticle(this.user)
     const template = pick(articleTemplates)
+    const payload = {
+      title: generated?.title || template.title,
+      category: generated?.category || template.category,
+      content: generated?.content || template.content,
+      excerpt: generated?.excerpt || '...',
+      description: generated?.description || '...'
+    }
     const data = await apiRequestAsUser(this.user, '/articles', {
       method: 'POST',
-      body: JSON.stringify({
-        title: template.title,
-        category: template.category,
-        content: template.content,
-        excerpt: '...',
-        description: '...'
-      })
+      body: JSON.stringify(payload)
     })
 
     if (data?.success) {
@@ -855,9 +1080,10 @@ class Session {
     if (this.user.isVisitor) return
 
     await sleep(getActionDelay(1500, 3000))
+    const generated = await generateHumanStatus(this.user)
     const data = await apiRequestAsUser(this.user, '/statuses', {
       method: 'POST',
-      body: JSON.stringify({ content: pick(statusPool) })
+      body: JSON.stringify({ content: generated || pick(statusPool) })
     })
 
     if (data?.success) {
@@ -870,21 +1096,47 @@ class Session {
   async likeRandomContent() {
     if (this.user.isVisitor) return
 
-    if (Math.random() > 0.5) {
-      const articlesData = await apiRequestAsUser(this.user, '/articles?limit=10')
-      if (articlesData?.success && articlesData.data.articles?.length) {
-        const article = pick(articlesData.data.articles)
-        await apiRequestAsUser(this.user, `/articles/${article.id}/like`, { method: 'POST' })
-        this.actionsInSession++
-        stats.likes++
+    let target = this.pickSeenTarget()
+    if (!target) {
+      if (Math.random() > 0.5) {
+        const articlesData = await apiRequestAsUser(this.user, '/articles?limit=10')
+        if (articlesData?.success && articlesData.data.articles?.length) {
+          const article = pick(articlesData.data.articles)
+          target = {
+            targetType: 'article',
+            id: Number(article.id),
+            authorId: Number(article.author_id || 0),
+            title: article.title,
+            excerpt: article.excerpt
+          }
+          this.rememberSeen('article', article)
+        }
+      } else {
+        const statusesData = await apiRequestAsUser(this.user, '/statuses?limit=10')
+        if (statusesData?.success && statusesData.data?.length) {
+          const status = pick(statusesData.data)
+          target = {
+            targetType: 'status',
+            id: Number(status.id),
+            authorId: Number(status.author_id || 0),
+            excerpt: status.content
+          }
+          this.rememberSeen('status', status)
+        }
       }
-    } else {
-      const statusesData = await apiRequestAsUser(this.user, '/statuses?limit=10')
-      if (statusesData?.success && statusesData.data?.length) {
-        const status = pick(statusesData.data)
-        await apiRequestAsUser(this.user, `/statuses/${status.id}/like`, { method: 'POST' })
-        this.actionsInSession++
-        stats.likes++
+    }
+
+    if (!target) return
+
+    const reacted = await reactToContent(this.user, target.targetType, target.id, 'like')
+    if (reacted?.success) {
+      this.actionsInSession++
+      stats.likes++
+      if (Math.random() < 0.28) {
+        await commentOnContent(this.user, target.targetType, target.id, {
+          title: target.title,
+          excerpt: target.excerpt
+        })
       }
     }
   }
@@ -969,6 +1221,269 @@ function pickLoginCandidate() {
   return best
 }
 
+function makeChineseSimUsername(index = 0) {
+  const last = pick(CN_LAST_NAMES)
+  const given = pick(CN_GIVEN_NAMES)
+  const suffix = pick(CN_USER_SUFFIX)
+  const serial = String((index % 900000) + 100000).slice(-6)
+  return `${last}${given}${suffix}${serial}`
+}
+
+async function getSeedStatus() {
+  const [[{ simUsers }]] = await pool.read(`SELECT COUNT(*) AS simUsers FROM users WHERE email LIKE ?`, [`%@${SIM_USER_EMAIL_DOMAIN}`])
+  const [[{ simArticles }]] = await pool.read(
+    `SELECT COUNT(*) AS simArticles
+     FROM articles a
+     JOIN users u ON u.id = a.author_id
+     WHERE u.email LIKE ?`,
+    [`%@${SIM_USER_EMAIL_DOMAIN}`]
+  )
+  const [[{ simStatuses }]] = await pool.read(
+    `SELECT COUNT(*) AS simStatuses
+     FROM statuses s
+     JOIN users u ON u.id = s.author_id
+     WHERE u.email LIKE ?`,
+    [`%@${SIM_USER_EMAIL_DOMAIN}`]
+  )
+  const [[{ simComments }]] = await pool.read(
+    `SELECT COUNT(*) AS simComments
+     FROM content_comments c
+     JOIN users u ON u.id = c.user_id
+     WHERE u.email LIKE ?`,
+    [`%@${SIM_USER_EMAIL_DOMAIN}`]
+  )
+
+  const users = Number(simUsers || 0)
+  const articles = Number(simArticles || 0)
+  const statuses = Number(simStatuses || 0)
+  const comments = Number(simComments || 0)
+  return {
+    users,
+    articles,
+    statuses,
+    comments,
+    targetContent: SIM_CONTENT_TARGET,
+    ready: users > 0 && articles >= SIM_CONTENT_TARGET && statuses >= SIM_CONTENT_TARGET
+  }
+}
+
+async function loadSimUsersFromDb() {
+  const [rows] = await pool.read(
+    `SELECT id, username, avatar, created_at
+     FROM users
+     WHERE email LIKE ?
+     ORDER BY id ASC
+     LIMIT ?`,
+    [`%@${SIM_USER_EMAIL_DOMAIN}`, Math.min(currentScale.maxRegisteredUsers, 200000)]
+  )
+
+  registeredUsers = normalizeRegisteredUsers(
+    rows.map((row, idx) => ({
+      id: `sim_${row.id}`,
+      dbUserId: row.id,
+      username: row.username,
+      token: null,
+      refreshToken: null,
+      loginCount: randomInt(0, 18),
+      articleCount: randomInt(0, 16),
+      statusCount: randomInt(0, 42),
+      browses: randomInt(0, 1200),
+      registrationTime: new Date(row.created_at || Date.now()).getTime(),
+      userType: idx % 7 === 0 ? 'ACTIVE_VETERAN' : idx % 5 === 0 ? 'NEW_USER' : 'SILENT_VETERAN',
+      nextLoginAt: Date.now() + randomInt(1000, 120000)
+    }))
+  )
+  rebuildUserIndex()
+}
+
+async function generateSimUsers(batchSize = SIM_SEED_BATCH_SIZE) {
+  const target = Math.max(1, Number(batchSize || SIM_SEED_BATCH_SIZE))
+  const hashedPassword = await bcrypt.hash(SIM_STOCK_PASSWORD, 10)
+  const values = []
+  for (let i = 0; i < target; i++) {
+    const username = makeChineseSimUsername(i + Date.now())
+    values.push(username, `${username}@${SIM_USER_EMAIL_DOMAIN}`, hashedPassword, String(username).charAt(0), 'user')
+  }
+  const placeholders = Array.from({ length: target }, () => '(?, ?, ?, ?, ?, NOW())').join(', ')
+  await pool.write(
+    `INSERT IGNORE INTO users (username, email, password, avatar, role, created_at) VALUES ${placeholders}`,
+    values
+  )
+  await loadSimUsersFromDb()
+  return getSeedStatus()
+}
+
+async function generateSimContent(batchSize = SIM_SEED_BATCH_SIZE) {
+  const amount = Math.max(1, Number(batchSize || SIM_SEED_BATCH_SIZE))
+  const [authors] = await pool.read(
+    `SELECT id, username, avatar
+     FROM users
+     WHERE email LIKE ?
+     ORDER BY RAND()
+     LIMIT 2000`,
+    [`%@${SIM_USER_EMAIL_DOMAIN}`]
+  )
+
+  if (!authors.length) {
+    throw new Error('请先生成模拟用户')
+  }
+
+  const articleRows = []
+  const statusRows = []
+  const commentDrafts = []
+  const gradients = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
+  ]
+
+  for (let i = 0; i < amount; i++) {
+    const author = authors[i % authors.length]
+    const pseudoUser = normalizeUserProfile({
+      id: `seed_${author.id}_${i}`,
+      dbUserId: author.id,
+      username: author.username,
+      token: null,
+      loginCount: 0,
+      articleCount: 0,
+      statusCount: 0,
+      browses: 0,
+      registrationTime: Date.now() - randomInt(1, 120) * 86400000,
+      userType: 'SILENT_VETERAN'
+    })
+    const article = await generateHumanArticle(pseudoUser)
+    const status = await generateHumanStatus(pseudoUser)
+
+    const cleanContent = String(article?.content || '').trim()
+    const plain = cleanContent.replace(/<[^>]*>/g, '').trim()
+    const readTime = Math.max(1, Math.ceil(plain.length / 500))
+    articleRows.push([
+      String(article?.title || `生活记录 ${i + 1}`).slice(0, 280),
+      String(article?.category || 'lifestyle').slice(0, 50),
+      readTime,
+      String(article?.excerpt || plain.slice(0, 110)).slice(0, 1200),
+      String(article?.description || '').slice(0, 1200),
+      pick(gradients),
+      author.id,
+      author.username || '',
+      author.avatar || '',
+      cleanContent || `<p>${plain || '今日记录'}</p>`
+    ])
+    statusRows.push([String(status || '今日记录').slice(0, 500), author.id, author.username || '', author.avatar || '', 0])
+    const commenter = authors[(i + 7) % authors.length]
+    const titleHint = String(article?.title || '').slice(0, 22)
+    const statusHint = String(status || '').slice(0, 22)
+    commentDrafts.push({
+      article: [
+        commenter.id,
+        'article',
+        i, // placeholder for article index
+        `看到“${titleHint || '这篇内容'}”这个点很有共鸣，实操里确实容易被忽略。`.slice(0, 500)
+      ],
+      status: [
+        commenter.id,
+        'status',
+        i, // placeholder for status index
+        `这条动态很真实，尤其是“${statusHint || '这个细节'}”这部分。`.slice(0, 500)
+      ]
+    })
+  }
+
+  let articleIds = []
+  let statusIds = []
+  if (articleRows.length) {
+    const [result] = await pool.write(
+      'INSERT INTO articles (title, category, read_time, excerpt, description, gradient, author_id, author_username, author_avatar, content, created_at) VALUES ?',
+      [articleRows.map((row) => [...row, new Date()])]
+    )
+    const firstId = Number(result?.insertId || 0)
+    if (firstId > 0) {
+      articleIds = Array.from({ length: articleRows.length }, (_, i) => firstId + i)
+    }
+  }
+  if (statusRows.length) {
+    const [result] = await pool.write(
+      'INSERT INTO statuses (content, author_id, author_username, author_avatar, likes, created_at) VALUES ?',
+      [statusRows.map((row) => [...row, new Date()])]
+    )
+    const firstId = Number(result?.insertId || 0)
+    if (firstId > 0) {
+      statusIds = Array.from({ length: statusRows.length }, (_, i) => firstId + i)
+    }
+  }
+
+  const commentRows = []
+  if (articleIds.length && statusIds.length) {
+    for (const draft of commentDrafts) {
+      const aIdx = Number(draft.article[2] || 0)
+      const sIdx = Number(draft.status[2] || 0)
+      const articleId = articleIds[aIdx]
+      const statusId = statusIds[sIdx]
+      if (articleId) commentRows.push([draft.article[0], 'article', articleId, draft.article[3], null, new Date()])
+      if (statusId) commentRows.push([draft.status[0], 'status', statusId, draft.status[3], null, new Date()])
+    }
+  }
+  if (commentRows.length) {
+    await pool.write(
+      'INSERT INTO content_comments (user_id, target_type, target_id, content, parent_id, created_at) VALUES ?',
+      [commentRows]
+    )
+  }
+  return getSeedStatus()
+}
+
+async function deleteSimContent() {
+  await pool.write(
+    `DELETE c FROM content_comments c
+     JOIN users u ON u.id = c.user_id
+     WHERE u.email LIKE ?`,
+    [`%@${SIM_USER_EMAIL_DOMAIN}`]
+  )
+  await pool.write(
+    `DELETE c FROM content_comments c
+     JOIN articles a ON c.target_type = 'article' AND c.target_id = a.id
+     JOIN users u ON u.id = a.author_id
+     WHERE u.email LIKE ?`,
+    [`%@${SIM_USER_EMAIL_DOMAIN}`]
+  )
+  await pool.write(
+    `DELETE c FROM content_comments c
+     JOIN statuses s ON c.target_type = 'status' AND c.target_id = s.id
+     JOIN users u ON u.id = s.author_id
+     WHERE u.email LIKE ?`,
+    [`%@${SIM_USER_EMAIL_DOMAIN}`]
+  )
+  await pool.write(
+    `DELETE a FROM articles a
+     JOIN users u ON u.id = a.author_id
+     WHERE u.email LIKE ?`,
+    [`%@${SIM_USER_EMAIL_DOMAIN}`]
+  )
+  await pool.write(
+    `DELETE s FROM statuses s
+     JOIN users u ON u.id = s.author_id
+     WHERE u.email LIKE ?`,
+    [`%@${SIM_USER_EMAIL_DOMAIN}`]
+  )
+  return getSeedStatus()
+}
+
+async function deleteSimUsers() {
+  await pool.write(`DELETE FROM users WHERE email LIKE ?`, [`%@${SIM_USER_EMAIL_DOMAIN}`])
+  await loadSimUsersFromDb()
+  return getSeedStatus()
+}
+
+function generateRegistrationIdentity() {
+  const occupied = new Set(registeredUsers.map((user) => user.username))
+  for (const name of runGeneratedUsernames) occupied.add(name)
+
+  const username = createHumanUsername(lastNames, firstNames, occupied)
+  const email = `${username}@${pick(domains)}`
+  return { username, email }
+}
+
 let isRunning = false
 let isPaused = false
 let pausedAt = 0
@@ -998,19 +1513,21 @@ async function scheduleRegistrations() {
       continue
     }
 
-    const username = `${pick(lastNames)}_${pick(firstNames)}_${String(randomInt(1, 999999)).padStart(6, '0')}`
+    const { username, email } = generateRegistrationIdentity()
     const data = await apiRequest('/auth/register', {
       method: 'POST',
       body: JSON.stringify({
         username,
-        email: `${username}@${pick(domains)}`,
+        email,
         password: SIM_STOCK_PASSWORD
       })
     })
 
     if (data?.success) {
+      runGeneratedUsernames.add(data.data.user.username || username)
       const profile = enrichProfileAsStockUser(normalizeUserProfile({
         id: data.data.user.id,
+        dbUserId: data.data.user.id,
         username: data.data.user.username,
         token: data.data.token,
         refreshToken: data.data.refreshToken || null,
@@ -1023,6 +1540,8 @@ async function scheduleRegistrations() {
         nextLoginAt: Date.now() + getNewUserWarmupMs()
       }))
       registeredUsers.push(profile)
+      rememberUser(profile)
+      ensureSocialCircle(profile)
       stats.registrations++
     }
   }
@@ -1062,6 +1581,9 @@ async function scheduleLogins() {
       if (data?.success) {
         candidate.token = data.data.token
         candidate.refreshToken = data.data.refreshToken || null
+        candidate.dbUserId = Number(data?.data?.user?.id || candidate.dbUserId || 0)
+        rememberUser(candidate)
+        ensureSocialCircle(candidate)
         candidate.loginCount = (candidate.loginCount || 0) + 1
         candidate.userType = inferUserType(candidate)
 
@@ -1134,6 +1656,9 @@ async function reconnectSessions() {
       if (data?.success) {
         profile.token = data.data.token
         profile.refreshToken = data.data.refreshToken || null
+        profile.dbUserId = Number(data?.data?.user?.id || profile.dbUserId || 0)
+        rememberUser(profile)
+        ensureSocialCircle(profile)
         profile.loginCount = (profile.loginCount || 0) + 1
         profile.userType = saved.type || inferUserType(profile)
 
@@ -1184,6 +1709,8 @@ async function startSimulator() {
   resetStats()
   completedSessions = []
   registeredUsers = []
+  runGeneratedUsernames = new Set()
+  userByUsername = new Map()
 
   console.log(`[Sim] 启动压测模拟器，当前预设：${currentScale.label}`)
   console.log(
@@ -1192,11 +1719,16 @@ async function startSimulator() {
   console.log(`[Sim] 说明：${currentScale.description}`)
   console.log(`[Sim] 游客占比 ${(currentScale.visitorRatio * 100).toFixed(1)}% | 写入倍率 ${currentScale.writeMultiplier.toFixed(2)}x`)
   console.log('[Sim] 已禁用恢复机制：本次从空状态启动')
-  await bootstrapStockUsers()
-
-  for (let i = 0; i < REGISTRATION_WORKERS; i++) {
-    scheduleRegistrations()
+  const seed = await getSeedStatus()
+  if (!seed.ready) {
+    isRunning = false
+    throw new Error(
+      `请先生成初始数据：当前模拟用户 ${seed.users}，文章 ${seed.articles}，动态 ${seed.statuses}，要求文章/动态至少 ${seed.targetContent}`
+    )
   }
+
+  await loadSimUsersFromDb()
+
   for (let i = 0; i < LOGIN_WORKERS; i++) {
     scheduleLogins()
   }
@@ -1284,17 +1816,44 @@ function readUsersFile() {
   return []
 }
 
-function stopSimulator() {
+async function cleanupRunGeneratedData() {
+  const usernames = Array.from(runGeneratedUsernames).filter((name) => typeof name === 'string' && name.trim())
+  if (!usernames.length) return
+
+  const chunkSize = 500
+  let deleted = 0
+  for (let i = 0; i < usernames.length; i += chunkSize) {
+    const chunk = usernames.slice(i, i + chunkSize)
+    const placeholders = chunk.map(() => '?').join(', ')
+    const [result] = await pool.write(`DELETE FROM users WHERE username IN (${placeholders})`, chunk)
+    deleted += Number(result?.affectedRows || 0)
+  }
+
+  runGeneratedUsernames.clear()
+  console.log(`[Sim] 已清理本轮模拟数据用户：${deleted} 个`)
+}
+
+async function stopSimulator(options = {}) {
+  const { cleanupGeneratedData = false } = options
   isRunning = false
   isPaused = false
   pausedAt = 0
   simulatorEpoch += 1
   for (const session of activeSessions.values()) session.isAlive = false
   activeSessions.clear()
+  // 停止后不再展示历史会话，后台活动面板应立即归零。
+  completedSessions = []
   loginInFlight.clear()
   activeRequests = 0
   for (const handle of intervalHandles) clearInterval(handle)
   intervalHandles.clear()
+  // 立即落盘，避免读取到旧的 active/completed 残留。
+  await writeSessionFile().catch(() => {})
+  if (cleanupGeneratedData) {
+    await cleanupRunGeneratedData().catch((err) => {
+      console.error('[Sim] 清理本轮模拟数据失败:', err?.message || err)
+    })
+  }
   console.log('[Sim] 模拟器已停止')
 }
 
@@ -1325,11 +1884,13 @@ function resumeSimulator() {
 }
 
 function getActiveSessions() {
+  if (!isRunning) return []
   const data = readSessionFile()
   return data.active
 }
 
 function getCompletedSessions() {
+  if (!isRunning) return []
   const data = readSessionFile()
   return data.completed
 }
@@ -1403,24 +1964,24 @@ function getAvailablePresets() {
   }))
 }
 
-function applyPreset(presetId) {
+async function applyPreset(presetId) {
   const preset = LOAD_PRESETS[presetId]
   if (!preset) {
     throw new Error(`Unknown load preset: ${presetId}`)
   }
 
   const wasRunning = isRunning
-  if (wasRunning) stopSimulator()
+  if (wasRunning) await stopSimulator({ cleanupGeneratedData: false })
 
   currentScale = sanitizeConfig(resolvePreset(presetId))
 
-  if (wasRunning) startSimulator()
+  if (wasRunning) await startSimulator()
   return getRuntimeStats()
 }
 
-function updateConfig(partialConfig = {}) {
+async function updateConfig(partialConfig = {}) {
   const wasRunning = isRunning
-  if (wasRunning) stopSimulator()
+  if (wasRunning) await stopSimulator({ cleanupGeneratedData: false })
 
   currentScale = sanitizeConfig({
     ...currentScale,
@@ -1430,7 +1991,7 @@ function updateConfig(partialConfig = {}) {
     description: '当前正在使用自定义调速参数。'
   })
 
-  if (wasRunning) startSimulator()
+  if (wasRunning) await startSimulator()
   return getRuntimeStats()
 }
 
@@ -1439,6 +2000,11 @@ module.exports = {
   pauseSimulator,
   resumeSimulator,
   stopSimulator,
+  getSeedStatus,
+  generateSimUsers,
+  generateSimContent,
+  deleteSimUsers,
+  deleteSimContent,
   getActiveSessions,
   getCompletedSessions,
   getRuntimeStats,

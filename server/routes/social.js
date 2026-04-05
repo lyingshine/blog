@@ -1,6 +1,7 @@
 ﻿const express = require('express')
 const router = express.Router()
-const { authMiddleware } = require('../middleware/auth')
+const { authMiddleware, optionalAuthMiddleware } = require('../middleware/auth')
+const { generateDiscoveryRecommendations } = require('../utils/recommendation')
 const {
   normalizeTargetType,
   normalizeTargetId,
@@ -50,6 +51,25 @@ async function publishSocialNotification(userId, notificationPayload, pushPayloa
     link: pushPayload?.link || notification.link || '/messages'
   })
 }
+
+router.get('/recommendations', optionalAuthMiddleware, async (req, res) => {
+  try {
+    const articleLimit = Math.min(Math.max(Number(req.query.articleLimit || req.query.limit || 100), 10), 200)
+    const statusLimit = Math.min(Math.max(Number(req.query.statusLimit || req.query.limit || 100), 10), 200)
+    const userId = Number(req.user?.id || 0)
+
+    const data = await generateDiscoveryRecommendations({
+      userId,
+      articleLimit,
+      statusLimit
+    })
+
+    res.json({ success: true, data })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ success: false, message: '获取推荐内容失败' })
+  }
+})
 
 router.get('/engagement', async (req, res) => {
   try {

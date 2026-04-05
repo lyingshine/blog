@@ -59,64 +59,66 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 const isOpen = ref(false)
 const currentTheme = ref('classic')
+const route = useRoute()
 
 const themes = [
   {
     id: 'classic',
     name: '经典白',
-    accent: '#0071e3',
+    accent: '#2f6fb8',
     preview: {
-      background: '#ffffff',
-      '--preview-text': '#1d1d1f',
-      '--preview-card': '#f5f5f7',
-      '--preview-border': '#e8e8ed'
+      background: '#f4f6fa',
+      '--preview-text': '#1f2430',
+      '--preview-card': '#fcfdff',
+      '--preview-border': '#dde4ee'
     }
   },
   {
     id: 'dark',
     name: '深夜黑',
-    accent: '#0a84ff',
+    accent: '#6ea9e6',
     preview: {
-      background: '#1c1c1e',
-      '--preview-text': '#f5f5f7',
-      '--preview-card': '#2c2c2e',
-      '--preview-border': '#38383a'
+      background: '#0f131a',
+      '--preview-text': '#e9edf5',
+      '--preview-card': '#171e28',
+      '--preview-border': '#2a3443'
     }
   },
   {
     id: 'midnight',
     name: '午夜蓝',
-    accent: '#4da6ff',
+    accent: '#79b7f1',
     preview: {
-      background: '#1b2838',
-      '--preview-text': '#e0e8f0',
-      '--preview-card': '#243447',
-      '--preview-border': '#2d3e50'
+      background: '#101b2b',
+      '--preview-text': '#e3ebf6',
+      '--preview-card': '#19293d',
+      '--preview-border': '#273f57'
     }
   },
   {
     id: 'sand',
     name: '暖沙金',
-    accent: '#b45309',
+    accent: '#a35b22',
     preview: {
-      background: '#faf8f5',
-      '--preview-text': '#3d3225',
-      '--preview-card': '#f0ebe4',
-      '--preview-border': '#e5ddd4'
+      background: '#f4efe7',
+      '--preview-text': '#3f3328',
+      '--preview-card': '#fbf7f0',
+      '--preview-border': '#e8ded2'
     }
   },
   {
     id: 'mist',
     name: '薄雾灰',
-    accent: '#5856d6',
+    accent: '#4a78b0',
     preview: {
-      background: '#f2f2f7',
-      '--preview-text': '#1c1c1e',
-      '--preview-card': '#e5e5ea',
-      '--preview-border': '#c6c6c8'
+      background: '#edf1f6',
+      '--preview-text': '#212633',
+      '--preview-card': '#f8fbff',
+      '--preview-border': '#dce4ef'
     }
   }
 ]
@@ -133,6 +135,7 @@ const selectTheme = (themeId) => {
   currentTheme.value = themeId
   document.documentElement.setAttribute('data-theme', themeId)
   localStorage.setItem('blog-theme', themeId)
+  closePanel()
 }
 
 onMounted(() => {
@@ -148,6 +151,13 @@ onMounted(() => {
 watch(currentTheme, (newTheme) => {
   document.documentElement.setAttribute('data-theme', newTheme)
 })
+
+watch(
+  () => route.fullPath,
+  () => {
+    isOpen.value = false
+  }
+)
 </script>
 
 <style scoped>

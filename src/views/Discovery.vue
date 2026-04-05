@@ -373,12 +373,25 @@ const fetchData = async (options = {}) => {
   const { silent = false } = options
   if (!silent) loading.value = true
   try {
-    const [articlesRes, statusesRes] = await Promise.all([
-      apiService.getArticles({ limit: 100 }),
-      apiService.getStatuses()
-    ])
-    articles.value = (articlesRes.data?.articles || []).map(normalizeArticle)
-    statuses.value = (statusesRes.data || []).map(normalizeStatus)
+    let recommendationLoaded = false
+    try {
+      const recRes = await apiService.getDiscoveryRecommendations({ articleLimit: 100, statusLimit: 100 })
+      articles.value = (recRes.data?.articles || []).map(normalizeArticle)
+      statuses.value = (recRes.data?.statuses || []).map(normalizeStatus)
+      recommendationLoaded = true
+    } catch (recError) {
+      console.warn('推荐流获取失败，回退到默认列表：', recError?.message || recError)
+    }
+
+    if (!recommendationLoaded) {
+      const [articlesRes, statusesRes] = await Promise.all([
+        apiService.getArticles({ limit: 100 }),
+        apiService.getStatuses()
+      ])
+      articles.value = (articlesRes.data?.articles || []).map(normalizeArticle)
+      statuses.value = (statusesRes.data || []).map(normalizeStatus)
+    }
+
     await loadEngagementBatch()
   } catch (error) {
     console.error('获取发现内容失败:', error)
