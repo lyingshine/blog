@@ -1372,20 +1372,41 @@ async function generateSimContent(batchSize = SIM_SEED_BATCH_SIZE) {
     ])
     statusRows.push([String(status || '今日记录').slice(0, 500), author.id, author.username || '', author.avatar || '', 0])
     const commenter = authors[(i + 7) % authors.length]
-    const titleHint = String(article?.title || '').slice(0, 22)
-    const statusHint = String(status || '').slice(0, 22)
+    const commenterUser = normalizeUserProfile({
+      id: `seed_commenter_${commenter.id}_${i}`,
+      dbUserId: commenter.id,
+      username: commenter.username,
+      token: null,
+      loginCount: 0,
+      articleCount: 0,
+      statusCount: 0,
+      browses: 0,
+      registrationTime: Date.now() - randomInt(1, 120) * 86400000,
+      userType: 'SILENT_VETERAN'
+    })
+    const articleComment = await generateHumanComment(commenterUser, {
+      targetType: 'article',
+      title: String(article?.title || '').slice(0, 120),
+      excerpt: String(article?.excerpt || plain).slice(0, 180),
+      topic: String(article?.category || 'lifestyle')
+    })
+    const statusComment = await generateHumanComment(commenterUser, {
+      targetType: 'status',
+      excerpt: String(status || '').slice(0, 180),
+      topic: String(article?.category || 'lifestyle')
+    })
     commentDrafts.push({
       article: [
         commenter.id,
         'article',
         i, // placeholder for article index
-        `看到“${titleHint || '这篇内容'}”这个点很有共鸣，实操里确实容易被忽略。`.slice(0, 500)
+        String(articleComment || '').slice(0, 500)
       ],
       status: [
         commenter.id,
         'status',
         i, // placeholder for status index
-        `这条动态很真实，尤其是“${statusHint || '这个细节'}”这部分。`.slice(0, 500)
+        String(statusComment || '').slice(0, 500)
       ]
     })
   }

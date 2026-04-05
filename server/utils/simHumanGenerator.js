@@ -7,6 +7,7 @@ const IS_OPENROUTER_ENDPOINT = /openrouter\\.ai/i.test(String(OPENROUTER_ENDPOIN
 const OPENROUTER_TIMEOUT_MS = Math.max(3000, Number(process.env.OPENROUTER_TIMEOUT_MS || 12000))
 const OPENROUTER_MAX_CONCURRENCY = Math.max(1, Number(process.env.OPENROUTER_MAX_CONCURRENCY || 8))
 const OPENROUTER_RETRY_TIMES = Math.max(1, Number(process.env.OPENROUTER_RETRY_TIMES || 4))
+const SIM_AI_STRICT = String(process.env.SIM_AI_STRICT || 'true').toLowerCase() !== 'false'
 const SIM_AI_BATCH_ENABLED = String(process.env.SIM_AI_BATCH_ENABLED || 'true').toLowerCase() !== 'false'
 const SIM_AI_BATCH_STATUS_INITIAL_SIZE = Math.max(1, Math.min(100, Number(process.env.SIM_AI_BATCH_STATUS_INITIAL_SIZE || 20)))
 const SIM_AI_BATCH_STATUS_REFILL_SIZE = Math.max(1, Math.min(200, Number(process.env.SIM_AI_BATCH_STATUS_REFILL_SIZE || 100)))
@@ -140,6 +141,7 @@ console.log(`[Sim AI] Model pool: ${FREE_MODEL_POOL.join(' | ')} | endpoint=${OP
 console.log(
   `[Sim AI] Batch mode: ${SIM_AI_BATCH_ENABLED ? 'on' : 'off'} | status(initial=${SIM_AI_BATCH_STATUS_INITIAL_SIZE}, refill=${SIM_AI_BATCH_STATUS_REFILL_SIZE}) comment=${SIM_AI_BATCH_COMMENT_SIZE} article=${SIM_AI_BATCH_ARTICLE_SIZE}`
 )
+console.log(`[Sim AI] Strict mode: ${SIM_AI_STRICT ? 'on' : 'off'}`)
 
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
@@ -696,6 +698,9 @@ async function generateHumanArticle(user) {
   }
 
   if (!ai && !looseArticle) {
+    if (SIM_AI_STRICT) {
+      throw new Error('AI生成文章失败：未返回可用中文内容')
+    }
     const fallback = fallbackArticle(user)
     rememberTopic(user, fallback.topic)
     return fallback
@@ -706,7 +711,10 @@ async function generateHumanArticle(user) {
     return looseArticle
   }
 
-  const content = String(ai.content || '').trim() || fallbackArticle(user).content
+  const content = String(ai?.content || '').trim()
+  if (!content && SIM_AI_STRICT) {
+    throw new Error('AI生成文章失败：内容为空')
+  }
   const topic = String(ai.topic || ai.category || 'lifestyle').toLowerCase()
   const normalizedTopic = normalizeCategory(topic)
   const excerptSource = String(ai.excerpt || stripHtml(content)).trim()
@@ -774,6 +782,9 @@ async function generateHumanStatus(user) {
   }
 
   if (!ai && !isUsableChineseText(looseText, 0.2)) {
+    if (SIM_AI_STRICT) {
+      throw new Error('AI生成动态失败：未返回可用中文内容')
+    }
     const fallback = fallbackStatus(user)
     rememberTopic(user, fallback.topic)
     return fallback.content
@@ -784,6 +795,9 @@ async function generateHumanStatus(user) {
   rememberTopic(user, topic)
 
   if (!content) {
+    if (SIM_AI_STRICT) {
+      throw new Error('AI生成动态失败：内容为空')
+    }
     return fallbackStatus(user).content
   }
 
@@ -841,11 +855,19 @@ async function generateHumanComment(user, target = {}) {
   }
 
   if (!ai && !isUsableChineseText(looseText, 0.2)) {
+    if (SIM_AI_STRICT) {
+      throw new Error('AI生成评论失败：未返回可用中文内容')
+    }
     return fallbackComment(target).content.slice(0, 220)
   }
 
   const content = String(ai?.content || looseText || '').replace(/\s+/g, ' ').trim()
-  if (!content) return fallbackComment(target).content.slice(0, 220)
+  if (!content) {
+    if (SIM_AI_STRICT) {
+      throw new Error('AI生成评论失败：内容为空')
+    }
+    return fallbackComment(target).content.slice(0, 220)
+  }
   return content.slice(0, 220)
 }
 
